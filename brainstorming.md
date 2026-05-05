@@ -7,9 +7,9 @@
 
 ---
 
-**Active Gate:** Step 5 — MEASURER
+**Active Gate:** Step 6 — JUDGE
 **Status:** OPEN
 
 ---
 
-<!-- chat starts below after Measurer posts in shared.md -->
+<!-- chat starts below after Judge posts in shared.md -->

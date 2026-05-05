@@ -858,3 +858,64 @@ Known weaknesses:
 → Head to brainstorming.md — say "submit" when your idea is ready.
 
 ---
+
+---
+
+**[HUMAN INSIGHT]** | `2026-05-05 03:02` | Gate 5 — MEASURER
+
+Three measurement concerns resolved:
+
+**M3 Boundary Accuracy — Two-Layer Benchmark**
+- Layer 1: Run BGI on two repos solving the same problem (e.g., Express vs Fastify). Measure cross-repo boundary convergence (~80% = BGI sees real structure).
+- Layer 2: Compare that converged boundary set to folder structure. Converges + diverges from folders = BGI found real structure humans didn't organize around (not a failure).
+- This lifts M3 confidence from LOW to MEDIUM — the benchmark is self-validating.
+
+**SEP Forecast Precision — Reframe the Metric**
+- Some edges are meant to stay suspended by design (intentional decoupling). Measuring resurrection rate was wrong.
+- Correct metric: % of acted-upon forecasts that produced a useful outcome — resurrection OR confirmed intentional boundary. Both are wins.
+- Permanently unresolved edges → `INTENTIONAL_BOUNDARY` label over time. No alarm, no pressure.
+
+**Per-Subtree CNL in Mixed Monorepos — Cross-Stack Topology**
+- Detect subtrees via manifest files + language density. Each subtree gets its own CNL/BCC map.
+- Always look for cross-subtree links. SEP handles this naturally: cross-subtree suspended edges → `CROSS_STACK_BOUNDARY` Odd Group class.
+- If link found → subtrees are connected nodes in a higher-level repo graph. Design D (Outside-In) surfaces the contracts.
+- If no link found → parallel BGI instances, no forced coupling.
+- The gap becomes a feature: BGI understands monorepo topology, not just file topology.
+
+---
+
+**🏛 ARCHIVIST** | `2026-05-05 03:02` | Gate 5 Reaction
+
+Two-layer benchmark mirrors how academic software architecture papers validate detectors (cross-project generalizability + structural oracle). `CROSS_STACK_BOUNDARY` maps directly to what Palantir's Gotham and large enterprise monorepos call "integration seams" — a known unsolved problem in static analysis tooling. BGI is now addressing it.
+
+---
+
+**🔭 VISIONARY** | `2026-05-05 03:02` | Gate 5 Reaction
+
+`INTENTIONAL_BOUNDARY` is a breakthrough label — no tool today distinguishes "we haven't found the lock yet" from "there is no lock by design." This becomes a first-class architectural concept that agents can reason about. `CROSS_STACK_BOUNDARY` Odd Groups are the seed of a future "repo constellation" view — multiple repos in an org mapped to each other through their cross-stack seams.
+
+---
+
+**⚙️ PRAGMATIST** | `2026-05-05 03:02` | Gate 5 Reaction
+
+Two-layer benchmark is implementable in <2 days: pick 3 repo pairs, run BGI, compare boundary type sets, then diff against folder layout. `CROSS_STACK_BOUNDARY` needs one new field on `OddGroup`: `cross_stack: boolean` + `subtree_pair: [SubtreeId, SubtreeId]`. `INTENTIONAL_BOUNDARY` needs a time-to-label threshold config (e.g., 30 days without resurrection = label fires).
+
+---
+
+**🔍 SKEPTIC** | `2026-05-05 03:02` | Gate 5 Reaction
+
+Two-layer benchmark has a blind spot: two repos that both implement the same bad architecture will converge on wrong boundaries. Mitigate by choosing repo pairs with different authors and codebases, not forks. `INTENTIONAL_BOUNDARY` threshold (30 days) is arbitrary — a library repo and a fast-moving startup repo have very different "permanent" timescales. Make the threshold configurable per repo activity level, not fixed.
+
+---
+
+**📊 MEASURER** | `2026-05-05 03:02` | Gate 5 Reaction
+
+Updated M3 confidence: LOW → MEDIUM. Updated SEP forecast metric definition: resurrection rate → actionable outcome rate. `CROSS_STACK_BOUNDARY` adds a new measurable: cross-stack link detection recall (% of known API contracts between subtrees that BGI surfaces). Estimated ~75% recall at launch, rising with Outside-In overlay coverage. System score revised: 8.3 → **8.5 / 10**.
+
+---
+
+**⚖️ JUDGE** | `2026-05-05 03:02` | Gate 5 Reaction
+
+All three concerns resolved cleanly with no regressions. `INTENTIONAL_BOUNDARY` and `CROSS_STACK_BOUNDARY` are net additions to the design, not patches. Ready for final judgment. Proceeding to Step 6.
+
+---
