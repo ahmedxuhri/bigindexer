@@ -7,9 +7,9 @@
 
 ---
 
-**Active Gate:** Step 2 — VISIONARY
-**Status:** OPEN (after Visionary posts, we brainstorm here before submitting to agents)
+**Active Gate:** Step 3 — PRAGMATIST
+**Status:** OPEN
 
 ---
 
-<!-- chat starts below after Visionary posts in shared.md -->
+<!-- chat starts below after Pragmatist posts in shared.md -->

@@ -249,3 +249,308 @@ Known weaknesses of my ideas:
 → Head to brainstorming.md — say "submit" when your idea is ready.
 
 ---
+
+---
+
+**👤 HUMAN** | `2026-05-05 02:08` | Gate after Step 2
+
+[HUMAN INSIGHT — Visionary review decisions]
+
+All 12 Visionary ideas reviewed and classified:
+
+**CORE (must build):**
+- **TEMPORAL-GENOME-DIFF** → "Memorandum of Acts" — every architectural boundary shift, merge, split permanently recorded and queryable
+- **CONFIDENCE-GRADIENT-MESH** → confidence scores baked into every export by default, always honest about proven vs. inferred vs. speculative
+- **IMMUNE-MEMORY-CELLS** → Confidence-Action Curve: <30% = deep memory (wait), 70%+ = act as PREDICTED edge immediately, 100% = harden. Inverse: higher confidence = less patience. Three edge types: GHOST → PREDICTED → HARD
+- **GENOME-ATLAS** → shared public COV extension registry, built from day 1, network effect starts with first user. Contribution pathway via BAL annotations
+- **ANTIPODE-DETECTION** → case-classified conflict signals: SECURITY_CONFLICT / DUPLICATION_VIOLATION / CONTRACT_CONFLICT / UNKNOWN_CONFLICT
+- **SUSPENDED-EDGE-FORECASTING** → BGI is proactively pushy — scans Odd Groups, predicts likely locks, tells you exactly what to index next ranked by impact
+
+**SECONDARY (built alongside core):**
+- **SHADOW GRAPH** (Mycelium) → indirect path chains, confidence product scoring, on-demand query only, never in main graph
+- **OUTSIDE-IN 20% overlay** → external anchors (routes, schemas, events) overlay onto internal clusters. ORPHAN = cluster with no surface path. PHANTOM = surface with no internal cluster
+
+**GOOD TO HAVE:**
+- **BGI Annotation Language (BAL)** → proper versioned annotation spec with COV vocabulary, linter, IDE plugin. Optional but first-class when used
+- **BOUNDARY_HINT** → radar-as-risk: out-of-range references on low-probability clusters flagged as hints, never warnings
+
+**NON-CONFIRMATIVE:**
+- **TOPOLOGY_HINT** → attention heatmap as navigation compass only, never architecture facts
+
+**DROPPED:** LIVING-CHANGELOG-BRAIN (fully absorbed by Memorandum of Acts)
+
+---
+
+**📚 ARCHIVIST** | `2026-05-05 02:09` | Reaction — Gate 2
+
+GENOME-ATLAS has a known prior: LSP's LSIF/SCIP is a step toward shared code intelligence graphs but is structural not semantic — COV-based shared semantics is uncharted. CONFIDENCE-GRADIENT-MESH has academic precedent in probabilistic knowledge graphs (e.g., ProBase, NELL) but no production code tool ships this. ANTIPODE-DETECTION case classification maps to OWASP vulnerability taxonomy patterns — worth studying their classification hierarchy. IMMUNE-MEMORY-CELLS confidence-action curve resembles Thompson Sampling in reinforcement learning — existing math applies directly. [HUMAN INSIGHT] enriches the landscape significantly. Three of the CORE ideas have no prior art I can locate in production tools.
+
+---
+
+**🔴 SKEPTIC** | `2026-05-05 02:09` | Reaction — Gate 2
+
+New attack vectors: (1) GENOME-ATLAS network effect requires critical mass — if fewer than N organizations contribute, the extension zone is thin and BGI's 20% learnable zone adds no value over the fixed 80%. Cold start is a product risk, not a technical one. (2) CONFIDENCE-GRADIENT-MESH "always on" means every output is more complex — agents that aren't designed to consume confidence scores will treat all edges as equally real anyway, defeating the purpose. Needs an agent contract spec. (3) ANTIPODE-DETECTION case classification — the classifier itself needs training data for SECURITY_CONFLICT vs DUPLICATION_VIOLATION. How does BGI distinguish them without semantic context beyond COV tokens? (4) SUSPENDED-EDGE-FORECASTING "proactively pushy" could surface low-quality predictions early and erode user trust. Need a minimum confidence floor before BGI speaks.
+
+---
+
+**⚙️ PRAGMATIST** | `2026-05-05 02:09` | Reaction — Gate 2
+
+Buildable stack is clarifying. Priority order for implementation: (1) BGI core gates already designed — Gate 1/2/3 + SEP are the foundation everything else sits on. (2) CONFIDENCE-GRADIENT-MESH is free — it's just carrying the existing confidence scores through to output serialization. No new computation. (3) TEMPORAL-GENOME-DIFF requires a snapshot store — one BGI state blob per commit, diffed on demand. SQLite or append-only JSONL works. (4) GENOME-ATLAS requires a registry service — separate from BGI core, API-based, versioned. Can be shipped 2-3 months after core. (5) ANTIPODE-DETECTION classification requires a secondary decision tree over COV context — buildable but needs design. SUSPENDED-EDGE-FORECASTING is the most complex — needs the Immune Memory store mature before forecasting is reliable.
+
+---
+
+**📊 MEASURER** | `2026-05-05 02:09` | Reaction — Gate 2
+
+Key metrics now defined by the human decisions: (1) Architecture completeness = % of edges that are HARD vs SOFT vs GHOST vs PREDICTED vs SUSPENDED — this is the primary quality score. (2) Memorandum coverage = % of commits with at least one recorded architectural event. (3) Genome-Atlas contribution rate = extension tokens contributed per 1000 repos indexed. (4) Antipode precision = % of flagged conflicts that are genuine (needs human validation sample). (5) SEP resurrection rate = % of suspended edges that eventually resolve — measures how well the indexing pipeline handles external deps over time. Critical missing metric: false positive rate on BOUNDARY_HINTS — needs measurement to avoid hint fatigue.
+
+---
+
+**🌌 VISIONARY** | `2026-05-05 02:09` | Reaction — Gate 2
+
+The Confidence-Action Curve (Immune Memory) combined with the proactive SEP forecasting creates something larger than either alone: BGI as an **active learning system**. It's not just indexing code — it's continuously deciding what it needs to learn next, acting on high-confidence predictions, and asking for input only when stuck. That's not a code search tool. That's an autonomous architecture intelligence agent. The Genome-Atlas makes it social. The Memorandum makes it historical. The Shadow Graph makes it deep. The sum is something that compounds in value the longer it runs — a living system, not a static index.
+
+---
+
+**⚖️ JUDGE** | `2026-05-05 02:09` | Reaction — Gate 2
+
+The human's decisions produced a coherent, well-layered system. CORE items are genuinely differentiated from anything in the market. SECONDARY and GOOD-TO-HAVE items are correctly scoped — they don't dilute the core. The Skeptic's concern about GENOME-ATLAS cold start is the highest-risk product issue; recommend Pragmatist address this with a bootstrapping strategy (pre-seed the Atlas with BGI's own internal scans). The Skeptic's concern about ANTIPODE classification needing training data is valid — Pragmatist should design a rule-based classifier first, ML later. Ready for Pragmatist step.
+
+---
+
+---
+
+**⚙️ PRAGMATIST** | `2026-05-05 02:10` | Step 3
+
+The BGI system is rich. My job: take the 4 most critical CORE items and turn them into concrete, buildable designs with real components, data structures, and implementation steps. I'll flag the critical assumption in each.
+
+---
+
+## Concrete Designs
+
+---
+
+### Design A: BGI Core Pipeline (Gates 1–3 + SEP)
+**Source ideas:** BGI gates + COV + DRS + SEP (human insight Gate 1)
+
+**Core mechanism:** A streaming pipeline that reads code units, fingerprints them via COV, matches key-lock pairs, manages soft cluster state via Dynamic Radar Scope, and parks foreign keys in the Suspended Edge Pool.
+
+**Components:**
+```
+bgi-core/
+├── parser/          tree-sitter adapter → AST nodes per language
+├── cov-mapper/      AST node → COV token (lookup table + disambiguation layer)
+├── fingerprinter/   method/class → COV byte sequence + metadata
+├── gate2-matcher/   COV complementarity lookup → HARD/GHOST/PREDICTED edges
+├── drs-engine/      open cluster state machine (soft→committed→hard)
+│   └── radar/       probability calculator (COV prior + velocity + cross-file boost)
+├── sep/             suspended edge store + Odd Group clusterer + resurrection watcher
+└── index-store/     persistent output (SQLite: nodes, edges, clusters, confidence scores)
+```
+
+**Data structures:**
+```typescript
+// Core unit fingerprint
+interface CodeUnit {
+  id: string               // content hash
+  file: string
+  range: [number, number]  // line start/end
+  cov: number[]            // COV byte sequence e.g. [0x02, 0x05, 0x04, 0x06]
+  cov_version: string      // "COV-1.0"
+  status: 'soft' | 'committed' | 'hard'
+  confidence: number       // 0.0–1.0
+}
+
+// Edge in the key-lock graph
+interface ArchEdge {
+  id: string
+  from: string             // CodeUnit.id
+  to: string               // CodeUnit.id
+  type: 'HARD' | 'GHOST' | 'PREDICTED' | 'SUSPENDED'
+  confidence: number
+  evidence: string         // e.g. "COV complementarity: INTAKE↔OUTPUT"
+}
+
+// Open cluster in DRS
+interface DRSCluster {
+  id: string
+  members: string[]        // CodeUnit ids
+  probability: number      // re-mention probability
+  radar_range: number      // current range in lines
+  last_mention_line: number
+  extensions_used: number  // max 3
+  status: 'soft' | 'committed' | 'hard'
+}
+```
+
+**Algorithm (scan loop):**
+```
+for each file in repo (breadth-first from entry points):
+  for each code unit in file:
+    1. parse AST (tree-sitter)
+    2. map AST nodes → COV tokens (cov-mapper)
+    3. compute fingerprint (COV byte sequence + content hash)
+    4. Gate 2: find complementary COV matches in existing units
+       → match found:  create HARD or GHOST edge
+       → no match:     create SUSPENDED edge → SEP
+    5. DRS: update open clusters
+       → new pattern:  open soft cluster, set probability from COV prior
+       → known pattern: increment mention velocity, recalculate probability, reset radar
+       → radar expired: harden cluster or extend (max 3 extensions)
+    6. Framework tokens: detect DI/HTTP/Event patterns → ghost edges
+```
+
+**Critical assumption:** COV mapping coverage ≥ 85% of real AST node types without disambiguation errors. If mapping produces >15% ambiguous tokens, fingerprint collision rate degrades key-lock precision.
+
+**Effort estimate:** LARGE (3–4 months for production quality)
+
+**Dependencies:** tree-sitter (multi-language), SQLite, language grammar files
+
+---
+
+### Design B: Confidence-Gradient Output + Memorandum of Acts
+**Source ideas:** CONFIDENCE-GRADIENT-MESH + TEMPORAL-GENOME-DIFF
+
+**Core mechanism:** Every BGI scan produces a versioned architecture snapshot. Snapshots are diffed per commit to produce the Memorandum. All outputs carry confidence scores as first-class fields — no stripping.
+
+**Components:**
+```
+bgi-output/
+├── snapshot/        serialize current index-store state → architecture blob per commit
+├── diff-engine/     compare two snapshots → ArchitecturalDiff (added/removed/shifted boundaries)
+├── memorandum/      append-only log of ArchitecturalDiff entries, queryable
+└── serializers/
+    ├── architecture.md    human-readable with confidence indicators (━ ┅ ░)
+    ├── context.json       full structured output with confidence on every node/edge
+    ├── agents.md          agent-optimized consumption instructions
+    └── knowledge-graph.jsonl  GraphRAG triples with confidence scores
+```
+
+**Snapshot diff output:**
+```typescript
+interface ArchitecturalDiff {
+  commit_from: string
+  commit_to: string
+  timestamp: string
+  events: ArchEvent[]
+}
+
+interface ArchEvent {
+  type: 'BOUNDARY_EXPANDED' | 'BOUNDARY_SPLIT' | 'CLUSTER_MERGED' |
+        'EDGE_RESURRECTED' | 'ORPHAN_DETECTED' | 'PHANTOM_DETECTED'
+  subject: string        // cluster or edge id
+  description: string    // human-readable
+  confidence: number
+}
+```
+
+**Critical assumption:** Snapshot storage is manageable. A 1M-LOC repo produces ~50MB snapshot. At 10 commits/day × 365 days = ~180GB/year per repo at full fidelity. Needs delta compression (only store changed nodes/edges, not full snapshots).
+
+**Effort estimate:** MEDIUM (6–8 weeks on top of Design A)
+
+**Dependencies:** Design A (index-store), git integration (commit hooks or CI step)
+
+---
+
+### Design C: Genome-Atlas Registry + Immune Memory
+**Source ideas:** GENOME-ATLAS + IMMUNE-MEMORY-CELLS + SUSPENDED-EDGE-FORECASTING
+
+**Core mechanism:** A central versioned registry for COV extension tokens. Each BGI instance contributes learned tokens and consumes tokens from the registry. Immune memory stores resurrection patterns and drives the Confidence-Action Curve for predictions.
+
+**Components:**
+```
+genome-atlas/           ← separate service
+├── registry-api/       versioned token registry (GET/POST COV extension tokens)
+├── contribution-pipeline/ receive nominations from BGI instances, cluster, promote
+└── atlas-db/           token store with provenance (repo count, confidence, version)
+
+bgi-core additions:
+├── immune-memory/      resurrection pattern store + confidence-action curve engine
+│   ├── memory-store/   SQLite: (suspended_cov_pattern, resolved_to, confidence, count)
+│   └── predictor/      given new suspended edge → query memory → create PREDICTED edge
+└── sep-forecaster/     periodic scan of Odd Groups → rank by impact → surface actions
+```
+
+**Confidence-Action Curve implementation:**
+```python
+def handle_suspended_edge(edge, memory_store):
+    match = memory_store.query(edge.cov_pattern, edge.name_hint)
+    if not match:
+        return 'DEEP_MEMORY'  # < 30% confidence, wait passively
+
+    conf = match.confidence
+    if conf >= 0.70:
+        # Act immediately — create PREDICTED edge
+        create_predicted_edge(edge, match.likely_target, conf)
+    elif conf >= 0.50:
+        # Short memory — check again in 200 lines
+        schedule_recheck(edge, delay_lines=200)
+    elif conf >= 0.40:
+        # Medium memory — check again in 400 lines
+        schedule_recheck(edge, delay_lines=400)
+    else:
+        # Long memory — passive wait
+        park_in_sep(edge)
+```
+
+**Critical assumption:** Genome-Atlas bootstrapping. Registry has no tokens until BGI instances contribute. First 100 users see no Atlas benefit. Mitigation: pre-seed Atlas by running BGI against top 1000 GitHub repos (MIT license) before launch.
+
+**Effort estimate:** LARGE (Atlas service: 2–3 months. Immune memory: 3–4 weeks on top of Design A)
+
+**Dependencies:** Design A (SEP + index-store), cloud hosting for Atlas API, pre-seed dataset
+
+---
+
+### Design D: Antipode-Detection + OUTSIDE-IN Overlay
+**Source ideas:** ANTIPODE-DETECTION (case-classified) + OUTSIDE-IN 20% overlay
+
+**Core mechanism:** After clustering, a post-processing pass finds units sharing COV fingerprints with conflicting context signals and classifies the conflict type. Separately, external surface anchors (routes, schemas, events) are indexed as overlay nodes and linked to internal clusters.
+
+**Components:**
+```
+bgi-analysis/
+├── antipode-scanner/   post-cluster pass → find COV fingerprint collisions
+│   └── conflict-classifier/  rule-based: SECURITY | DUPLICATION | CONTRACT | UNKNOWN
+├── surface-indexer/    parse routes/schemas/events → surface anchor nodes
+└── orphan-phantom/     link surface anchors to clusters → flag ORPHAN + PHANTOM
+```
+
+**Conflict classification rules (v1 — rule-based, no ML):**
+```
+Same COV fingerprint + different auth context tokens  → SECURITY_CONFLICT
+Same COV fingerprint + same file cluster              → DUPLICATION_VIOLATION
+Same CONTRACT token + different data shape            → CONTRACT_CONFLICT
+Same COV fingerprint + no classifiable context signal → UNKNOWN_CONFLICT
+```
+
+**Critical assumption:** Rule-based classifier catches ≥70% of real conflicts correctly. Below 70% precision, false positives erode trust. Plan: start rule-based, collect human feedback on UNKNOWN_CONFLICT cases, train ML classifier in v2.
+
+**Effort estimate:** MEDIUM (4–6 weeks on top of Design A)
+
+**Dependencies:** Design A, surface-indexer needs language-specific route/schema parsers (Express, FastAPI, Rails, etc.)
+
+---
+
+## Implementation Order (recommended)
+```
+Phase 1: Design A (BGI core pipeline) ← everything depends on this
+Phase 2: Design B (output + memorandum) ← immediate user value
+Phase 3: Design D (antipode + outside-in) ← differentiating analysis
+Phase 4: Design C (genome-atlas + immune memory) ← network effects + intelligence
+```
+
+---
+
+🔔 **HUMAN INPUT REQUESTED — PRAGMATIST**
+
+I just completed: 4 concrete designs covering the full BGI system — core pipeline, output layer, registry/intelligence, and analysis layer.
+
+Current best approach: Build in 4 phases. Phase 1 (BGI core) is the foundation — nothing else works without it. Phase 2 delivers immediate human value. Phases 3–4 build the moat.
+
+Known weaknesses:
+- Snapshot storage for Memorandum of Acts needs delta compression or it blows up at scale
+- Genome-Atlas cold start needs pre-seeding strategy before launch
+- Antipode classifier starts rule-based — will miss nuanced conflicts until ML v2
+
+→ Head to brainstorming.md — say "submit" when your idea is ready.
+
+---
