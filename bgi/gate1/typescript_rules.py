@@ -250,3 +250,70 @@ def apply_tier5(heritage_name: str) -> list[tuple[COV, float]]:
     if _HERITAGE_AUTHZ.search(heritage_name):
         results.append((COV.AUTHORIZE, 0.9))
     return results
+
+
+# ── Route call detection (Express / Fastify / Koa / Hapi) ────────────────────
+
+_HTTP_METHODS = {"get", "post", "put", "delete", "patch", "head", "options", "all", "use"}
+
+# Object prefixes whose .get/.post/... are never route registrations
+_NON_ROUTE_PREFIXES = {
+    "promise", "object", "array", "string", "number", "boolean", "console",
+    "fs", "path", "math", "json", "process", "buffer", "url", "os", "util",
+    "crypto", "stream", "events", "date", "error", "map", "set", "symbol",
+}
+
+
+def extract_route_call_info(call_node: "Node") -> "tuple[str, str] | None":
+    """
+    If call_node is a route registration call like `router.get('/path', handler)`,
+    returns (HTTP_METHOD_UPPER, path_string). Otherwise returns None.
+    Handles Express, Fastify, Koa, Hapi and any framework using obj.method(path, ...) convention.
+    """
+    func = call_node.child_by_field_name("function")
+    if func is None or func.type != "member_expression":
+        return None
+
+    prop_node = func.child_by_field_name("property")
+    obj_node  = func.child_by_field_name("object")
+    if prop_node is None or obj_node is None:
+        return None
+
+    method = node_text(prop_node).lower()
+    if method not in _HTTP_METHODS:
+        return None
+
+    # Block obvious non-route callers (stdlib, built-ins)
+    obj_text = node_text(obj_node).lower()
+    if any(obj_text == p or obj_text.startswith(p + ".") for p in _NON_ROUTE_PREFIXES):
+        return None
+
+    # Extract path from the first string or template literal argument
+    args_node = call_node.child_by_field_name("arguments")
+    if args_node is None:
+        return None
+
+    path = "<dynamic>"
+    for arg in args_node.children:
+        if arg.type in ("string", "template_string"):
+            raw = node_text(arg)
+            path = raw.strip("\"'`")
+            break
+
+    return (method.upper(), path)
+
+
+def extract_route_handler(call_node: "Node") -> "Node | None":
+    """
+    Returns the last arrow_function or function argument — the route handler.
+    Handles middleware chains: router.get('/path', auth, rateLimit, handler).
+    """
+    args_node = call_node.child_by_field_name("arguments")
+    if args_node is None:
+        return None
+
+    handler = None
+    for arg in args_node.children:
+        if arg.type in ("arrow_function", "function"):
+            handler = arg
+    return handler

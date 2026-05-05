@@ -27,6 +27,7 @@ from bgi.gate1.rules import dedupe_ordered
 from bgi.gate1.typescript_rules import (
     apply_tier1, apply_tier2, apply_tier3, apply_tier4, apply_tier5,
     node_text, INTERFACE_TOKEN,
+    extract_route_call_info, extract_route_handler,
 )
 from bgi.gate1.ai_fallback import AIFallback
 
@@ -88,14 +89,30 @@ def _has_meaningful_params(params_node: Node | None) -> bool:
 
 def _get_decorators(func_or_class_node: Node) -> list[str]:
     """
-    In TS, decorators sit as `decorator` children *before* the class/method keyword.
-    They are direct children of the class_declaration or method_definition node.
+    Return decorator texts for a function/method/class node.
+
+    Two locations are checked:
+      1. Direct children of the node (class_declaration, some TS versions)
+      2. Preceding siblings in the parent's children (method_definition in class_body)
+         — the tree-sitter TS grammar places method decorators as siblings before
+         the method_definition, not as children of it.
     """
-    return [
+    results = [
         node_text(child)
         for child in func_or_class_node.children
         if child.type == "decorator"
     ]
+    # Also collect decorators that are preceding siblings in the parent container
+    parent = func_or_class_node.parent
+    if parent is not None and parent.type in ("class_body", "program", "statement_block", "module"):
+        siblings = parent.children
+        idx = next((i for i, s in enumerate(siblings) if s.id == func_or_class_node.id), None)
+        if idx is not None:
+            i = idx - 1
+            while i >= 0 and siblings[i].type == "decorator":
+                results.append(node_text(siblings[i]))
+                i -= 1
+    return results
 
 
 # ── Class context ─────────────────────────────────────────────────────────────
@@ -194,25 +211,33 @@ def fingerprint_function_ts(
     rel_path: str,
     ai: AIFallback,
     parent_var_name: str | None = None,
+    route_info: tuple[str, str] | None = None,
 ) -> COVFingerprint:
     """Produce a COVFingerprint for a single TS function/method/arrow."""
 
-    func_name = _func_name(func_node, parent_var_name)
-    class_name = _class_name_for(func_node)
-    unit_id = (
-        f"{rel_path}::{class_name}::{func_name}"
-        if class_name
-        else f"{rel_path}::{func_name}"
-    )
-
-    collected: list[tuple[COV, float]] = []
+    if route_info:
+        http_method, path = route_info
+        func_name = f"{http_method}:{path}"
+        unit_id   = f"{rel_path}::{func_name}"
+        collected: list[tuple[COV, float]] = [(COV.ROUTE, 1.0)]
+        class_name = None
+    else:
+        func_name = _func_name(func_node, parent_var_name)
+        class_name = _class_name_for(func_node)
+        unit_id = (
+            f"{rel_path}::{class_name}::{func_name}"
+            if class_name
+            else f"{rel_path}::{func_name}"
+        )
+        collected: list[tuple[COV, float]] = []
 
     # ASYNC flag
     if _is_async(func_node):
         collected.append((COV.ASYNC, 1.0))
 
-    # Tier 2 — function name
-    collected.extend(apply_tier2(func_name))
+    # Tier 2 — function name (skip for route handlers: name is synthetic)
+    if not route_info:
+        collected.extend(apply_tier2(func_name))
 
     # INTAKE — meaningful parameters
     params = func_node.child_by_field_name("parameters") or func_node.child_by_field_name("parameter")
@@ -351,6 +376,16 @@ def _collect_ts_units(
                     if value and value.type in ("arrow_function", "function"):
                         results.append(("func", value, var_name))
 
+        # Route registration: router.get('/path', ..., handler)
+        if child.type == "expression_statement":
+            for gc in child.children:
+                if gc.type == "call_expression":
+                    route_info = extract_route_call_info(gc)
+                    if route_info:
+                        handler = extract_route_handler(gc)
+                        if handler:
+                            results.append(("route", handler, route_info))
+
         # Recurse into other containers (export, namespace, module, etc.)
         if child.type not in _FUNC_TYPES and depth < 10:
             _collect_ts_units(child, results, depth + 1)
@@ -373,10 +408,12 @@ def scan_file_ts(
     _collect_ts_units(tree.root_node, units)
 
     fingerprints = []
-    for kind, node, parent_var_name in units:
+    for kind, node, extra in units:
         if kind == "interface":
             fingerprints.append(_fingerprint_interface(node, rel_path))
+        elif kind == "route":
+            fingerprints.append(fingerprint_function_ts(node, rel_path, ai, route_info=extra))
         else:
-            fingerprints.append(fingerprint_function_ts(node, rel_path, ai, parent_var_name))
+            fingerprints.append(fingerprint_function_ts(node, rel_path, ai, parent_var_name=extra))
 
     return fingerprints

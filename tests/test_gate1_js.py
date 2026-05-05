@@ -23,10 +23,13 @@ def fingerprints_for(src: str) -> list:
     tree = _PARSER.parse(src.encode())
     units: list = []
     _collect_js_units(tree.root_node, units)
-    return [
-        fingerprint_function_js(node, "test.js", _NO_AI, parent_var_name)
-        for _, node, parent_var_name in units
-    ]
+    fps = []
+    for kind, node, extra in units:
+        if kind == "route":
+            fps.append(fingerprint_function_js(node, "test.js", _NO_AI, route_info=extra))
+        else:
+            fps.append(fingerprint_function_js(node, "test.js", _NO_AI, parent_var_name=extra))
+    return fps
 
 
 def tokens_of(fp) -> list[str]:
@@ -288,3 +291,53 @@ class TestGeneratorFunctions:
     def test_generator_name_in_unit_id(self):
         fps = fingerprints_for("function* iterateItems(items) { for (const i of items) yield i; }")
         assert "iterateItems" in fps[0].unit_id
+
+
+# ── Route detection ───────────────────────────────────────────────────────────
+
+class TestRouteDetection:
+    def test_express_get_route_has_route_token(self):
+        fps = fingerprints_for("""
+            router.get('/users', async (req, res) => {
+                const users = await db.findAll();
+                res.json(users);
+            });
+        """)
+        route_fps = [fp for fp in fps if "COV.ROUTE" in tokens_of(fp)]
+        assert len(route_fps) >= 1
+
+    def test_express_post_route_unit_id(self):
+        fps = fingerprints_for("""
+            router.post('/users', async (req, res) => {
+                const user = await db.create(req.body);
+                res.json(user);
+            });
+        """)
+        route_fps = [fp for fp in fps if "COV.ROUTE" in tokens_of(fp)]
+        assert any("POST:/users" in fp.unit_id for fp in route_fps)
+
+    def test_app_delete_route(self):
+        fps = fingerprints_for("""
+            app.delete('/users/:id', async (req, res) => {
+                await db.remove(req.params.id);
+                res.sendStatus(204);
+            });
+        """)
+        route_fps = [fp for fp in fps if "COV.ROUTE" in tokens_of(fp)]
+        assert len(route_fps) >= 1
+
+    def test_route_with_middleware_chain(self):
+        fps = fingerprints_for("""
+            router.put('/items/:id', authenticate, async (req, res) => {
+                await db.update(req.params.id, req.body);
+                res.sendStatus(200);
+            });
+        """)
+        route_fps = [fp for fp in fps if "COV.ROUTE" in tokens_of(fp)]
+        assert any("PUT:/items/:id" in fp.unit_id for fp in route_fps)
+
+    def test_non_route_call_ignored(self):
+        fps = fingerprints_for("""
+            console.get('something');
+        """)
+        assert len(fps) == 0

@@ -27,6 +27,7 @@ from bgi.gate1.rules import dedupe_ordered
 from bgi.gate1.typescript_rules import (
     apply_tier1, apply_tier2, apply_tier3, apply_tier4, apply_tier5,
     node_text,
+    extract_route_call_info, extract_route_handler,
 )
 from bgi.gate1.ai_fallback import AIFallback
 
@@ -172,23 +173,32 @@ def fingerprint_function_js(
     rel_path: str,
     ai: AIFallback,
     parent_var_name: str | None = None,
+    route_info: tuple[str, str] | None = None,
 ) -> COVFingerprint:
     """Produce a COVFingerprint for a single JS function/method/arrow."""
 
-    func_name = _func_name(func_node, parent_var_name)
-    class_name = _class_name_for(func_node)
-    unit_id = (
-        f"{rel_path}::{class_name}::{func_name}"
-        if class_name
-        else f"{rel_path}::{func_name}"
-    )
-
-    collected: list[tuple[COV, float]] = []
+    if route_info:
+        http_method, path = route_info
+        func_name = f"{http_method}:{path}"
+        unit_id   = f"{rel_path}::{func_name}"
+        collected: list[tuple[COV, float]] = [(COV.ROUTE, 1.0)]
+        class_name = None
+    else:
+        func_name = _func_name(func_node, parent_var_name)
+        class_name = _class_name_for(func_node)
+        unit_id = (
+            f"{rel_path}::{class_name}::{func_name}"
+            if class_name
+            else f"{rel_path}::{func_name}"
+        )
+        collected: list[tuple[COV, float]] = []
 
     if _is_async(func_node):
         collected.append((COV.ASYNC, 1.0))
 
-    collected.extend(apply_tier2(func_name))
+    # Tier 2 — function name (skip for route handlers: name is synthetic)
+    if not route_info:
+        collected.extend(apply_tier2(func_name))
 
     params = func_node.child_by_field_name("parameters") or func_node.child_by_field_name("parameter")
     if _has_meaningful_params(params):
@@ -283,6 +293,16 @@ def _collect_js_units(
                     if value and value.type in ("arrow_function", "function"):
                         results.append(("func", value, var_name))
 
+        # Route registration: router.get('/path', ..., handler)
+        if child.type == "expression_statement":
+            for gc in child.children:
+                if gc.type == "call_expression":
+                    route_info = extract_route_call_info(gc)
+                    if route_info:
+                        handler = extract_route_handler(gc)
+                        if handler:
+                            results.append(("route", handler, route_info))
+
         if child.type not in _FUNC_TYPES and depth < 10:
             _collect_js_units(child, results, depth + 1)
 
@@ -303,7 +323,10 @@ def scan_file_js(
     units: list = []
     _collect_js_units(tree.root_node, units)
 
-    return [
-        fingerprint_function_js(node, rel_path, ai, parent_var_name)
-        for _, node, parent_var_name in units
-    ]
+    fingerprints = []
+    for kind, node, extra in units:
+        if kind == "route":
+            fingerprints.append(fingerprint_function_js(node, rel_path, ai, route_info=extra))
+        else:
+            fingerprints.append(fingerprint_function_js(node, rel_path, ai, parent_var_name=extra))
+    return fingerprints
