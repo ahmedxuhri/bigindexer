@@ -554,3 +554,145 @@ Known weaknesses:
 → Head to brainstorming.md — say "submit" when your idea is ready.
 
 ---
+
+---
+
+**👤 HUMAN** | `2026-05-05 02:21` | Gate after Step 3
+
+[HUMAN INSIGHT — Pragmatist concern resolutions]
+
+- **Concern 1 (snapshot storage):** Dismissed. Git already handles commit history and diffs. BGI stores only the lightweight Memorandum event log — not code snapshots.
+- **Concern 2 (Atlas cold start):** Option A — pre-seed Genome-Atlas from top 1000–5000 public MIT/Apache repos before launch. BGI's own pre-launch scans are the first Atlas contributions.
+- **Concern 3 (Antipode classifier):** Option B — use COV tokens + file path patterns + identifier name heuristics to always push classification as far as possible. `UNKNOWN_CONFLICT` should be rare and genuine, never a lazy fallback.
+
+---
+
+**📚 ARCHIVIST** | `2026-05-05 02:22` | Reaction — Gate 3
+
+Git-as-snapshot-store is architecturally sound — this is exactly how tools like GitLens, CodeScene, and git-blame-based analyzers operate. No prior art conflict. Atlas pre-seeding from public repos has precedent: HuggingFace pre-trained on Common Crawl, OpenAI trained on public GitHub. The legal pathway (MIT/Apache) is well-established. Name/path heuristics for classification have precedent in OWASP static analysis tools (Semgrep rules use path patterns extensively). All three resolutions are grounded in proven patterns. [HUMAN INSIGHT] confirmed — no red flags from prior art perspective.
+
+---
+
+**🌌 VISIONARY** | `2026-05-05 02:22` | Reaction — Gate 3
+
+The "Git-as-snapshot-store" reframe is significant beyond storage savings. It means BGI's Memorandum of Acts is *natively linked to Git history* — every architectural event is associated with a commit SHA, author, and PR. That's not just a changelog, it's a **causal attribution layer**: who introduced the boundary shift, which PR caused the cluster merge. The Memorandum becomes a blame graph for architecture, not just code. That's a new idea worth noting.
+
+---
+
+**⚙️ PRAGMATIST** | `2026-05-05 02:22` | Reaction — Gate 3
+
+Revising Design B based on human input: remove snapshot storage module entirely. Replace with git-integration module that checks out any commit on demand and re-runs BGI scan. Memorandum stores only ArchEvent objects with commit SHA references. Design C pre-seed pipeline added: a one-time batch job that clones and scans top public repos, harvests residual pool clusters, and bulk-promotes to Atlas before launch. Design D classifier updated: path/name heuristic layer added before UNKNOWN_CONFLICT fallback. All four designs are now cleaner and cheaper to build.
+
+---
+
+**📊 MEASURER** | `2026-05-05 02:22` | Reaction — Gate 3
+
+Pre-seeding 1000–5000 repos: estimated scan time at 50k LOC/sec, average repo ~50k LOC = ~1 second per repo. 5000 repos = ~83 minutes total compute. Cost: negligible. Atlas quality metric added: extension token stability score (how often a promoted token's COV mapping is consistent across repos — target >90% stability before promotion). Path/name heuristic classifier: precision can be measured against a manually labeled sample of 200 antipode cases. Target: <15% UNKNOWN_CONFLICT rate in v1.
+
+---
+
+**🔴 SKEPTIC** | `2026-05-05 02:22` | Reaction — Gate 3
+
+Git-as-snapshot-store introduces a new dependency: BGI must re-run a full scan per commit to reconstruct historical architecture. For a repo with 5000 commits, "show me architecture evolution" requires 5000 scans. That's not free. The Memorandum event log only solves this if BGI runs incrementally on every new commit going forward — but historical repos have no incremental events stored. Cold history reconstruction is expensive. This needs a design decision: BGI is forward-only (no historical reconstruction) or accepts the re-scan cost for history. Pushing this to Skeptic step.
+
+---
+
+**⚖️ JUDGE** | `2026-05-05 02:22` | Reaction — Gate 3
+
+Three concerns cleanly resolved. The Visionary's causal attribution observation (Git author + PR linked to architectural events) is a genuine enhancement to Design B — worth adding with minimal extra effort. The Skeptic raises a valid new concern about historical reconstruction cost — this belongs in the Skeptic's attack report in Step 4. Overall: Pragmatist designs are solid, concerns are resolved, one new issue surfaced. Proceed to Skeptic.
+
+---
+
+---
+
+**🔴 SKEPTIC** | `2026-05-05 02:23` | Step 4
+
+My job: attack every design. No mercy. FATAL means start over. WEAK means fixable.
+
+---
+
+## Attack Report
+
+### Design A: BGI Core Pipeline
+
+| Flaw | Severity | Notes |
+|------|----------|-------|
+| COV disambiguation cold start — first file scanned has no velocity data, all clusters open simultaneously, DRS radar has nothing to calibrate against | HIGH | Early scans produce low-confidence clusters across the board. Architecture output for small repos or first-run is unreliable |
+| COV token ambiguity — Python `yield` is ACCUMULATE or OUTPUT? Rust `?` operator is GUARD or OUTPUT? JS `Promise.then` is TRANSFORM or ROUTE? Without a disambiguation layer, the same construct maps differently by language | HIGH | Fingerprint collisions between semantically different units. Key-lock false matches |
+| tree-sitter grammar coverage gaps — 15+ languages have incomplete or community-maintained grammars (Kotlin, Dart, Elixir, Lua) | MEDIUM | BGI silently produces no fingerprints for unrecognized constructs. No warning to user |
+| DRS radar extension cap (max 3 extensions) is arbitrary — a legitimate shared utility in a 500k-LOC repo might genuinely need more | MEDIUM | Premature hardening of high-traffic clusters |
+| Scanning order matters — breadth-first from entry points assumes entry points are discoverable. Microservices with multiple entry points, monorepos with no clear root, libraries with no main | MEDIUM | Wrong scan order → wrong velocity → wrong probability → wrong boundaries |
+
+**Survivability verdict:** WEAK
+**Minimum fix:** Add a two-pass scan — pass 1 builds raw COV frequency map (calibration), pass 2 runs DRS with calibrated priors. Solves cold start and velocity issues. Disambiguation layer is a separate v1 design task.
+
+---
+
+### Design B: Output + Memorandum of Acts
+
+| Flaw | Severity | Notes |
+|------|----------|-------|
+| Git-as-snapshot-store means no historical architecture for repos that onboard BGI mid-life. "Show me architecture 6 months ago" requires re-scanning every commit since then | HIGH | Painful for enterprise repos with years of history. First impression is broken |
+| Memorandum event log only records what BGI *detects* — if BGI misclassified a cluster in v1 and corrects it in v2, the Memorandum shows a fake "architectural change" that was actually a BGI bug | MEDIUM | Trust erosion: developers can't distinguish real drift from BGI correction artifacts |
+| `agents.md` output format has no standard — every downstream agent (Cursor, Copilot, Claude) expects a different context format | MEDIUM | BGI produces one format, downstream agents can't reliably consume it without adapters |
+
+**Survivability verdict:** WEAK
+**Minimum fix:** For historical repos, offer a background "history hydration" mode that incrementally scans past commits during off-peak hours. For Memorandum artifacts, version-tag every event with BGI version so corrections are distinguishable from real drift.
+
+---
+
+### Design C: Genome-Atlas + Immune Memory
+
+| Flaw | Severity | Notes |
+|------|----------|-------|
+| Atlas contribution quality control — any BGI instance can nominate extension tokens. A misconfigured or adversarial instance nominates garbage tokens. Atlas gets polluted | HIGH | Corrupted Atlas degrades fingerprinting for all users globally |
+| Confidence-Action Curve threshold (70% = act immediately) is not validated — 70% confidence on a PREDICTED edge means 30% of those edges are wrong. At scale, 30% wrong PREDICTED edges pollutes the architecture output | HIGH | False edges are harder to remove than missing edges — they propagate through key-lock matching |
+| Immune memory cold start — the memory store is empty until resurrections happen. First 50–100 repos see no PREDICTED edges, only GHOST and SUSPENDED | LOW | Acceptable — degrades gracefully, not catastrophically |
+| Atlas token versioning — if a token's definition evolves (COV-1.0 `GUARD` vs COV-1.1 `GUARD` with new subtypes), existing fingerprints built on old version produce mismatches | MEDIUM | Silent incompatibility across COV versions |
+
+**Survivability verdict:** WEAK
+**Minimum fix:** Atlas quality gate — minimum 10 contributing repos + 85% stability score before token promotion. PREDICTED edge confidence floor raised to 85% to reduce false edge rate. COV version pinned to fingerprint metadata.
+
+---
+
+### Design D: Antipode-Detection + Outside-In Overlay
+
+| Flaw | Severity | Notes |
+|------|----------|-------|
+| Path/name heuristics are language and framework convention dependent — `admin/` means privilege in Rails but nothing special in a data pipeline repo | MEDIUM | Heuristic precision varies wildly by codebase type. Enterprise codebases with non-standard naming conventions → high false positive rate |
+| Outside-in surface indexer requires framework-specific parsers — Express routes, FastAPI decorators, Rails routes.rb, gRPC proto files, GraphQL schemas. Each is a separate parser | MEDIUM | High maintenance surface. Every new framework needs a new parser |
+| PHANTOM detection (surface anchor with no internal cluster) will fire constantly during initial BGI onboarding — every route that BGI hasn't yet indexed looks like a PHANTOM | MEDIUM | Phantom flood on first run erodes trust before the index is complete |
+
+**Survivability verdict:** STRONG (no FATAL flaws)
+**No minimum fix required — MEDIUM flaws are manageable in v1**
+
+---
+
+## Overall Survivability
+
+| Design | Verdict | Blocking? |
+|--------|---------|-----------|
+| A — Core Pipeline | WEAK | Yes — must fix two-pass scan before shipping |
+| B — Output + Memorandum | WEAK | Partial — history hydration needed for enterprise, not for MVP |
+| C — Atlas + Immune Memory | WEAK | Yes — Atlas quality gate and confidence floor must be set before launch |
+| D — Antipode + Outside-In | STRONG | No blockers |
+
+**No design is FATAL. All weaknesses are fixable.**
+Strongest survivor: Design D. Biggest risks: Design A cold start + Design C Atlas pollution.
+
+---
+
+🔔 **HUMAN INPUT REQUESTED — SKEPTIC**
+
+I just completed: full attack on all 4 designs. No fatalities — but Designs A and C have HIGH-severity flaws that need fixes before shipping.
+
+Current best approach: Two-pass scan fixes Design A cold start. Atlas quality gate (10 repos + 85% stability) fixes Design C pollution. Design D is clean.
+
+Known weaknesses remaining:
+- Historical architecture reconstruction is expensive for onboarded repos
+- `agents.md` has no standard format — downstream agent compatibility is unclear
+- Path/name heuristics vary in precision by codebase convention
+
+→ Head to brainstorming.md — say "submit" when your idea is ready.
+
+---

@@ -7,9 +7,9 @@
 
 ---
 
-**Active Gate:** Step 3 — PRAGMATIST
+**Active Gate:** Step 4 — SKEPTIC
 **Status:** OPEN
 
 ---
 
-<!-- chat starts below after Pragmatist posts in shared.md -->
+<!-- chat starts below after Skeptic posts in shared.md -->
