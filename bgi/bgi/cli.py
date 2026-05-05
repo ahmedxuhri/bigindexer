@@ -36,6 +36,8 @@ def main() -> None:
                       help="Cache file for incremental mode (default: .bgi-cache.json)")
     scan.add_argument("--routes", default=None, metavar="FILE",
                       help="Also write a route manifest JSON (e.g. routes.json)")
+    scan.add_argument("--graphml", default=None, metavar="FILE",
+                      help="Also write a GraphML cluster graph (e.g. graph.graphml)")
 
     curate = sub.add_parser("curate", help="Analyze unresolved patterns and propose COV extension tokens")
     curate.add_argument("--unresolved", default="bgi-unresolved.jsonl", help="AIFallback log path")
@@ -74,6 +76,7 @@ def main() -> None:
             incremental=args.incremental,
             cache_file=args.cache,
             routes_output=args.routes,
+            graphml_output=args.graphml,
         )
 
     elif args.command == "curate":

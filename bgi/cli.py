@@ -14,14 +14,14 @@ def main() -> None:
     scan = sub.add_parser("scan", help="Scan a directory and produce a BGI graph")
     scan.add_argument("path", help="Root path to scan")
     scan.add_argument("--lang", default="python",
-                      choices=["python", "typescript", "tsx", "ts", "javascript", "jsx", "js",
+                      choices=["auto",
+                               "python", "typescript", "tsx", "ts", "javascript", "jsx", "js",
                                "java", "go", "rust", "ruby", "csharp", "php", "kotlin", "c",
                                "scala", "lua", "elixir",
-                               # Generic fallback (any language not listed above)
                                "swift", "r", "dart", "bash", "nim", "zig", "haskell",
                                "ocaml", "fsharp", "clojure", "erlang", "matlab", "vb",
                                "crystal", "cobol", "groovy", "generic"],
-                      help="Language to scan (default: python). Use 'generic' for any unsupported language.")
+                      help="Language to scan (default: python). Use 'auto' for multi-language repos.")
     scan.add_argument("--out", default="bgi-graph.json", help="Output file")
     scan.add_argument("--db", default="bgi-sep.db", help="SEP SQLite database path")
     scan.add_argument("--ai-key", default=None,
@@ -34,6 +34,10 @@ def main() -> None:
                       help="Only re-scan files changed since last run (uses .bgi-cache.json)")
     scan.add_argument("--cache", default=".bgi-cache.json",
                       help="Cache file for incremental mode (default: .bgi-cache.json)")
+    scan.add_argument("--routes", default=None, metavar="FILE",
+                      help="Also write a route manifest JSON (e.g. routes.json)")
+    scan.add_argument("--graphml", default=None, metavar="FILE",
+                      help="Also write a GraphML cluster graph (e.g. graph.graphml)")
 
     curate = sub.add_parser("curate", help="Analyze unresolved patterns and propose COV extension tokens")
     curate.add_argument("--unresolved", default="bgi-unresolved.jsonl", help="AIFallback log path")
@@ -44,6 +48,16 @@ def main() -> None:
                         help="AI API key (enables AI Position 4). Also reads DEEPSEEK_API_KEY env var.")
     curate.add_argument("--ai-model", default="deepseek-v4-flash",
                         help="AI model for curation (default: deepseek-v4-flash)")
+
+    diff_cmd = sub.add_parser("diff", help="Diff two scan roots and report architectural changes")
+    diff_cmd.add_argument("before", help="Path to 'before' scan root")
+    diff_cmd.add_argument("after",  help="Path to 'after' scan root")
+    diff_cmd.add_argument("--lang", default="auto",
+                          help="Language to scan (default: auto for multi-language)")
+    diff_cmd.add_argument("--out", default=None, metavar="FILE",
+                          help="Write diff JSON to file (optional)")
+    diff_cmd.add_argument("--verbose", action="store_true", default=False,
+                          help="Show full added/removed/changed unit lists")
 
     args = parser.parse_args()
 
@@ -61,6 +75,8 @@ def main() -> None:
             html=args.html,
             incremental=args.incremental,
             cache_file=args.cache,
+            routes_output=args.routes,
+            graphml_output=args.graphml,
         )
 
     elif args.command == "curate":
@@ -88,6 +104,35 @@ def main() -> None:
         for c in candidates:
             action = result["candidates"][candidates.index(c)]["action"]
             print(f"  [{action}] {c.token_name}  conf={c.confidence:.2f}  signals={c.signal_sources}")
+
+    elif args.command == "diff":
+        import json
+        import os
+        from pathlib import Path
+        from bgi.gate1.scanner import scan_repository, scan_directory
+        from bgi.gate1.ai_fallback import AIFallback
+        from bgi.delta.diff import diff_scans, format_diff_report, serialize_diff
+
+        ai = AIFallback(enabled=False)
+        lang = args.lang.lower()
+
+        def _scan(path: str) -> list:
+            p = Path(path).resolve()
+            if lang == "auto":
+                return scan_repository(p, ai=ai)
+            return scan_directory(p, language=lang, ai=ai)
+
+        print(f"[BGI] Scanning before: {args.before}")
+        fps_before = _scan(args.before)
+        print(f"[BGI] Scanning after:  {args.after}")
+        fps_after  = _scan(args.after)
+
+        diff = diff_scans(fps_before, fps_after)
+        print(format_diff_report(diff, verbose=args.verbose))
+
+        if args.out:
+            Path(args.out).write_text(json.dumps(serialize_diff(diff), indent=2))
+            print(f"\n[BGI] Diff written to {args.out}")
 
 
 if __name__ == "__main__":

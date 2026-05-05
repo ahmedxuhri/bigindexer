@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bgi"
+version = "0.1.0"
+description = "Bio-Gate Indexing — language-agnostic hierarchical code intelligence"
+requires-python = ">=3.10"
+dependencies = [
+    "tree-sitter>=0.23",
+    "tree-sitter-python>=0.23",
+    "tree-sitter-typescript>=0.23",
+    "tree-sitter-javascript>=0.21,<0.22",
+    "tree-sitter-java>=0.23",
+    "tree-sitter-go>=0.23",
+    "tree-sitter-rust>=0.23",
+    "tree-sitter-ruby>=0.23",
+    "tree-sitter-c-sharp==0.23.1",
+    "tree-sitter-php==0.23.11",
+    "tree-sitter-kotlin==1.1.0",
+    "tree-sitter-c==0.21.4",
+    "tree-sitter-scala==0.23.4",
+    "tree-sitter-lua==0.2.0",
+    "tree-sitter-elixir==0.3.5",
+    "openai>=1.0",                  # OpenAI-compatible client — used for DeepSeek and others
+]
+
+[project.scripts]
+bgi = "bgi.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--tb=short -q"
+
+[tool.coverage.run]
+source = ["bgi"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false

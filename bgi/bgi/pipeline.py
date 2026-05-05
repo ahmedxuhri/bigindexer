@@ -18,6 +18,7 @@ def run_scan(
     incremental: bool = False,
     cache_file: str = ".bgi-cache.json",
     routes_output: str | None = None,
+    graphml_output: str | None = None,
 ) -> None:
     from bgi.gate1.scanner import scan_directory, scan_file, scan_repository, _scan_file_auto, _EXT_TO_LANG
     from bgi.gate2.keylock import match_fingerprints
@@ -136,6 +137,12 @@ def run_scan(
         from bgi.output.route_manifest import write_route_manifest
         write_route_manifest(fingerprints, routes_output)
         print(f"[BGI] Route manifest written to {routes_output}")
+
+    # GraphML cluster graph (optional)
+    if graphml_output:
+        from bgi.output.graph import write_graphml
+        write_graphml(edges, drs_result, graphml_output, cluster_level=True)
+        print(f"[BGI] GraphML cluster graph written to {graphml_output}")
 
     # Step 4 — HTML visualization
     if html:

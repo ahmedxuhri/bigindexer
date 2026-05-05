@@ -17,8 +17,10 @@ def run_scan(
     html: bool = False,
     incremental: bool = False,
     cache_file: str = ".bgi-cache.json",
+    routes_output: str | None = None,
+    graphml_output: str | None = None,
 ) -> None:
-    from bgi.gate1.scanner import scan_directory, scan_file
+    from bgi.gate1.scanner import scan_directory, scan_file, scan_repository, _scan_file_auto, _EXT_TO_LANG
     from bgi.gate2.keylock import match_fingerprints
     from bgi.gate3.drs import run_drs
     from bgi.sep.pool import SuspendedEdgePool
@@ -29,113 +31,16 @@ def run_scan(
     root_path = Path(root).resolve()
     scan_run = f"scan-{int(time.time())}"
     ai = AIFallback(enabled=False)
+    auto_mode = language.lower() == "auto"
 
-    if incremental:
+    if incremental and not auto_mode:
         from bgi.delta.cache import ScanCache
-        from bgi.gate1.scanner import scan_file as _scan_py
-        try:
-            from bgi.gate1.ts_scanner import scan_file_ts as _scan_ts
-        except ImportError:
-            _scan_ts = None
-        try:
-            from bgi.gate1.js_scanner import scan_file_js as _scan_js
-        except ImportError:
-            _scan_js = None
-        try:
-            from bgi.gate1.java_scanner import scan_file_java as _scan_java
-        except ImportError:
-            _scan_java = None
-        try:
-            from bgi.gate1.go_scanner import scan_file_go as _scan_go
-        except ImportError:
-            _scan_go = None
-        try:
-            from bgi.gate1.rust_scanner import scan_file_rust as _scan_rust
-        except ImportError:
-            _scan_rust = None
-        try:
-            from bgi.gate1.ruby_scanner import scan_file_ruby as _scan_ruby
-        except ImportError:
-            _scan_ruby = None
-        try:
-            from bgi.gate1.csharp_scanner import scan_file_csharp as _scan_csharp
-        except ImportError:
-            _scan_csharp = None
-        try:
-            from bgi.gate1.php_scanner import scan_file_php as _scan_php
-        except ImportError:
-            _scan_php = None
-        try:
-            from bgi.gate1.kotlin_scanner import scan_file_kotlin as _scan_kotlin
-        except ImportError:
-            _scan_kotlin = None
-        try:
-            from bgi.gate1.c_scanner import scan_file_c as _scan_c
-        except ImportError:
-            _scan_c = None
-        try:
-            from bgi.gate1.scala_scanner import scan_file_scala as _scan_scala
-        except ImportError:
-            _scan_scala = None
-        try:
-            from bgi.gate1.lua_scanner import scan_file_lua as _scan_lua
-        except ImportError:
-            _scan_lua = None
-        try:
-            from bgi.gate1.elixir_scanner import scan_file_elixir as _scan_elixir
-        except ImportError:
-            _scan_elixir = None
 
+        # Resolve per-language scanner function
         lang = language.lower()
-        if lang == "python":
-            source_files = sorted(root_path.rglob("*.py"))
-            _scan_fn = _scan_py
-        elif lang in ("typescript", "tsx", "ts"):
-            exts = {"*.ts", "*.tsx"}
-            source_files = sorted(
-                f for ext in exts for f in root_path.rglob(ext)
-                if ".d.ts" not in f.name
-            )
-            _scan_fn = _scan_ts
-        elif lang in ("javascript", "jsx", "js"):
-            exts = {"*.js", "*.jsx"}
-            source_files = sorted(f for ext in exts for f in root_path.rglob(ext))
-            _scan_fn = _scan_js
-        elif lang == "java":
-            source_files = sorted(root_path.rglob("*.java"))
-            _scan_fn = _scan_java
-        elif lang == "go":
-            source_files = sorted(root_path.rglob("*.go"))
-            _scan_fn = _scan_go
-        elif lang == "rust":
-            source_files = sorted(root_path.rglob("*.rs"))
-            _scan_fn = _scan_rust
-        elif lang == "ruby":
-            source_files = sorted(root_path.rglob("*.rb"))
-            _scan_fn = _scan_ruby
-        elif lang == "csharp":
-            source_files = sorted(root_path.rglob("*.cs"))
-            _scan_fn = _scan_csharp
-        elif lang == "php":
-            source_files = sorted(root_path.rglob("*.php"))
-            _scan_fn = _scan_php
-        elif lang == "kotlin":
-            source_files = sorted(root_path.rglob("*.kt"))
-            _scan_fn = _scan_kotlin
-        elif lang == "c":
-            source_files = sorted(root_path.rglob("*.c"))
-            _scan_fn = _scan_c
-        elif lang == "scala":
-            source_files = sorted(root_path.rglob("*.scala"))
-            _scan_fn = _scan_scala
-        elif lang == "lua":
-            source_files = sorted(root_path.rglob("*.lua"))
-            _scan_fn = _scan_lua
-        elif lang == "elixir":
-            source_files = sorted(root_path.rglob("*.ex"))
-            _scan_fn = _scan_elixir
-        else:
-            raise NotImplementedError(f"Language '{language}' not yet supported.")
+        _scan_fn = _get_scanner_fn(lang)
+        exts = _get_lang_exts(lang, _EXT_TO_LANG)
+        source_files = _collect_source_files(root_path, exts, lang)
 
         cache_path = Path(output).parent / cache_file
         cache = ScanCache.load(cache_path)
@@ -165,6 +70,12 @@ def run_scan(
 
         fingerprints = cached_fps + new_fps
         print(f"[BGI] Gate 1 complete — {len(fingerprints)} units ({len(new_fps)} re-scanned)")
+
+    elif auto_mode:
+        print(f"[BGI] Auto-scan {root_path} (multi-language) ...")
+        fingerprints = scan_repository(root_path, ai=ai, scan_run=scan_run)
+        print(f"[BGI] Gate 1 complete — {len(fingerprints)} units fingerprinted")
+
     else:
         print(f"[BGI] Scanning {root_path} ...")
         fingerprints = scan_directory(root_path, language=language, ai=ai, scan_run=scan_run)
@@ -221,6 +132,18 @@ def run_scan(
     agents_md_path.write_text(narration.agents_md)
     print(f"[BGI] Architecture narration written to {agents_md_path}")
 
+    # Route manifest (optional)
+    if routes_output:
+        from bgi.output.route_manifest import write_route_manifest
+        write_route_manifest(fingerprints, routes_output)
+        print(f"[BGI] Route manifest written to {routes_output}")
+
+    # GraphML cluster graph (optional)
+    if graphml_output:
+        from bgi.output.graph import write_graphml
+        write_graphml(edges, drs_result, graphml_output, cluster_level=True)
+        print(f"[BGI] GraphML cluster graph written to {graphml_output}")
+
     # Step 4 — HTML visualization
     if html:
         from bgi.output.html_viz import generate_html
@@ -228,3 +151,70 @@ def run_scan(
         title = f"BGI — {Path(root).name}"
         generate_html(graph, html_path, inline_d3=True, title=title)
         print(f"[BGI] HTML visualization written to {html_path}")
+
+
+# ── Language dispatch helpers (used by pipeline and incremental scan) ─────────
+
+def _get_scanner_fn(lang: str):
+    """Return the scan_file_* function for a given language identifier."""
+    from bgi.gate1.scanner import scan_file
+    if lang == "python":
+        return scan_file
+    if lang in ("typescript", "tsx", "ts"):
+        from bgi.gate1.ts_scanner import scan_file_ts
+        return scan_file_ts
+    if lang in ("javascript", "jsx", "js"):
+        from bgi.gate1.js_scanner import scan_file_js
+        return scan_file_js
+    if lang == "java":
+        from bgi.gate1.java_scanner import scan_file_java
+        return scan_file_java
+    if lang == "go":
+        from bgi.gate1.go_scanner import scan_file_go
+        return scan_file_go
+    if lang == "rust":
+        from bgi.gate1.rust_scanner import scan_file_rust
+        return scan_file_rust
+    if lang == "ruby":
+        from bgi.gate1.ruby_scanner import scan_file_ruby
+        return scan_file_ruby
+    if lang == "csharp":
+        from bgi.gate1.csharp_scanner import scan_file_csharp
+        return scan_file_csharp
+    if lang == "php":
+        from bgi.gate1.php_scanner import scan_file_php
+        return scan_file_php
+    if lang == "kotlin":
+        from bgi.gate1.kotlin_scanner import scan_file_kotlin
+        return scan_file_kotlin
+    if lang == "c":
+        from bgi.gate1.c_scanner import scan_file_c
+        return scan_file_c
+    if lang == "scala":
+        from bgi.gate1.scala_scanner import scan_file_scala
+        return scan_file_scala
+    if lang == "lua":
+        from bgi.gate1.lua_scanner import scan_file_lua
+        return scan_file_lua
+    if lang == "elixir":
+        from bgi.gate1.elixir_scanner import scan_file_elixir
+        return scan_file_elixir
+    raise NotImplementedError(f"Language '{lang}' not supported for incremental scan. Use --lang=auto.")
+
+
+def _get_lang_exts(lang: str, ext_map: dict) -> list[str]:
+    """Return glob patterns for a language's file extensions."""
+    return sorted({
+        f"*{ext}" for ext, l in ext_map.items() if l == lang
+    }) or [f"*.{lang}"]
+
+
+def _collect_source_files(root: Path, exts: list[str], lang: str) -> list[Path]:
+    """Collect all source files for the given extension patterns."""
+    files: list[Path] = []
+    for pattern in exts:
+        for f in root.rglob(pattern):
+            if lang in ("typescript", "ts") and f.name.endswith(".d.ts"):
+                continue
+            files.append(f)
+    return sorted(set(files))
