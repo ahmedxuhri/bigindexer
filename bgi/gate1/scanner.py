@@ -256,6 +256,11 @@ def scan_directory(
             if ".d.ts" not in f.name  # skip declaration files
         )
         _scan_fn = scan_file_ts
+    elif language in ("javascript", "jsx", "js"):
+        from bgi.gate1.js_scanner import scan_file_js
+        exts = {"*.js", "*.jsx"} if language in ("jsx", "js") else {"*.js"}
+        source_files = sorted(f for ext in exts for f in root.rglob(ext))
+        _scan_fn = scan_file_js
     else:
         raise NotImplementedError(f"Language '{language}' not yet supported.")
 

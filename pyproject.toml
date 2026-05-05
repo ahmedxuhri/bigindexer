@@ -11,6 +11,7 @@ dependencies = [
     "tree-sitter>=0.23",
     "tree-sitter-python>=0.23",
     "tree-sitter-typescript>=0.23",
+    "tree-sitter-javascript>=0.21,<0.22",
     "anthropic>=0.25",          # Position 1/2/3/4 AI — swap for any LLM
 ]
 

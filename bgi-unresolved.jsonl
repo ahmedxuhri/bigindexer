@@ -3928,3 +3928,19 @@
 {"snippet": "v.strip()", "scan_run": "scan-1777983138"}
 {"snippet": "payload.items()", "scan_run": "scan-1777983138"}
 {"snippet": "asyncio.sleep(0)", "scan_run": "scan-1777983138"}
+{"snippet": "ValueError(\"token required\")", "scan_run": "scan-1777985659"}
+{"snippet": "PermissionError(\"no user\")", "scan_run": "scan-1777985659"}
+{"snippet": "ValueError(\"card_token required\")", "scan_run": "scan-1777985659"}
+{"snippet": "isinstance(payload, dict)", "scan_run": "scan-1777985659"}
+{"snippet": "TypeError(\"payload must be dict\")", "scan_run": "scan-1777985659"}
+{"snippet": "v.strip()", "scan_run": "scan-1777985659"}
+{"snippet": "payload.items()", "scan_run": "scan-1777985659"}
+{"snippet": "asyncio.sleep(0)", "scan_run": "scan-1777985659"}
+{"snippet": "ValueError(\"token required\")", "scan_run": "scan-1777985665"}
+{"snippet": "PermissionError(\"no user\")", "scan_run": "scan-1777985665"}
+{"snippet": "ValueError(\"card_token required\")", "scan_run": "scan-1777985665"}
+{"snippet": "isinstance(payload, dict)", "scan_run": "scan-1777985665"}
+{"snippet": "TypeError(\"payload must be dict\")", "scan_run": "scan-1777985665"}
+{"snippet": "v.strip()", "scan_run": "scan-1777985665"}
+{"snippet": "payload.items()", "scan_run": "scan-1777985665"}
+{"snippet": "asyncio.sleep(0)", "scan_run": "scan-1777985665"}
