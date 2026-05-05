@@ -7,22 +7,9 @@
 
 ---
 
-**Active Gate:** Step 1 — ARCHIVIST
-**Status:** OPEN
+**Active Gate:** Step 2 — VISIONARY
+**Status:** OPEN (after Visionary posts, we brainstorm here before submitting to agents)
 
 ---
 
-## Context (what the Archivist just found)
-
-The landscape has been mapped. The core gap is clear:
-- All current tools (Sourcegraph, Greptile, tree-sitter, vector search) optimize for **human search UIs**.
-- No system today produces a **hierarchical, confidence-scored, continuously-updated architecture model** that is also agent-consumable.
-- The most unexplored territories: hierarchical multi-level indexing, relationship-first indexing, confidence-scored inference, incremental architecture diff.
-
-## Archivist's question for you
-> Have you personally encountered any tool, paper, or system — even obscure or internal — that attempts hierarchical architecture inference or confidence-scored code relationship extraction? And from the unexplored gaps listed, which feels most promising as your primary differentiator?
-
----
-
-<!-- your chat with Copilot starts below — say "submit" when ready -->
-
+<!-- chat starts below after Visionary posts in shared.md -->
