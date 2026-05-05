@@ -7,8 +7,9 @@ Consumes the fully assembled BGI graph and produces two outputs:
 
 Design:
   - Heuristic pass always runs: produces a deterministic, rule-based agents.md with no API cost.
-  - AI pass (when enabled): sends heuristic draft + graph context to claude-haiku to enrich
-    cluster names, add architectural intent, and flag notable relationships.
+  - AI pass (when enabled): sends heuristic draft + graph context to an LLM (DeepSeek by default,
+    any OpenAI-compatible provider works) to enrich cluster names, add architectural intent,
+    and flag notable relationships.
   - Output is written to <output_dir>/agents.md alongside the JSON graph.
 
 agents.md format:
@@ -22,6 +23,17 @@ agents.md format:
   ## Seam Units
   ## Resurrection Forecasts (if any)
   ## Stats
+
+Quick start (with DeepSeek):
+    from bgi.ai.narrator import ArchitectureNarrator
+    from bgi.gate1.ai_fallback import make_deepseek_client
+
+    narrator = ArchitectureNarrator(
+        enabled=True,
+        client=make_deepseek_client("sk-..."),
+    )
+    result = narrator.narrate(graph, root="my_service")
+    Path("agents.md").write_text(result.agents_md)
 """
 from __future__ import annotations
 
@@ -64,7 +76,7 @@ _ROLE_RULES: list[tuple[set[str], str]] = [
 def _infer_role(dominant_tokens: list[str]) -> str:
     token_set = set(dominant_tokens)
     for required, role in _ROLE_RULES:
-        if required & token_set:
+        if required.issubset(token_set):
             return role
     return "General Logic"
 
@@ -248,17 +260,30 @@ class NarratorResult:
 
 class ArchitectureNarrator:
     """
-    AI Position 3.
+    AI Position 3 — Architecture Narrator.
+
+    Uses an OpenAI-compatible client (DeepSeek by default) to enrich
+    heuristic cluster names with real domain context.
 
     Usage:
-        narrator = ArchitectureNarrator(enabled=True, client=anthropic_client)
+        from bgi.gate1.ai_fallback import make_deepseek_client
+        narrator = ArchitectureNarrator(
+            enabled=True,
+            client=make_deepseek_client("sk-..."),
+        )
         result = narrator.narrate(graph, root="my_service")
         Path("agents.md").write_text(result.agents_md)
     """
 
-    def __init__(self, enabled: bool = False, client=None):
+    def __init__(
+        self,
+        enabled: bool = False,
+        client=None,
+        model: str = "deepseek-v4-flash",
+    ):
         self.enabled = enabled
         self.client = client
+        self.model = model
 
     def narrate(self, graph: dict, root: str = ".") -> NarratorResult:
         clusters = graph.get("clusters", [])
@@ -324,17 +349,23 @@ class ArchitectureNarrator:
             '"concerns": ["<concern1>", ...]}\n\n'
             f"Cluster metadata:\n{cluster_summary}\n\n"
             f"Current agents.md (truncated):\n{heuristic_md[:2000]}\n\n"
-            "Reply with ONLY the JSON object."
+            "Reply with ONLY the JSON object. Keep concerns brief (max 3 items, max 100 chars each)."
         )
 
-        response = self.client.messages.create(
-            model="claude-haiku-4-5",
-            max_tokens=512,
+        response = self.client.chat.completions.create(
+            model=self.model,
+            max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
         )
 
-        raw = response.content[0].text.strip()
+        raw = (response.choices[0].message.content or "").strip()
+        # Strip markdown code fences if present
         raw = re.sub(r"^```[a-z]*\n?", "", raw).rstrip("`").strip()
+        # Extract first complete JSON object in case there's preamble text
+        match = re.search(r"\{.*\}", raw, re.DOTALL)
+        if not match:
+            raise ValueError(f"No JSON object found in response: {raw[:100]!r}")
+        raw = match.group(0)
 
         import json
         parsed = json.loads(raw)

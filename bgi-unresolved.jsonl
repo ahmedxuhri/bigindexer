@@ -3984,3 +3984,19 @@
 {"type": "call", "snippet": "v.strip()", "scan_run": "scan-1777989752"}
 {"type": "call", "snippet": "payload.items()", "scan_run": "scan-1777989752"}
 {"type": "call", "snippet": "asyncio.sleep(0)", "scan_run": "scan-1777989752"}
+{"type": "call", "snippet": "ValueError(\"token required\")", "scan_run": "scan-1777990815"}
+{"type": "call", "snippet": "PermissionError(\"no user\")", "scan_run": "scan-1777990815"}
+{"type": "call", "snippet": "ValueError(\"card_token required\")", "scan_run": "scan-1777990815"}
+{"type": "call", "snippet": "isinstance(payload, dict)", "scan_run": "scan-1777990815"}
+{"type": "call", "snippet": "TypeError(\"payload must be dict\")", "scan_run": "scan-1777990815"}
+{"type": "call", "snippet": "v.strip()", "scan_run": "scan-1777990815"}
+{"type": "call", "snippet": "payload.items()", "scan_run": "scan-1777990815"}
+{"type": "call", "snippet": "asyncio.sleep(0)", "scan_run": "scan-1777990815"}
+{"type": "call", "snippet": "ValueError(\"token required\")", "scan_run": "scan-1777991054"}
+{"type": "call", "snippet": "PermissionError(\"no user\")", "scan_run": "scan-1777991054"}
+{"type": "call", "snippet": "ValueError(\"card_token required\")", "scan_run": "scan-1777991054"}
+{"type": "call", "snippet": "isinstance(payload, dict)", "scan_run": "scan-1777991054"}
+{"type": "call", "snippet": "TypeError(\"payload must be dict\")", "scan_run": "scan-1777991054"}
+{"type": "call", "snippet": "v.strip()", "scan_run": "scan-1777991054"}
+{"type": "call", "snippet": "payload.items()", "scan_run": "scan-1777991054"}
+{"type": "call", "snippet": "asyncio.sleep(0)", "scan_run": "scan-1777991054"}

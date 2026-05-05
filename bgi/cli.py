@@ -18,6 +18,10 @@ def main() -> None:
                       help="Language to scan (default: python)")
     scan.add_argument("--out", default="bgi-graph.json", help="Output file")
     scan.add_argument("--db", default="bgi-sep.db", help="SEP SQLite database path")
+    scan.add_argument("--ai-key", default=None,
+                      help="AI API key (enables AI Position 1 + 3). Also reads DEEPSEEK_API_KEY env var.")
+    scan.add_argument("--ai-model", default="deepseek-v4-flash",
+                      help="AI model name (default: deepseek-v4-flash)")
 
     curate = sub.add_parser("curate", help="Analyze unresolved patterns and propose COV extension tokens")
     curate.add_argument("--unresolved", default="bgi-unresolved.jsonl", help="AIFallback log path")
@@ -28,8 +32,17 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "scan":
+        import os
         from bgi.pipeline import run_scan
-        run_scan(args.path, language=args.lang, output=args.out, db=args.db)
+        ai_key = args.ai_key or os.environ.get("DEEPSEEK_API_KEY")
+        run_scan(
+            args.path,
+            language=args.lang,
+            output=args.out,
+            db=args.db,
+            ai_key=ai_key,
+            ai_model=args.ai_model,
+        )
 
     elif args.command == "curate":
         import json

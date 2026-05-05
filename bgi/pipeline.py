@@ -7,7 +7,14 @@ import json
 from pathlib import Path
 
 
-def run_scan(root: str, language: str = "python", output: str = "bgi-graph.json", db: str = "bgi-sep.db") -> None:
+def run_scan(
+    root: str,
+    language: str = "python",
+    output: str = "bgi-graph.json",
+    db: str = "bgi-sep.db",
+    ai_key: str | None = None,
+    ai_model: str = "deepseek-v4-flash",
+) -> None:
     from bgi.gate1.scanner import scan_directory
     from bgi.gate2.keylock import match_fingerprints
     from bgi.gate3.drs import run_drs
@@ -57,8 +64,17 @@ def run_scan(root: str, language: str = "python", output: str = "bgi-graph.json"
 
     # AI Position 3 — Architecture Narrator
     from bgi.ai.narrator import ArchitectureNarrator
-    narrator = ArchitectureNarrator(enabled=False)
+    from bgi.gate1.ai_fallback import make_deepseek_client
+
+    ai_client = make_deepseek_client(ai_key) if ai_key else None
+    narrator = ArchitectureNarrator(
+        enabled=bool(ai_key),
+        client=ai_client,
+        model=ai_model,
+    )
     narration = narrator.narrate(graph, root=str(root_path))
+    if narration.ai_enhanced:
+        print(f"[BGI] Narrator AI-enhanced ({ai_model})")
 
     agents_md_path = Path(output).with_name("agents.md")
     agents_md_path.write_text(narration.agents_md)
