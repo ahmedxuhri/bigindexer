@@ -245,6 +245,16 @@ def fingerprint_function_ts(
     class_context_tokens = dedupe_ordered([t for t, _ in class_context_raw])
 
     tokens = dedupe_ordered([t for t, _ in collected])
+
+    # Unit-level AI fallback — fires when no behavioural tokens were found
+    _STRUCTURAL = {COV.ASYNC, COV.INTAKE}
+    if not any(t not in _STRUCTURAL for t in tokens):
+        source_text = node_text(func_node)
+        unit_results = ai.classify_unit(unit_id, source_text, language="typescript")
+        if unit_results:
+            collected.extend(unit_results)
+            tokens = dedupe_ordered([t for t, _ in collected])
+
     confidences = [c for _, c in collected]
     confidence = min(confidences) if confidences else 1.0
 
