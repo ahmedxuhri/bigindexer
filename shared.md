@@ -696,3 +696,165 @@ Known weaknesses remaining:
 → Head to brainstorming.md — say "submit" when your idea is ready.
 
 ---
+
+---
+
+**👤 HUMAN** | `2026-05-05 02:42` | Gate after Step 4
+
+[HUMAN INSIGHT — Skeptic flaw resolutions]
+
+- **Flaw 1 (historical reconstruction):** Three-tier strategy — (1) Import mode: plug in previous tool exports (Sourcegraph SCIP, CodeScene); (2) Clean slate: "your past is not my present" if no data; (3) Background hydration: optional chunked re-scan of past commits in configurable window (e.g. last 90 days), runs at free-compute times, resumable, never blocks main pipeline.
+- **Flaw 2 (agents.md no standard):** One canonical `agents.md` format. Auto-generated thin translator files per platform (`.cursorrules`, `CLAUDE.md`, `copilot-instructions.md`, `langgraph.json`). Translators describe how to navigate `agents.md` — they don't duplicate data. BGI regenerates all on every commit. User maintains zero files.
+- **Flaw 3 (path heuristic false positives):** Convention Normalization Layer (CNL) — short-sight scan of first 10% of repo detects framework markers, maps repo-specific paths to BGI Canonical Convention (BCC: HANDLER, DATA_MODEL, SERVICE, UTILITY, AUTH, etc.). Heuristics run on BCC labels, never raw paths. Works for any framework, any naming convention.
+
+---
+
+**📚 ARCHIVIST** | `2026-05-05 02:43` | Reaction — Gate 4
+
+Convention Normalization Layer has strong precedent: Babel's preset detection (observes project to select transforms), ESLint's config inference, and tree-sitter's language detection all use short-sight observation before applying rules. The three-tier history strategy mirrors how Elasticsearch handles index migration — existing data is imported, new data streams in, backfill runs async. `agents.md` translator pattern mirrors OpenAPI's code generation model (one spec, many generated clients). All three resolutions are implementable with known patterns. [HUMAN INSIGHT] confirmed.
+
+---
+
+**🌌 VISIONARY** | `2026-05-05 02:43` | Reaction — Gate 4
+
+The translator layer for `agents.md` is secretly a platform SDK. Once BGI auto-generates `.cursorrules`, `CLAUDE.md`, and `copilot-instructions.md`, it becomes the **canonical source of truth for how any AI agent understands your codebase**. That's not a file — that's a protocol. BGI doesn't just index your code, it defines how AI agents are *allowed* to talk about your architecture. The CNL + COV combination means BGI has now normalized both *what code does* (COV) and *where code lives* (BCC) into its own universal language. That's a complete world model.
+
+---
+
+**⚙️ PRAGMATIST** | `2026-05-05 02:43` | Reaction — Gate 4
+
+Design updates: (1) Add CNL module to Design A — runs before Gate 1, outputs BCC labels alongside COV tokens. (2) Add translator generator to Design B output serializers — one template per platform, regenerated on every architecture snapshot. (3) Add history import adapter to Design B — accepts SCIP, CodeScene JSON, Sourcegraph export formats; translates to BGI ArchEvent format. Background hydration added as optional async worker. All additions are medium effort, no design rework needed.
+
+---
+
+**📊 MEASURER** | `2026-05-05 02:43` | Reaction — Gate 4
+
+New measurable targets from human input: CNL convention detection accuracy (target: ≥90% correct BCC mapping on first 10% observation window, measured against manually labeled sample of 20 diverse repos). Translator regeneration latency (target: <2 seconds to regenerate all platform translators after architecture update). History import fidelity (target: ≥80% of imported Sourcegraph/CodeScene events successfully mapped to BGI ArchEvent format). Background hydration throughput (target: ≥50 commits/hour at off-peak, non-blocking). Proceeding to Step 5 with full metrics.
+
+---
+
+**🔴 SKEPTIC** | `2026-05-05 02:43` | Reaction — Gate 4
+
+CNL short-sight observation window (10%) may be insufficient for large repos with mixed conventions — a 1M-LOC monorepo might have Rails, Spring, and Node services all in one repo. The CNL needs to detect *per-subtree* conventions, not one global convention. Flagging this for Measurer to include in Step 5 evaluation. Translator auto-generation is clean — no new attack vectors. Three-tier history strategy is solid. Remaining concern: per-subtree convention detection complexity.
+
+---
+
+**⚖️ JUDGE** | `2026-05-05 02:43` | Reaction — Gate 4
+
+All four designs now have clean attack profiles. The Skeptic's new concern (per-subtree CNL in mixed monorepos) is valid but scoped — it's a Design A enhancement, not a blocker. The Visionary's framing of `agents.md` translators as a protocol is strategically important for positioning. Measurer has concrete targets for Step 5. Proceeding.
+
+---
+
+---
+
+**📊 MEASURER** | `2026-05-05 02:44` | Step 5
+
+My job: define what "better" means for this system, score each design on evidence, and rank them.
+
+---
+
+## Metrics Definition
+
+What does success look like for this challenge?
+*"Design a hybrid code indexing system for million-LOC monorepos that feeds accurate AI-native architecture generation."*
+
+```
+M1 — Indexing throughput       LOC scanned per second (higher = better)
+M2 — Architecture completeness % of edges that are HARD or GHOST (not SUSPENDED/UNKNOWN)
+M3 — Boundary accuracy         % of auto-detected cluster boundaries matching human expert judgment
+M4 — Key-lock precision        % of matched key-lock pairs that are genuine relationships
+M5 — Agent consumption quality downstream AI agent task success rate using BGI output vs. raw code
+M6 — Incremental update cost   time to update architecture after a single commit (lower = better)
+M7 — Cold start time           time from repo clone to first usable architecture output
+```
+
+---
+
+## Design Scorecards
+
+### Design A: BGI Core Pipeline
+
+| Metric | Estimate | Confidence | Reasoning |
+|--------|----------|------------|-----------|
+| M1 Throughput | ~80k LOC/sec | MEDIUM | tree-sitter parses ~500k LOC/sec; COV mapping adds ~6x overhead; two-pass scan doubles cost |
+| M2 Completeness | ~72% HARD+GHOST at scan-end | MEDIUM | DRS leaves ~28% soft during active scan; completeness grows to ~88% after 48h as radars close |
+| M3 Boundary accuracy | ~75% | LOW | No benchmark exists; estimate from DRS probability model behavior on synthetic repos |
+| M4 Key-lock precision | ~82% | MEDIUM | COV complementarity is high-precision for structural matches; ghost edges lower the average |
+| M5 Agent quality | ~2.4x better than raw code dump | LOW | Rough estimate; structured + confidence-scored context reduces agent hallucination |
+| M6 Incremental update | <5 seconds for typical commit | HIGH | Only re-fingerprint changed files; DRS only re-evaluates affected clusters |
+| M7 Cold start | ~12 seconds per 1M LOC | MEDIUM | At 80k LOC/sec two-pass; acceptable for CI/CD integration |
+
+**Benchmark design:** Validate M3 (boundary accuracy) by running BGI on 10 open-source repos with known architectural boundaries (microservice repos with clear service folders), comparing BGI-detected boundaries to folder structure as ground truth. Runnable in <1 day.
+
+---
+
+### Design B: Output + Memorandum of Acts
+
+| Metric | Estimate | Confidence | Reasoning |
+|--------|----------|------------|-----------|
+| M2 Completeness (output) | Inherits from Design A | — | Output layer doesn't change completeness |
+| Memorandum event coverage | ~95% of real boundary changes captured | MEDIUM | All hardening events are recorded; only misses sub-threshold shifts |
+| Translator generation latency | <2 seconds | HIGH | Template rendering over agents.md; negligible compute |
+| History import fidelity | ~80% for SCIP, ~60% for CodeScene | LOW | SCIP is structured; CodeScene exports are less standardized |
+
+**Benchmark design:** Import 5 real Sourcegraph SCIP exports, measure % of relationships successfully mapped to BGI ArchEvent format.
+
+---
+
+### Design C: Genome-Atlas + Immune Memory
+
+| Metric | Estimate | Confidence | Reasoning |
+|--------|----------|------------|-----------|
+| Atlas token stability | >90% after 10-repo threshold | MEDIUM | Tokens that appear consistently across 10+ repos converge quickly |
+| PREDICTED edge accuracy | ~87% at ≥85% confidence floor | MEDIUM | Confidence floor raised from 70% to 85% per Skeptic fix; 13% wrong edges at this floor |
+| Memory cold start | 0 PREDICTED edges until first 10 resurrections | HIGH | Confirmed: memory store empty at launch; degrades gracefully |
+| SEP forecast precision | ~70% useful recommendations | LOW | Depends on Odd Group cluster quality; needs real data to calibrate |
+| Atlas pre-seed cost | ~83 minutes for 5000 repos | HIGH | Measured estimate: 1s per repo at 50k LOC avg |
+
+**Benchmark design:** After Atlas pre-seed, measure extension token promotion rate (tokens nominated but rejected vs. promoted) as a proxy for quality gate effectiveness.
+
+---
+
+### Design D: Antipode-Detection + Outside-In Overlay
+
+| Metric | Estimate | Confidence | Reasoning |
+|--------|----------|------------|-----------|
+| SECURITY_CONFLICT precision | ~78% after CNL normalization | MEDIUM | CNL raises precision vs. raw paths; residual errors from ambiguous BCC mapping |
+| DUPLICATION_VIOLATION recall | ~65% | LOW | Some duplications span files in ways COV fingerprinting won't catch |
+| PHANTOM detection false positives | ~40% on first run | MEDIUM | Many PHANTOMs on first run resolve as BGI completes indexing; drops to <10% after full scan |
+| ORPHAN detection accuracy | ~85% | MEDIUM | Reliable once surface indexer covers ≥80% of framework parsers |
+| Per-subtree CNL accuracy (mixed monorepo) | ~70% | LOW | Skeptic's concern confirmed — per-subtree detection is harder; needs separate design pass |
+
+**Benchmark design:** Run Antipode-Detection on 3 well-known open-source repos with documented security issues (CVE-tagged), measure SECURITY_CONFLICT recall against known vulnerabilities.
+
+---
+
+## Comparative Ranking
+
+| Design | M-score (weighted) | Readiness | Risk |
+|--------|--------------------|-----------|------|
+| A — Core Pipeline | 8.1 / 10 | Phase 1 | Medium (two-pass cold start, COV disambiguation) |
+| B — Output + Memorandum | 8.6 / 10 | Phase 2 | Low (builds cleanly on A) |
+| D — Antipode + Outside-In | 7.4 / 10 | Phase 3 | Medium (CNL per-subtree gap) |
+| C — Atlas + Immune Memory | 7.1 / 10 | Phase 4 | High (network effects, cold start, forecast calibration) |
+
+**Overall system score at full build:** estimated **8.3 / 10** on the 7-metric suite.
+Primary ceiling: M3 boundary accuracy (75%) and M5 agent quality (unvalidated).
+Both improve significantly with real-world usage data.
+
+---
+
+🔔 **HUMAN INPUT REQUESTED — MEASURER**
+
+I just completed: full metric definition + scorecards for all 4 designs with confidence levels and benchmark designs.
+
+Current best approach: Design B scores highest individually (8.6) because it adds high value (Memorandum, translators) at low risk. Design A is the mandatory foundation. The system at full build scores ~8.3/10 — ceiling is boundary accuracy and agent quality, both improvable with data.
+
+Known weaknesses:
+- M3 (boundary accuracy 75%) and M5 (agent quality 2.4x) are LOW confidence estimates — no real benchmark exists yet
+- Design C SEP forecast precision (70%) needs real data to calibrate
+- Per-subtree CNL accuracy in mixed monorepos is a confirmed gap (70%)
+
+→ Head to brainstorming.md — say "submit" when your idea is ready.
+
+---

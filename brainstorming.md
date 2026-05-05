@@ -7,9 +7,9 @@
 
 ---
 
-**Active Gate:** Step 4 — SKEPTIC
+**Active Gate:** Step 5 — MEASURER
 **Status:** OPEN
 
 ---
 
-<!-- chat starts below after Skeptic posts in shared.md -->
+<!-- chat starts below after Measurer posts in shared.md -->
