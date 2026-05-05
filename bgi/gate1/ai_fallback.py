@@ -1,13 +1,16 @@
 """
 Gate 1 — AI Position 1: Token Fallback classifier.
 
+Uses an OpenAI-compatible client (default: DeepSeek via https://api.deepseek.com).
+Any provider that speaks the OpenAI Chat Completions API works here.
+
 Two modes of operation:
 
 1. Call-level fallback (existing):
    Fires for call_expression nodes that no Tier 1–4 rule matched.
    Returns (COV, confidence) or None.
 
-2. Unit-level fallback (new):
+2. Unit-level fallback:
    Fires when a function's entire token list is empty after all tiers.
    This catches DSL wrappers, generated code, and heavy metaprogramming
    that produce no detectable AST patterns.
@@ -15,16 +18,25 @@ Two modes of operation:
 
 Both modes log to bgi-unresolved.jsonl for curator consumption.
 When enabled=False (default), both modes return None/[] without calling the LLM.
+
+Quick start:
+    from bgi.gate1.ai_fallback import AIFallback, make_deepseek_client
+    ai = AIFallback(enabled=True, client=make_deepseek_client("sk-..."))
 """
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from tree_sitter import Node
 
 from bgi.core.cov import COV
 from bgi.gate1.rules import node_text
 
+
+# Default model — DeepSeek v4 Flash (fast, cheap, OpenAI-compatible)
+_DEFAULT_MODEL = "deepseek-v4-flash"
+_DEFAULT_BASE_URL = "https://api.deepseek.com"
 
 # Tokens AI is allowed to assign
 _CLASSIFIABLE = {
@@ -70,23 +82,57 @@ Example: [["FETCH", 0.8], ["OUTPUT", 0.9]]
 If you cannot classify, reply: []"""
 
 
+def make_deepseek_client(api_key: str | None = None, base_url: str = _DEFAULT_BASE_URL):
+    """
+    Create an OpenAI-compatible client pointed at DeepSeek.
+    api_key defaults to DEEPSEEK_API_KEY env var if not provided.
+    """
+    from openai import OpenAI
+    return OpenAI(
+        api_key=api_key or os.environ.get("DEEPSEEK_API_KEY", ""),
+        base_url=base_url,
+    )
+
+
 class AIFallback:
     """
     AI Position 1 — Token Fallback.
 
-    Wraps an LLM to classify ambiguous code units and calls.
+    Uses an OpenAI-compatible client (DeepSeek by default) to classify
+    ambiguous code units and calls.
+
     Disabled by default (enabled=False). Set enabled=True and provide
-    a client (Anthropic SDK or compatible) to activate.
+    a client (via make_deepseek_client() or any openai.OpenAI instance)
+    to activate.
 
     When disabled, all methods still log unresolved snippets to the
     JSONL log for offline curator analysis and future training data.
     """
 
-    def __init__(self, enabled: bool = False, client=None, log_path: Path | None = None):
+    def __init__(
+        self,
+        enabled: bool = False,
+        client=None,
+        model: str = _DEFAULT_MODEL,
+        log_path: Path | None = None,
+    ):
         self.enabled = enabled
         self.client = client
+        self.model = model
         self._log_path = log_path or _DEFAULT_LOG
         self._unresolved: list[dict] = []  # in-memory buffer; flushed on flush()
+
+    def _chat(self, prompt: str, max_tokens: int = 80) -> str | None:
+        """Send a prompt to the LLM and return the response text, or None on error."""
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                max_tokens=max_tokens,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return response.choices[0].message.content.strip()
+        except Exception:
+            return None
 
     # ── Call-level fallback ───────────────────────────────────────────────────
 
@@ -103,31 +149,32 @@ class AIFallback:
             return None
 
         prompt = _CALL_PROMPT.format(
-            tokens=[str(t) for t in sorted(_CLASSIFIABLE, key=str)],
+            tokens=sorted(t.value for t in _CLASSIFIABLE),
             snippet=context_snippet or callee_text,
         )
 
-        try:
-            response = self.client.messages.create(
-                model="claude-haiku-4-5",
-                max_tokens=16,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            raw = response.content[0].text.strip().split()
-            if len(raw) != 2:
-                return None
-            token_str, conf_str = raw
-            if token_str == "UNKNOWN":
-                return None
-            token = COV(token_str)
-            if token not in _CLASSIFIABLE:
-                return None
-            conf = float(conf_str)
-            if conf <= 0.5:
-                return None
-            return (token, conf)
-        except Exception:
+        raw = self._chat(prompt, max_tokens=128)
+        if raw is None:
             return None
+        parts = raw.split()
+        if len(parts) != 2:
+            return None
+        token_str, conf_str = parts
+        if token_str == "UNKNOWN":
+            return None
+        try:
+            token = COV(token_str)
+        except ValueError:
+            return None
+        if token not in _CLASSIFIABLE:
+            return None
+        try:
+            conf = float(conf_str)
+        except ValueError:
+            return None
+        if conf <= 0.5:
+            return None
+        return (token, conf)
 
     # ── Unit-level fallback ───────────────────────────────────────────────────
 
@@ -153,34 +200,31 @@ class AIFallback:
             return []
 
         prompt = _UNIT_PROMPT.format(
-            tokens=[str(t) for t in sorted(_CLASSIFIABLE, key=str)],
+            tokens=sorted(t.value for t in _CLASSIFIABLE),
             snippet=source_snippet[:800],
         )
 
-        try:
-            response = self.client.messages.create(
-                model="claude-haiku-4-5",
-                max_tokens=80,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            raw = response.content[0].text.strip()
-            if raw == "[]":
-                return []
-            pairs = json.loads(raw)
-            result = []
-            for item in pairs:
-                if not isinstance(item, (list, tuple)) or len(item) != 2:
-                    continue
-                token_str, conf = item
-                try:
-                    token = COV(token_str)
-                except ValueError:
-                    continue
-                if token in _CLASSIFIABLE and float(conf) > 0.5:
-                    result.append((token, float(conf)))
-            return result
-        except Exception:
+        raw = self._chat(prompt, max_tokens=200)
+        if raw is None or raw == "[]":
             return []
+
+        try:
+            pairs = json.loads(raw)
+        except (json.JSONDecodeError, ValueError):
+            return []
+
+        result = []
+        for item in pairs:
+            if not isinstance(item, (list, tuple)) or len(item) != 2:
+                continue
+            token_str, conf = item
+            try:
+                token = COV(token_str)
+            except ValueError:
+                continue
+            if token in _CLASSIFIABLE and float(conf) > 0.5:
+                result.append((token, float(conf)))
+        return result
 
     # ── Logging ───────────────────────────────────────────────────────────────
 

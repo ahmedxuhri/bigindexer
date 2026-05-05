@@ -25,11 +25,15 @@ from bgi.gate1.ai_fallback import AIFallback
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _make_client_response(text: str):
-    """Build a minimal mock Anthropic client whose .messages.create() returns text."""
+    """Build a mock OpenAI-compatible client whose chat.completions.create() returns text."""
+    message = MagicMock()
+    message.content = text
+    choice = MagicMock()
+    choice.message = message
     response = MagicMock()
-    response.content = [MagicMock(text=text)]
+    response.choices = [choice]
     client = MagicMock()
-    client.messages.create.return_value = response
+    client.chat.completions.create.return_value = response
     return client
 
 
@@ -107,7 +111,7 @@ class TestClassifyCall:
 
     def test_exception_returns_none(self):
         client = MagicMock()
-        client.messages.create.side_effect = RuntimeError("network error")
+        client.chat.completions.create.side_effect = RuntimeError("network error")
         ai = AIFallback(enabled=True, client=client)
         node = MagicMock()
         with patch("bgi.gate1.ai_fallback.node_text", return_value="x()"):
@@ -166,7 +170,7 @@ class TestClassifyUnit:
 
     def test_exception_returns_empty(self):
         client = MagicMock()
-        client.messages.create.side_effect = RuntimeError("boom")
+        client.chat.completions.create.side_effect = RuntimeError("boom")
         ai = AIFallback(enabled=True, client=client)
         result = ai.classify_unit("a.py::x", "def x(): pass")
         assert result == []
