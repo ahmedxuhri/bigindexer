@@ -248,7 +248,7 @@ def scan_directory(
 ) -> list[COVFingerprint]:
     """
     Scan all source files under root and return fingerprints.
-    Supported languages: python, typescript/tsx/ts, javascript/jsx/js, java, go, rust, ruby.
+    Supported languages: python, typescript/tsx/ts, javascript/jsx/js, java, go, rust, ruby, csharp, php, kotlin, c, scala.
     """
     language = language.lower()
     ai = ai or AIFallback(enabled=False)
@@ -286,6 +286,26 @@ def scan_directory(
         from bgi.gate1.ruby_scanner import scan_file_ruby
         source_files = sorted(root.rglob("*.rb"))
         _scan_fn = scan_file_ruby
+    elif language == "csharp":
+        from bgi.gate1.csharp_scanner import scan_file_csharp
+        source_files = sorted(root.rglob("*.cs"))
+        _scan_fn = scan_file_csharp
+    elif language == "php":
+        from bgi.gate1.php_scanner import scan_file_php
+        source_files = sorted(root.rglob("*.php"))
+        _scan_fn = scan_file_php
+    elif language == "kotlin":
+        from bgi.gate1.kotlin_scanner import scan_file_kotlin
+        source_files = sorted(root.rglob("*.kt"))
+        _scan_fn = scan_file_kotlin
+    elif language == "c":
+        from bgi.gate1.c_scanner import scan_file_c
+        source_files = sorted(root.rglob("*.c"))
+        _scan_fn = scan_file_c
+    elif language == "scala":
+        from bgi.gate1.scala_scanner import scan_file_scala
+        source_files = sorted(root.rglob("*.scala"))
+        _scan_fn = scan_file_scala
     else:
         raise NotImplementedError(f"Language '{language}' not yet supported.")
 

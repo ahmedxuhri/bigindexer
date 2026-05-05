@@ -57,6 +57,26 @@ def run_scan(
             from bgi.gate1.ruby_scanner import scan_file_ruby as _scan_ruby
         except ImportError:
             _scan_ruby = None
+        try:
+            from bgi.gate1.csharp_scanner import scan_file_csharp as _scan_csharp
+        except ImportError:
+            _scan_csharp = None
+        try:
+            from bgi.gate1.php_scanner import scan_file_php as _scan_php
+        except ImportError:
+            _scan_php = None
+        try:
+            from bgi.gate1.kotlin_scanner import scan_file_kotlin as _scan_kotlin
+        except ImportError:
+            _scan_kotlin = None
+        try:
+            from bgi.gate1.c_scanner import scan_file_c as _scan_c
+        except ImportError:
+            _scan_c = None
+        try:
+            from bgi.gate1.scala_scanner import scan_file_scala as _scan_scala
+        except ImportError:
+            _scan_scala = None
 
         lang = language.lower()
         if lang == "python":
@@ -85,6 +105,21 @@ def run_scan(
         elif lang == "ruby":
             source_files = sorted(root_path.rglob("*.rb"))
             _scan_fn = _scan_ruby
+        elif lang == "csharp":
+            source_files = sorted(root_path.rglob("*.cs"))
+            _scan_fn = _scan_csharp
+        elif lang == "php":
+            source_files = sorted(root_path.rglob("*.php"))
+            _scan_fn = _scan_php
+        elif lang == "kotlin":
+            source_files = sorted(root_path.rglob("*.kt"))
+            _scan_fn = _scan_kotlin
+        elif lang == "c":
+            source_files = sorted(root_path.rglob("*.c"))
+            _scan_fn = _scan_c
+        elif lang == "scala":
+            source_files = sorted(root_path.rglob("*.scala"))
+            _scan_fn = _scan_scala
         else:
             raise NotImplementedError(f"Language '{language}' not yet supported.")
 
