@@ -41,6 +41,22 @@ def run_scan(
             from bgi.gate1.js_scanner import scan_file_js as _scan_js
         except ImportError:
             _scan_js = None
+        try:
+            from bgi.gate1.java_scanner import scan_file_java as _scan_java
+        except ImportError:
+            _scan_java = None
+        try:
+            from bgi.gate1.go_scanner import scan_file_go as _scan_go
+        except ImportError:
+            _scan_go = None
+        try:
+            from bgi.gate1.rust_scanner import scan_file_rust as _scan_rust
+        except ImportError:
+            _scan_rust = None
+        try:
+            from bgi.gate1.ruby_scanner import scan_file_ruby as _scan_ruby
+        except ImportError:
+            _scan_ruby = None
 
         lang = language.lower()
         if lang == "python":
@@ -57,6 +73,18 @@ def run_scan(
             exts = {"*.js", "*.jsx"}
             source_files = sorted(f for ext in exts for f in root_path.rglob(ext))
             _scan_fn = _scan_js
+        elif lang == "java":
+            source_files = sorted(root_path.rglob("*.java"))
+            _scan_fn = _scan_java
+        elif lang == "go":
+            source_files = sorted(root_path.rglob("*.go"))
+            _scan_fn = _scan_go
+        elif lang == "rust":
+            source_files = sorted(root_path.rglob("*.rs"))
+            _scan_fn = _scan_rust
+        elif lang == "ruby":
+            source_files = sorted(root_path.rglob("*.rb"))
+            _scan_fn = _scan_ruby
         else:
             raise NotImplementedError(f"Language '{language}' not yet supported.")
 

@@ -248,7 +248,7 @@ def scan_directory(
 ) -> list[COVFingerprint]:
     """
     Scan all source files under root and return fingerprints.
-    Supported languages: 'python', 'typescript', 'tsx'.
+    Supported languages: python, typescript/tsx/ts, javascript/jsx/js, java, go, rust, ruby.
     """
     language = language.lower()
     ai = ai or AIFallback(enabled=False)
@@ -270,6 +270,22 @@ def scan_directory(
         exts = {"*.js", "*.jsx"} if language in ("jsx", "js") else {"*.js"}
         source_files = sorted(f for ext in exts for f in root.rglob(ext))
         _scan_fn = scan_file_js
+    elif language == "java":
+        from bgi.gate1.java_scanner import scan_file_java
+        source_files = sorted(root.rglob("*.java"))
+        _scan_fn = scan_file_java
+    elif language == "go":
+        from bgi.gate1.go_scanner import scan_file_go
+        source_files = sorted(root.rglob("*.go"))
+        _scan_fn = scan_file_go
+    elif language == "rust":
+        from bgi.gate1.rust_scanner import scan_file_rust
+        source_files = sorted(root.rglob("*.rs"))
+        _scan_fn = scan_file_rust
+    elif language == "ruby":
+        from bgi.gate1.ruby_scanner import scan_file_ruby
+        source_files = sorted(root.rglob("*.rb"))
+        _scan_fn = scan_file_ruby
     else:
         raise NotImplementedError(f"Language '{language}' not yet supported.")
 
