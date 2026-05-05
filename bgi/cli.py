@@ -34,6 +34,10 @@ def main() -> None:
     curate.add_argument("--db", default="bgi-sep.db", help="SEP database path")
     curate.add_argument("--graph", default="bgi-graph.json", help="Graph JSON path")
     curate.add_argument("--out", default="cov-extension-candidates.json", help="Output file")
+    curate.add_argument("--ai-key", default=None,
+                        help="AI API key (enables AI Position 4). Also reads DEEPSEEK_API_KEY env var.")
+    curate.add_argument("--ai-model", default="deepseek-v4-flash",
+                        help="AI model for curation (default: deepseek-v4-flash)")
 
     args = parser.parse_args()
 
@@ -55,9 +59,18 @@ def main() -> None:
 
     elif args.command == "curate":
         import json
+        import os
         from pathlib import Path
         from bgi.ai.curator import VocabularyCurator, candidates_to_dict
-        curator = VocabularyCurator(enabled=False)
+        from bgi.gate1.ai_fallback import make_deepseek_client
+
+        ai_key = args.ai_key or os.environ.get("DEEPSEEK_API_KEY")
+        ai_client = make_deepseek_client(ai_key) if ai_key else None
+        curator = VocabularyCurator(
+            enabled=bool(ai_key),
+            client=ai_client,
+            model=args.ai_model,
+        )
         candidates = curator.curate(
             unresolved_log=Path(args.unresolved),
             sep_db=Path(args.db),

@@ -6228,3 +6228,11 @@
 {"type": "call", "snippet": "self._entries.values()", "scan_run": "scan-1777992318"}
 {"type": "call", "snippet": "len(self._entries)", "scan_run": "scan-1777992318"}
 {"type": "call", "snippet": "self.stats()", "scan_run": "scan-1777992318"}
+{"type": "call", "snippet": "ValueError(\"token required\")", "scan_run": "scan-1777992839"}
+{"type": "call", "snippet": "PermissionError(\"no user\")", "scan_run": "scan-1777992839"}
+{"type": "call", "snippet": "ValueError(\"card_token required\")", "scan_run": "scan-1777992839"}
+{"type": "call", "snippet": "isinstance(payload, dict)", "scan_run": "scan-1777992839"}
+{"type": "call", "snippet": "TypeError(\"payload must be dict\")", "scan_run": "scan-1777992839"}
+{"type": "call", "snippet": "v.strip()", "scan_run": "scan-1777992839"}
+{"type": "call", "snippet": "payload.items()", "scan_run": "scan-1777992839"}
+{"type": "call", "snippet": "asyncio.sleep(0)", "scan_run": "scan-1777992839"}

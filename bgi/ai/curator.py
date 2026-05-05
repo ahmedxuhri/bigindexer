@@ -50,15 +50,15 @@ EXTENSION_ZONE: set[str] = {
 
 # Heuristic patterns: regex on call snippets → candidate token name
 _HEURISTIC_PATTERNS: list[tuple[re.Pattern, str]] = [
-    (re.compile(r"\blru_cache\b|\bmemoize\b|\bcache\b",    re.I), "MEMOIZE"),
-    (re.compile(r"\borchestr\b|\bworkflow\b|\bpipeline\b", re.I), "ORCHESTRATE"),
-    (re.compile(r"\bintercept\b|\bmiddleware\b|\bhook\b",  re.I), "INTERCEPT"),
-    (re.compile(r"\bretry\b|\bbackoff\b|\bexponential\b",  re.I), "RETRY"),
-    (re.compile(r"\bpaginat\b|\bcursor\b|\boffset\b",      re.I), "PAGINATE"),
-    (re.compile(r"\bbatch\b|\bbulk\b",                     re.I), "BATCH"),
-    (re.compile(r"\benrich\b|\bdecorate\b|\bannot",        re.I), "ENRICH"),
-    (re.compile(r"\bcheckpoint\b|\bsnapshot\b",            re.I), "CHECKPOINT"),
-    (re.compile(r"\bmatch\b.*\bcase\b|\bpattern\b",        re.I), "PATTERN_MATCH"),
+    (re.compile(r"\blru_cache\b|\bmemoize\b|\bcache\b",  re.I), "MEMOIZE"),
+    (re.compile(r"\borchestr|\bworkflow|\bpipeline",     re.I), "ORCHESTRATE"),
+    (re.compile(r"\bintercept|\bmiddleware|\bhook\b",    re.I), "INTERCEPT"),
+    (re.compile(r"\bretry|\bbackoff|\bexponential",      re.I), "RETRY"),
+    (re.compile(r"\bpaginat|\bcursor|\boffset",          re.I), "PAGINATE"),
+    (re.compile(r"\bbatch|\bbulk",                       re.I), "BATCH"),
+    (re.compile(r"\benrich|\bdecorate|\bannot",          re.I), "ENRICH"),
+    (re.compile(r"\bcheckpoint|\bsnapshot",              re.I), "CHECKPOINT"),
+    (re.compile(r"\bmatch\b.*\bcase\b|\bpattern",        re.I), "PATTERN_MATCH"),
 ]
 
 
@@ -214,9 +214,10 @@ class VocabularyCurator:
         )
     """
 
-    def __init__(self, enabled: bool = False, client=None):
+    def __init__(self, enabled: bool = False, client=None, model: str = "deepseek-v4-flash"):
         self.enabled = enabled
         self.client = client
+        self._model = model
 
     def curate(
         self,
@@ -282,15 +283,20 @@ class VocabularyCurator:
             "Only output the JSON array."
         )
 
-        response = self.client.messages.create(
-            model="claude-haiku-4-5",
-            max_tokens=768,
+        response = self.client.chat.completions.create(
+            model=self._model,
+            max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
         )
 
-        raw = response.content[0].text.strip()
+        raw = (response.choices[0].message.content or "").strip()
+        # Strip markdown code fences if present
         raw = re.sub(r"^```[a-z]*\n?", "", raw).rstrip("`").strip()
-        parsed = json.loads(raw)
+        # Extract first JSON array from response
+        m = re.search(r"\[.*\]", raw, re.DOTALL)
+        if not m:
+            return heuristics
+        parsed = json.loads(m.group(0))
 
         ai_candidates: list[ExtensionCandidate] = []
         seen_names = {c.token_name for c in heuristics}
