@@ -7,9 +7,7 @@
 
 ---
 
-**Active Gate:** Step 6 — JUDGE
-**Status:** OPEN
+**Active Gate:** None
+**Status:** IDLE — ready for next cycle
 
 ---
-
-<!-- chat starts below after Judge posts in shared.md -->
