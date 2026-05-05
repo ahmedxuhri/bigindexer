@@ -77,6 +77,14 @@ def run_scan(
             from bgi.gate1.scala_scanner import scan_file_scala as _scan_scala
         except ImportError:
             _scan_scala = None
+        try:
+            from bgi.gate1.lua_scanner import scan_file_lua as _scan_lua
+        except ImportError:
+            _scan_lua = None
+        try:
+            from bgi.gate1.elixir_scanner import scan_file_elixir as _scan_elixir
+        except ImportError:
+            _scan_elixir = None
 
         lang = language.lower()
         if lang == "python":
@@ -120,6 +128,12 @@ def run_scan(
         elif lang == "scala":
             source_files = sorted(root_path.rglob("*.scala"))
             _scan_fn = _scan_scala
+        elif lang == "lua":
+            source_files = sorted(root_path.rglob("*.lua"))
+            _scan_fn = _scan_lua
+        elif lang == "elixir":
+            source_files = sorted(root_path.rglob("*.ex"))
+            _scan_fn = _scan_elixir
         else:
             raise NotImplementedError(f"Language '{language}' not yet supported.")
 
