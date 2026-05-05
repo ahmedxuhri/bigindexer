@@ -1,0 +1,8 @@
+Metadata-Version: 2.4
+Name: bgi
+Version: 0.1.0
+Summary: Bio-Gate Indexing — language-agnostic hierarchical code intelligence
+Requires-Python: >=3.10
+Requires-Dist: tree-sitter>=0.23
+Requires-Dist: tree-sitter-python>=0.23
+Requires-Dist: anthropic>=0.25
