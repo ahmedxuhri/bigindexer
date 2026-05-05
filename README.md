@@ -41,9 +41,9 @@ All thinking happens transparently in `shared.md` — a living chat room.
 1. **Define the challenge** — write it at the top of `shared.md`
 2. **Tell me to begin** — say "start cycle: [your challenge]"
 3. I will play each role in order, posting to `shared.md`
-4. **At the end of each role's step**, that role will ask you one focused question
-5. You respond with your human insight / suggestion
-6. All roles then react to your input in `shared.md`
+4. **At the end of each role's step**, open `brainstorming.md` — we'll chat freely there
+5. When your idea is fully formed, say **"submit"** — I'll distill it and post to `shared.md`
+6. All agents react to your insight, then the next role begins
 7. Repeat until the Judge produces a final synthesis
 
 ---
@@ -54,7 +54,8 @@ All thinking happens transparently in `shared.md` — a living chat room.
 mad/
 ├── README.md          ← you are here
 ├── WORKFLOW.md        ← detailed process rules
-├── shared.md          ← the living agent chat room
+├── shared.md          ← permanent agent chat room (all roles post here)
+├── brainstorming.md   ← recyclable human ↔ Copilot scratchpad at each gate
 ├── agents/
 │   ├── ARCHIVIST.md   ← role instructions
 │   ├── VISIONARY.md

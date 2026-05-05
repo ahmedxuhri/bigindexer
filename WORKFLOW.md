@@ -32,30 +32,45 @@ Example challenge:
 
 ## The Human Gate (mandatory between every step)
 
-After each role completes their step, **before passing to the next role**, that active
-role must ask the human exactly this structured question:
+The Human Gate is a **two-phase process**:
+
+### Phase 1 — Brainstorm (in `brainstorming.md`)
+
+After each role posts to `shared.md`, Copilot:
+1. Resets `brainstorming.md` with the current gate context (which step, what was found)
+2. Asks the human the role's focused question
+3. The human and Copilot chat freely — multiple back-and-forth turns
+   - Half-formed ideas, gut feelings, analogies, questions — all welcome
+   - Copilot plays a neutral thinking partner here (not any specific agent role)
+4. This continues until the human says **"submit"**
+
+### Phase 2 — Submission (back to `shared.md`)
+
+On "submit":
+1. Copilot distills the brainstorm into a clean **[HUMAN INSIGHT]** summary
+2. Posts it to `shared.md` under the header:
+   ```
+   **👤 HUMAN** | `YYYY-MM-DD HH:MM` | Gate after Step [N]
+   [distilled insight]
+   ```
+3. All 6 agent roles briefly react to it in `shared.md`
+4. `brainstorming.md` is reset (header updated, old chat cleared) for the next gate
+5. The next agent role begins its full step
+
+### The Role's Gate Question Format
+
+Each role ends its `shared.md` post with:
 
 ```
----
 🔔 HUMAN INPUT REQUESTED — [ROLE NAME]
 
-I just completed: [brief summary of what I did]
+I just completed: [brief summary]
+Current best approach: [1-2 sentences]
+Known weaknesses: [bullet list]
+My question for you: [ONE focused question]
 
-The current best approach is: [1-2 sentences]
-
-Its known weaknesses are:
-- [weakness 1]
-- [weakness 2]
-
-To move forward better, I need your perspective on:
-[ONE focused question]
-
-Your input will be shared with all agents before the next step.
----
+→ Head to brainstorming.md — say "submit" when your idea is ready.
 ```
-
-The human responds freely. Then **all 6 roles** briefly react to the human's input
-in `shared.md` before the next role begins its full step.
 
 ---
 
@@ -115,3 +130,13 @@ Copilot will:
 1. Write the challenge at the top of `shared.md`
 2. Begin as ARCHIVIST
 3. Follow this workflow until Judge converges
+
+---
+
+## File Roles
+
+| File | Purpose |
+|------|---------|
+| `shared.md` | Permanent record — all agent posts + submitted human insights |
+| `brainstorming.md` | Recyclable scratchpad — human ↔ Copilot chat at each gate, cleared after submit |
+| `sessions/` | Completed cycle archives |
