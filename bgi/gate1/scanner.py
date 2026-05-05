@@ -315,7 +315,48 @@ def scan_directory(
         source_files = sorted(root.rglob("*.ex"))
         _scan_fn = scan_file_elixir
     else:
-        raise NotImplementedError(f"Language '{language}' not yet supported.")
+        # Generic regex-based fallback — works for Swift, R, Dart, Bash, Nim, Zig, etc.
+        from bgi.gate1.generic_scanner import scan_file_generic
+        # Common extensions mapped to likely languages
+        _EXT_MAP = {
+            "swift": ["*.swift"],
+            "r": ["*.r", "*.R"],
+            "dart": ["*.dart"],
+            "bash": ["*.sh", "*.bash"],
+            "nim": ["*.nim"],
+            "zig": ["*.zig"],
+            "haskell": ["*.hs"],
+            "ocaml": ["*.ml", "*.mli"],
+            "fsharp": ["*.fs", "*.fsx"],
+            "clojure": ["*.clj", "*.cljs"],
+            "erlang": ["*.erl"],
+            "matlab": ["*.m"],
+            "vb": ["*.vb"],
+            "crystal": ["*.cr"],
+            "cobol": ["*.cob", "*.cbl"],
+            "groovy": ["*.groovy"],
+        }
+        globs = _EXT_MAP.get(language.lower(), [f"*.{language.lower()}"])
+        source_files = []
+        for g in globs:
+            source_files.extend(sorted(root.rglob(g)))
+        if not source_files:
+            # Last resort: scan everything not already handled
+            source_files = [
+                p for p in sorted(root.rglob("*"))
+                if p.is_file() and not p.suffix.lower() in {
+                    ".py", ".ts", ".tsx", ".js", ".jsx", ".java", ".go",
+                    ".rs", ".rb", ".cs", ".php", ".kt", ".c", ".h",
+                    ".scala", ".lua", ".ex", ".exs",
+                }
+            ]
+        for src_file in source_files:
+            try:
+                fingerprints.extend(scan_file_generic(src_file, root, ai, language=language))
+            except Exception as exc:
+                print(f"[BGI] Warning: skipped {src_file}: {exc}")
+        ai.flush(scan_run=scan_run)
+        return fingerprints
 
     for src_file in source_files:
         try:

@@ -14,8 +14,14 @@ def main() -> None:
     scan = sub.add_parser("scan", help="Scan a directory and produce a BGI graph")
     scan.add_argument("path", help="Root path to scan")
     scan.add_argument("--lang", default="python",
-                      choices=["python", "typescript", "tsx", "ts", "javascript", "jsx", "js", "java", "go", "rust", "ruby", "csharp", "php", "kotlin", "c", "scala", "lua", "elixir"],
-                      help="Language to scan (default: python)")
+                      choices=["python", "typescript", "tsx", "ts", "javascript", "jsx", "js",
+                               "java", "go", "rust", "ruby", "csharp", "php", "kotlin", "c",
+                               "scala", "lua", "elixir",
+                               # Generic fallback (any language not listed above)
+                               "swift", "r", "dart", "bash", "nim", "zig", "haskell",
+                               "ocaml", "fsharp", "clojure", "erlang", "matlab", "vb",
+                               "crystal", "cobol", "groovy", "generic"],
+                      help="Language to scan (default: python). Use 'generic' for any unsupported language.")
     scan.add_argument("--out", default="bgi-graph.json", help="Output file")
     scan.add_argument("--db", default="bgi-sep.db", help="SEP SQLite database path")
     scan.add_argument("--ai-key", default=None,
