@@ -406,7 +406,142 @@ class TestTokenCapping:
         # DEFER (specificity 9) and RAISE (7) should survive over CONDITIONAL (3)
         assert COV.DEFER in tokens or COV.RAISE in tokens
 
-class TestEdgeCases:
+
+# ── Enhancement 4: Python AST fast-path ──────────────────────────────────────
+
+class TestPythonASTPath:
+    def test_uses_ast_path_for_python(self):
+        """Python language should use AST path, giving source=deterministic."""
+        fps = _scan("""\
+            def greet(name):
+                return f"Hello {name}"
+        """, "python")
+        assert fps
+        assert fps[0].language == "python"
+        assert fps[0].source == "deterministic"
+
+    def test_python_exact_output(self):
+        fps = _scan("""\
+            def get_user(user_id):
+                return db.find(user_id)
+        """, "python")
+        assert fps
+        tokens = fps[0].tokens
+        assert COV.OUTPUT in tokens
+        assert COV.INTAKE in tokens
+        assert COV.FETCH in tokens  # from db.find() call-site
+
+    def test_python_raise(self):
+        fps = _scan("""\
+            def validate(value):
+                if value < 0:
+                    raise ValueError("negative")
+                return value
+        """, "python")
+        assert fps
+        tokens = fps[0].tokens
+        assert COV.RAISE in tokens
+        assert COV.CONDITIONAL in tokens
+        assert COV.OUTPUT in tokens
+
+    def test_python_try_except_finally(self):
+        fps = _scan("""\
+            def safe_read(path):
+                try:
+                    return open(path).read()
+                except IOError:
+                    return None
+                finally:
+                    cleanup()
+        """, "python")
+        assert fps
+        tokens = fps[0].tokens
+        assert COV.RECOVER in tokens
+        assert COV.DEFER in tokens
+
+    def test_python_async_def(self):
+        fps = _scan("""\
+            async def fetch_data(url):
+                return await session.get(url)
+        """, "python")
+        assert fps
+        tokens = fps[0].tokens
+        assert COV.ASYNC in tokens
+        assert COV.OUTPUT in tokens
+
+    def test_python_yield(self):
+        fps = _scan("""\
+            def stream_rows(query):
+                for row in db.execute(query):
+                    yield row
+        """, "python")
+        assert fps
+        tokens = fps[0].tokens
+        assert COV.EMIT in tokens
+        assert COV.LOOP in tokens
+
+    def test_python_class_method_exact(self):
+        """Class method must have correct class_context and unit_id."""
+        fps = _scan("""\
+            class UserService:
+                def save_user(self, user):
+                    db.save(user)
+        """, "python")
+        assert fps
+        fp = fps[0]
+        assert fp.class_context == ["UserService"]
+        assert "UserService" in fp.unit_id
+        assert "save_user" in fp.unit_id
+        assert COV.PERSIST in fp.tokens  # from db.save() call
+
+    def test_python_nested_func_no_class_prefix(self):
+        """Nested function inside a method must NOT get the class as context."""
+        fps = _scan("""\
+            class Processor:
+                def process(self, items):
+                    def helper(x):
+                        return x * 2
+                    return [helper(i) for i in items]
+        """, "python")
+        assert len(fps) == 2
+        names = {fp.unit_id.split("::")[-1] for fp in fps}
+        assert "process" in names
+        assert "helper" in names
+        helper = next(fp for fp in fps if "helper" in fp.unit_id)
+        assert helper.class_context == []  # NOT ["Processor"]
+
+    def test_python_string_literal_no_false_cov(self):
+        """String containing COV keywords must not pollute tokens via AST path."""
+        fps = _scan("""\
+            def describe():
+                return "use fetch to get data if for loop raise"
+        """, "python")
+        assert fps
+        tokens = fps[0].tokens
+        # Only OUTPUT (from return) should fire — nothing inside the string
+        assert COV.OUTPUT in tokens
+        assert COV.FETCH not in tokens
+        assert COV.CONDITIONAL not in tokens
+        assert COV.LOOP not in tokens
+        assert COV.RAISE not in tokens
+
+    def test_python_self_only_no_intake(self):
+        fps = _scan("""\
+            class Foo:
+                def run(self):
+                    return self.value
+        """, "python")
+        assert fps
+        assert COV.INTAKE not in fps[0].tokens  # self-only → no INTAKE
+
+    def test_python_syntax_error_fallback(self):
+        """Invalid Python should fall back to regex path without crashing."""
+        fps = _scan("def broken(\n    not valid syntax {{{\n", "python")
+        # Should return [] or some result, but NOT raise
+        assert isinstance(fps, list)
+
+
+
     def test_empty_file(self):
         fps = _scan("", "swift")
         assert fps == []

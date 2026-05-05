@@ -143,39 +143,115 @@ MAX_COV_TOKENS = 6
 # ── String/comment stripping — Enhancement 1 ─────────────────────────────────
 
 # Ordered: triple-quoted first (greedy), then single-quoted
-_STRIP_TRIPLE_DQ = re.compile(r'"""[\s\S]*?"""')
-_STRIP_TRIPLE_SQ = re.compile(r"'''[\s\S]*?'''")
-_STRIP_DQ        = re.compile(r'"[^"\\\n]*(?:\\.[^"\\\n]*)*"')
-_STRIP_SQ        = re.compile(r"'[^'\\\n]*(?:\\.[^'\\\n]*)*'")
-_STRIP_BACKTICK  = re.compile(r"`[^`\n]*`")
-# Line comments for common languages
-_STRIP_HASH      = re.compile(r"#[^\n]*")       # Python, Ruby, R, Bash
-_STRIP_SLASHSLASH= re.compile(r"//[^\n]*")      # Swift, Dart, JS, Go, Rust, C, Kotlin
-_STRIP_DASHDASH  = re.compile(r"--[^\n]*")      # Lua, Haskell, SQL
-_STRIP_PERCENT   = re.compile(r"%[^\n]*")       # Erlang, MATLAB
-# Block comments
-_STRIP_BLOCK     = re.compile(r"/\*[\s\S]*?\*/")
-_STRIP_BLOCK_LUA = re.compile(r"--\[\[[\s\S]*?\]\]")
+# (These were replaced by the _strip_noise state machine — kept as no-ops)
 
 
-def _clean_body(text: str) -> str:
-    """Strip string literals and comments before COV keyword scanning."""
-    # Block comments first (multi-line)
-    text = _STRIP_BLOCK.sub(" ", text)
-    text = _STRIP_BLOCK_LUA.sub(" ", text)
-    # Triple-quoted strings (multi-line)
-    text = _STRIP_TRIPLE_DQ.sub(" ", text)
-    text = _STRIP_TRIPLE_SQ.sub(" ", text)
-    # Single-line strings
-    text = _STRIP_DQ.sub(" ", text)
-    text = _STRIP_SQ.sub(" ", text)
-    text = _STRIP_BACKTICK.sub(" ", text)
-    # Line comments (after strings so we don't strip # inside strings)
-    text = _STRIP_HASH.sub(" ", text)
-    text = _STRIP_SLASHSLASH.sub(" ", text)
-    text = _STRIP_DASHDASH.sub(" ", text)
-    text = _STRIP_PERCENT.sub(" ", text)
-    return text
+def _strip_noise(source: str) -> str:
+    """
+    State-machine character-level tokenizer.
+    Replaces all string literals and comments with spaces (preserving newlines).
+    Handles escape sequences, nested quotes, and all major comment styles.
+    More accurate than regex for edge cases like escaped quotes and multiline strings.
+    """
+    result = []
+    i = 0
+    n = len(source)
+
+    while i < n:
+        c = source[i]
+        p2 = source[i:i+2]
+        p3 = source[i:i+3]
+        p4 = source[i:i+4]
+
+        # Triple-quoted strings (must check before single-quoted)
+        if p3 in ('"""', "'''"):
+            close = p3
+            j = source.find(close, i + 3)
+            end = j if j != -1 else n - 3
+            chunk = source[i: end + 3 if j != -1 else n]
+            result.append('\n' * chunk.count('\n'))
+            i = end + 3 if j != -1 else n
+
+        # Lua block comment  --[[ ... ]]
+        elif p4 == '--[[':
+            j = source.find(']]', i + 4)
+            chunk = source[i: (j + 2) if j != -1 else n]
+            result.append('\n' * chunk.count('\n'))
+            i = (j + 2) if j != -1 else n
+
+        # C-style block comment  /* ... */
+        elif p2 == '/*':
+            j = source.find('*/', i + 2)
+            chunk = source[i: (j + 2) if j != -1 else n]
+            result.append('\n' * chunk.count('\n'))
+            i = (j + 2) if j != -1 else n
+
+        # Line comment  //
+        elif p2 == '//':
+            j = source.find('\n', i)
+            result.append('\n')
+            i = (j + 1) if j != -1 else n
+
+        # Line comment  --  (Lua, Haskell, SQL — but not ->)
+        elif p2 == '--' and (i + 2 >= n or source[i + 2] != '>'):
+            j = source.find('\n', i)
+            result.append('\n')
+            i = (j + 1) if j != -1 else n
+
+        # Line comment  #
+        elif c == '#':
+            j = source.find('\n', i)
+            result.append('\n')
+            i = (j + 1) if j != -1 else n
+
+        # Double-quoted string
+        elif c == '"':
+            i += 1
+            while i < n:
+                ch = source[i]
+                if ch == '\\':
+                    i += 2
+                elif ch == '"':
+                    i += 1
+                    break
+                else:
+                    if ch == '\n':
+                        result.append('\n')
+                    i += 1
+
+        # Single-quoted string
+        elif c == "'":
+            i += 1
+            while i < n:
+                ch = source[i]
+                if ch == '\\':
+                    i += 2
+                elif ch == "'":
+                    i += 1
+                    break
+                else:
+                    if ch == '\n':
+                        result.append('\n')
+                    i += 1
+
+        # Backtick string
+        elif c == '`':
+            i += 1
+            while i < n:
+                ch = source[i]
+                if ch == '`':
+                    i += 1
+                    break
+                else:
+                    if ch == '\n':
+                        result.append('\n')
+                    i += 1
+
+        else:
+            result.append(c)
+            i += 1
+
+    return ''.join(result)
 
 
 # ── Body extraction strategies ────────────────────────────────────────────────
@@ -247,8 +323,8 @@ def _extract_body(lines: list[str], start: int, strategy: str) -> tuple[int, int
 # ── COV token extraction from body text ──────────────────────────────────────
 
 def _analyze_body(body_text: str) -> list[tuple[COV, float]]:
-    """Run COV patterns against cleaned (string/comment-free) body text."""
-    clean = _clean_body(body_text)
+    """Run COV patterns against noise-stripped (string/comment-free) body text."""
+    clean = _strip_noise(body_text)
     results: list[tuple[COV, float]] = []
     for pattern, token, conf in _BODY_PATTERNS:
         if pattern.search(clean):
@@ -383,6 +459,165 @@ def _detect_functions(source: str) -> list[_FuncMatch]:
     return results
 
 
+# ── Python AST fast-path — Enhancement 4 ─────────────────────────────────────
+# Call names → COV (Tier 3 equivalent without tree-sitter)
+_CALL_COV: list[tuple[re.Pattern, COV]] = [
+    (re.compile(r"^(save|persist|commit|flush|write|store|insert|upsert)$"),       COV.PERSIST),
+    (re.compile(r"^(find|fetch|get|load|read|query|select|search|retrieve|lookup)$"), COV.FETCH),
+    (re.compile(r"^(update|patch|modify|append|delete|remove|pop|push|merge)$"),    COV.MUTATE),
+    (re.compile(r"^(transform|convert|serialize|deserialize|encode|decode|parse|format|marshal|unmarshal)$"), COV.TRANSFORM),
+    (re.compile(r"^(validate|verify|assert|check|ensure|require)$"),                COV.VALIDATE),
+    (re.compile(r"^(log|debug|info|warn|warning|error|critical|print|printf|println|puts)$"), COV.LOG),
+    (re.compile(r"^(send|emit|publish|broadcast|dispatch|notify|trigger|fire)$"),   COV.EMIT),
+    (re.compile(r"^(subscribe|listen|on|handle|receive|register|watch)$"),          COV.SUBSCRIBE),
+    (re.compile(r"^(measure|record|increment|decrement|track|gauge|counter|histogram|timer)$"), COV.MEASURE),
+]
+
+
+def _walk_ast_no_nested(node, stop_types: tuple) -> "Iterator[ast.AST]":
+    """Yield AST descendants, stopping recursion into stop_types (but yielding them)."""
+    import ast as _ast
+    for child in _ast.iter_child_nodes(node):
+        yield child
+        if not isinstance(child, stop_types):
+            yield from _walk_ast_no_nested(child, stop_types)
+
+
+def _cov_from_ast_node(func_node) -> list[tuple[COV, float]]:
+    """
+    Walk an ast.FunctionDef / AsyncFunctionDef and return COV tokens.
+    Does NOT recurse into nested function definitions (mirrors tree-sitter _walk_body).
+    """
+    import ast as _ast
+    stop = (_ast.FunctionDef, _ast.AsyncFunctionDef)
+    collected: list[tuple[COV, float]] = []
+
+    if isinstance(func_node, _ast.AsyncFunctionDef):
+        collected.append((COV.ASYNC, 0.95))
+
+    for node in _walk_ast_no_nested(func_node, stop):
+        if isinstance(node, _ast.Return) and node.value is not None:
+            collected.append((COV.OUTPUT, 0.95))
+        elif isinstance(node, (_ast.Yield, _ast.YieldFrom)):
+            collected.append((COV.EMIT, 0.95))
+        elif isinstance(node, _ast.Raise):
+            collected.append((COV.RAISE, 0.95))
+        elif isinstance(node, _ast.ExceptHandler):
+            collected.append((COV.RECOVER, 0.95))
+        elif isinstance(node, _ast.Try) and node.finalbody:
+            collected.append((COV.DEFER, 0.95))
+        elif isinstance(node, _ast.Await):
+            collected.append((COV.ASYNC, 0.95))
+        elif isinstance(node, (_ast.For, _ast.While, _ast.AsyncFor)):
+            collected.append((COV.LOOP, 0.9))
+        elif isinstance(node, _ast.If):
+            collected.append((COV.CONDITIONAL, 0.9))
+        elif isinstance(node, (_ast.With, _ast.AsyncWith)):
+            collected.append((COV.SCOPE, 0.85))
+        elif isinstance(node, _ast.Call):
+            # Resolve call name (method or function)
+            func = node.func
+            name = func.attr if isinstance(func, _ast.Attribute) else (
+                   func.id  if isinstance(func, _ast.Name) else None)
+            if name:
+                for pat, cov_token in _CALL_COV:
+                    if pat.match(name):
+                        collected.append((cov_token, 0.88))
+                        break
+        # Python 3.10+ structural pattern matching
+        elif hasattr(_ast, 'Match') and isinstance(node, _ast.Match):
+            collected.append((COV.CONDITIONAL, 0.9))
+
+    return collected
+
+
+def _python_ast_path(
+    source: str,
+    rel_path: str,
+    ai: AIFallback,
+) -> "list[COVFingerprint] | None":
+    """
+    Fast-path for Python: use the built-in ast module for exact function
+    detection, class context, and COV analysis. Returns None on SyntaxError.
+    """
+    import ast as _ast
+
+    try:
+        tree = _ast.parse(source)
+    except SyntaxError:
+        return None
+
+    lines = source.splitlines()
+    fingerprints: list[COVFingerprint] = []
+
+    class _Visitor(_ast.NodeVisitor):
+        def __init__(self):
+            self._cls: list[str] = []  # class context stack
+
+        def visit_ClassDef(self, node: "_ast.ClassDef"):
+            self._cls.append(node.name)
+            self.generic_visit(node)
+            self._cls.pop()
+
+        def _handle_func(self, node):
+            name = node.name
+            class_ctx = self._cls[-1] if self._cls else None
+
+            line_start = node.lineno
+            line_end = getattr(node, "end_lineno", node.lineno) or node.lineno
+            header = lines[line_start - 1] if line_start <= len(lines) else ""
+
+            # Real params: exclude self/cls
+            args = node.args
+            all_args = list(args.args) + list(args.kwonlyargs)
+            if args.vararg:  all_args.append(args.vararg)
+            if args.kwarg:   all_args.append(args.kwarg)
+            has_params = bool([a for a in all_args if a.arg not in ("self", "cls")])
+
+            collected: list[tuple[COV, float]] = []
+            collected.extend(_analyze_name(name))
+            if has_params:
+                collected.append((COV.INTAKE, 0.9))
+            collected.extend(_cov_from_ast_node(node))
+
+            _STRUCTURAL = {COV.ASYNC, COV.INTAKE, COV.INIT, COV.TEARDOWN}
+            tokens = dedupe_ordered([t for t, _ in collected])
+            if not any(t not in _STRUCTURAL for t in tokens):
+                uid_tmp = f"{rel_path}::{name}"
+                body = "\n".join(lines[line_start - 1:line_end])
+                ai_res = ai.classify_unit(uid_tmp, body, language="python")
+                if ai_res:
+                    collected.extend(ai_res)
+
+            tokens = _cap_tokens(dedupe_ordered([t for t, _ in collected]))
+            confs  = [c for _, c in collected]
+            conf   = min(confs) if confs else 0.85
+            srcs   = {"ai_classified" if c < 0.9 else "deterministic" for _, c in collected}
+            src_lbl = ("composite"    if "ai_classified" in srcs and len(srcs) > 1 else
+                       "ai_classified" if "ai_classified" in srcs else "deterministic")
+
+            uid         = f"{rel_path}::{class_ctx}::{name}" if class_ctx else f"{rel_path}::{name}"
+            class_field = [class_ctx] if class_ctx else []
+
+            fingerprints.append(COVFingerprint(
+                unit_id=uid, tokens=tokens, class_context=class_field,
+                confidence=conf, source=src_lbl, language="python",
+                line_range=(line_start, line_end),
+            ))
+
+            # Walk nested functions with class stack cleared (they're not class methods)
+            saved = self._cls[:]
+            self._cls.clear()
+            self.generic_visit(node)
+            self._cls[:] = saved
+
+        def visit_FunctionDef(self, node):      self._handle_func(node)
+        def visit_AsyncFunctionDef(self, node): self._handle_func(node)
+
+    _Visitor().visit(tree)
+    return fingerprints
+
+
 def scan_file_generic(
     file_path: Path,
     root: Path,
@@ -390,8 +625,12 @@ def scan_file_generic(
     language: str = "unknown",
 ) -> list[COVFingerprint]:
     """
-    Generic scanner for any text-based language.
-    Uses regex-based function detection + keyword COV analysis.
+    Hybrid generic scanner for any text-based language.
+
+    Fast-paths (when available):
+      - Python: uses built-in ast module for exact structural COV + call-site analysis
+    Fallback for all other languages:
+      - Regex function detection + state-machine string/comment stripping + COV keywords
     """
     try:
         source = file_path.read_text(encoding="utf-8", errors="replace")
@@ -399,6 +638,14 @@ def scan_file_generic(
         return []
 
     rel_path = str(file_path.relative_to(root))
+
+    # ── Python AST fast-path ───────────────────────────────────────────────────
+    if language == "python":
+        result = _python_ast_path(source, rel_path, ai)
+        if result is not None:
+            return result
+        # SyntaxError fallback: continue to regex path below
+
     funcs = _detect_functions(source)
     fingerprints: list[COVFingerprint] = []
 
