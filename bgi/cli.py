@@ -22,6 +22,8 @@ def main() -> None:
                       help="AI API key (enables AI Position 1 + 3). Also reads DEEPSEEK_API_KEY env var.")
     scan.add_argument("--ai-model", default="deepseek-v4-flash",
                       help="AI model name (default: deepseek-v4-flash)")
+    scan.add_argument("--html", action="store_true", default=False,
+                      help="Also generate a self-contained HTML visualization")
 
     curate = sub.add_parser("curate", help="Analyze unresolved patterns and propose COV extension tokens")
     curate.add_argument("--unresolved", default="bgi-unresolved.jsonl", help="AIFallback log path")
@@ -42,6 +44,7 @@ def main() -> None:
             db=args.db,
             ai_key=ai_key,
             ai_model=args.ai_model,
+            html=args.html,
         )
 
     elif args.command == "curate":

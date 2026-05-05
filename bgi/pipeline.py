@@ -14,6 +14,7 @@ def run_scan(
     db: str = "bgi-sep.db",
     ai_key: str | None = None,
     ai_model: str = "deepseek-v4-flash",
+    html: bool = False,
 ) -> None:
     from bgi.gate1.scanner import scan_directory
     from bgi.gate2.keylock import match_fingerprints
@@ -79,3 +80,11 @@ def run_scan(
     agents_md_path = Path(output).with_name("agents.md")
     agents_md_path.write_text(narration.agents_md)
     print(f"[BGI] Architecture narration written to {agents_md_path}")
+
+    # Step 4 — HTML visualization
+    if html:
+        from bgi.output.html_viz import generate_html
+        html_path = str(Path(output).with_suffix(".html"))
+        title = f"BGI — {Path(root).name}"
+        generate_html(graph, html_path, inline_d3=True, title=title)
+        print(f"[BGI] HTML visualization written to {html_path}")
