@@ -15,20 +15,83 @@ def run_scan(
     ai_key: str | None = None,
     ai_model: str = "deepseek-v4-flash",
     html: bool = False,
+    incremental: bool = False,
+    cache_file: str = ".bgi-cache.json",
 ) -> None:
-    from bgi.gate1.scanner import scan_directory
+    from bgi.gate1.scanner import scan_directory, scan_file
     from bgi.gate2.keylock import match_fingerprints
     from bgi.gate3.drs import run_drs
     from bgi.sep.pool import SuspendedEdgePool
     from bgi.output.graph import serialize_graph
+    from bgi.gate1.ai_fallback import AIFallback
     import time
 
     root_path = Path(root).resolve()
     scan_run = f"scan-{int(time.time())}"
-    print(f"[BGI] Scanning {root_path} ...")
+    ai = AIFallback(enabled=False)
 
-    fingerprints = scan_directory(root_path, language=language, scan_run=scan_run)
-    print(f"[BGI] Gate 1 complete — {len(fingerprints)} units fingerprinted")
+    if incremental:
+        from bgi.delta.cache import ScanCache
+        from bgi.gate1.scanner import scan_file as _scan_py
+        try:
+            from bgi.gate1.ts_scanner import scan_file_ts as _scan_ts
+        except ImportError:
+            _scan_ts = None
+        try:
+            from bgi.gate1.js_scanner import scan_file_js as _scan_js
+        except ImportError:
+            _scan_js = None
+
+        lang = language.lower()
+        if lang == "python":
+            source_files = sorted(root_path.rglob("*.py"))
+            _scan_fn = _scan_py
+        elif lang in ("typescript", "tsx", "ts"):
+            exts = {"*.ts", "*.tsx"}
+            source_files = sorted(
+                f for ext in exts for f in root_path.rglob(ext)
+                if ".d.ts" not in f.name
+            )
+            _scan_fn = _scan_ts
+        elif lang in ("javascript", "jsx", "js"):
+            exts = {"*.js", "*.jsx"}
+            source_files = sorted(f for ext in exts for f in root_path.rglob(ext))
+            _scan_fn = _scan_js
+        else:
+            raise NotImplementedError(f"Language '{language}' not yet supported.")
+
+        cache_path = Path(output).parent / cache_file
+        cache = ScanCache.load(cache_path)
+        dirty, cached_fps = cache.partition(source_files, root_path, use_git=True)
+        deleted = cache.purge_deleted(source_files, root_path)
+
+        print(
+            f"[BGI] Incremental scan — "
+            f"{len(dirty)} dirty / {len(source_files) - len(dirty)} cached"
+            + (f" / {len(deleted)} deleted" if deleted else "")
+        )
+
+        new_fps: list = []
+        fps_by_rel: dict = {}
+        for f in dirty:
+            try:
+                fps = _scan_fn(f, root_path, ai)
+            except Exception as exc:
+                print(f"[BGI] Warning: skipped {f}: {exc}")
+                fps = []
+            new_fps.extend(fps)
+            fps_by_rel[str(f.relative_to(root_path))] = fps
+
+        cache.update_many(dirty, root_path, fps_by_rel)
+        cache.save(cache_path)
+        ai.flush(scan_run=scan_run)
+
+        fingerprints = cached_fps + new_fps
+        print(f"[BGI] Gate 1 complete — {len(fingerprints)} units ({len(new_fps)} re-scanned)")
+    else:
+        print(f"[BGI] Scanning {root_path} ...")
+        fingerprints = scan_directory(root_path, language=language, ai=ai, scan_run=scan_run)
+        print(f"[BGI] Gate 1 complete — {len(fingerprints)} units fingerprinted")
 
     edges, suspended = match_fingerprints(fingerprints)
     print(f"[BGI] Gate 2 complete — {len(edges)} edges detected ({len(suspended)} suspended)")
@@ -77,7 +140,7 @@ def run_scan(
     if narration.ai_enhanced:
         print(f"[BGI] Narrator AI-enhanced ({ai_model})")
 
-    agents_md_path = Path(output).with_name("agents.md")
+    agents_md_path = Path(output).parent / "agents.md"
     agents_md_path.write_text(narration.agents_md)
     print(f"[BGI] Architecture narration written to {agents_md_path}")
 

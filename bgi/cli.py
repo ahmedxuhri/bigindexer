@@ -24,6 +24,10 @@ def main() -> None:
                       help="AI model name (default: deepseek-v4-flash)")
     scan.add_argument("--html", action="store_true", default=False,
                       help="Also generate a self-contained HTML visualization")
+    scan.add_argument("--incremental", action="store_true", default=False,
+                      help="Only re-scan files changed since last run (uses .bgi-cache.json)")
+    scan.add_argument("--cache", default=".bgi-cache.json",
+                      help="Cache file for incremental mode (default: .bgi-cache.json)")
 
     curate = sub.add_parser("curate", help="Analyze unresolved patterns and propose COV extension tokens")
     curate.add_argument("--unresolved", default="bgi-unresolved.jsonl", help="AIFallback log path")
@@ -45,6 +49,8 @@ def main() -> None:
             ai_key=ai_key,
             ai_model=args.ai_model,
             html=args.html,
+            incremental=args.incremental,
+            cache_file=args.cache,
         )
 
     elif args.command == "curate":
