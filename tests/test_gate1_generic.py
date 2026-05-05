@@ -264,7 +264,147 @@ class TestFingerprintMetadata:
         assert COV.OUTPUT in fps[0].tokens
 
 
-# ── Edge cases ────────────────────────────────────────────────────────────────
+# ── Enhancement 1: string/comment stripping ───────────────────────────────────
+
+class TestBodyCleaning:
+    def test_string_literal_not_cov(self):
+        """Keywords inside string literals must not trigger COV tokens."""
+        fps = _scan("""\
+            func describe() -> String {
+                return "use fetch to get data if needed"
+            }
+        """, "swift")
+        assert fps
+        # "fetch", "if" are inside a string literal — should NOT fire FETCH/CONDITIONAL
+        # "return" is real code — OUTPUT should fire
+        assert COV.OUTPUT in fps[0].tokens
+        assert COV.FETCH not in fps[0].tokens
+        assert COV.CONDITIONAL not in fps[0].tokens
+
+    def test_comment_not_cov(self):
+        """Keywords inside line comments must not trigger COV tokens."""
+        fps = _scan("""\
+            func compute(x: Int) -> Int {
+                // if x is negative, raise an error and catch it
+                return x * 2
+            }
+        """, "swift")
+        assert fps
+        tokens = fps[0].tokens
+        assert COV.OUTPUT in tokens
+        # if/raise/catch in comment — should not fire
+        assert COV.CONDITIONAL not in tokens
+        assert COV.RAISE not in tokens
+        assert COV.RECOVER not in tokens
+
+    def test_real_code_still_fires(self):
+        """Real COV keywords in actual code must still fire after cleaning."""
+        fps = _scan("""\
+            func loadUser(id: Int) throws -> User {
+                if id <= 0 {
+                    throw InvalidIDError()
+                }
+                return db.fetch(id)
+            }
+        """, "swift")
+        assert fps
+        tokens = fps[0].tokens
+        assert COV.CONDITIONAL in tokens
+        assert COV.RAISE in tokens
+        assert COV.OUTPUT in tokens
+
+
+# ── Enhancement 2: class context tracking ────────────────────────────────────
+
+class TestClassContext:
+    def test_method_gets_class_prefix(self):
+        """Methods inside a class should have ClassName::method unit_id."""
+        fps = _scan("""\
+            class UserService {
+                func findUser(id: Int) -> User {
+                    return db.find(id)
+                }
+            }
+        """, "swift")
+        assert fps
+        assert any("UserService" in fp.unit_id for fp in fps)
+
+    def test_method_class_context_field(self):
+        fps = _scan("""\
+            class AuthManager {
+                func login(user: String) -> Bool {
+                    return verify(user)
+                }
+            }
+        """, "swift")
+        assert fps
+        fp = next(f for f in fps if "login" in f.unit_id)
+        assert fp.class_context == ["AuthManager"]
+
+    def test_top_level_function_no_class(self):
+        fps = _scan("""\
+            func helperFunc() -> Int {
+                return 42
+            }
+        """, "swift")
+        assert fps
+        fp = fps[0]
+        assert fp.class_context == []
+        assert "helperFunc" in fp.unit_id
+        assert "::" in fp.unit_id
+        # Should NOT have a spurious class prefix
+        parts = fp.unit_id.split("::")
+        assert parts[-1] == "helperFunc"
+
+    def test_python_class_method(self):
+        fps = _scan("""\
+            class Calculator:
+                def add(self, a, b):
+                    return a + b
+        """, "python")
+        assert fps
+        fp = fps[0]
+        assert "Calculator" in fp.unit_id
+        assert "add" in fp.unit_id
+
+
+# ── Enhancement 3: token capping ─────────────────────────────────────────────
+
+class TestTokenCapping:
+    def test_max_tokens_not_exceeded(self):
+        """No fingerprint should have more than MAX_COV_TOKENS tokens."""
+        from bgi.gate1.generic_scanner import MAX_COV_TOKENS
+        # A function body that would trigger many keywords if uncapped
+        fps = _scan("""\
+            func doEverything(data: Data) throws -> Result {
+                if data.isEmpty { throw DataError() }
+                for item in data { log(item) }
+                let result = fetch(data)
+                save(result)
+                return result
+            }
+        """, "swift")
+        assert fps
+        assert len(fps[0].tokens) <= MAX_COV_TOKENS
+
+    def test_high_specificity_tokens_kept(self):
+        """When capping, higher-specificity tokens should be retained."""
+        from bgi.gate1.generic_scanner import MAX_COV_TOKENS
+        fps = _scan("""\
+            func handleEvent(data: Data) throws -> Result {
+                defer { cleanup() }
+                if data.isEmpty { throw DataError() }
+                for item in data { process(item) }
+                let result = fetch(data)
+                save(result)
+                return result
+            }
+        """, "swift")
+        assert fps
+        tokens = fps[0].tokens
+        assert len(tokens) <= MAX_COV_TOKENS
+        # DEFER (specificity 9) and RAISE (7) should survive over CONDITIONAL (3)
+        assert COV.DEFER in tokens or COV.RAISE in tokens
 
 class TestEdgeCases:
     def test_empty_file(self):

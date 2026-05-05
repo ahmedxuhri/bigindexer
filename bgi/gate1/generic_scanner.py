@@ -12,7 +12,7 @@ Supported boundary strategies (auto-detected per file):
   ENDWORD — Ruby, Lua, Elixir, Crystal, VB, MATLAB ...
 
 Accuracy compared to dedicated tree-sitter scanners:
-  ~80-85% for COV token assignment (misses AST-level precision)
+  ~75-80% for COV token assignment (misses AST-level precision)
   ~95%    for function boundary detection in well-formatted code
 
 Use this for any language without a dedicated scanner:
@@ -65,6 +65,18 @@ _FUNC_PATTERNS: list[tuple[re.Pattern, int, str]] = [
     (re.compile(r"^\s*(?:function|def|func|fn|sub|method|procedure)\s+(\w+)\s*[(\[]?"), 1, "brace"),
 ]
 
+# Class context patterns — used to assign class_context to methods
+_CLASS_PATTERNS: list[re.Pattern] = [
+    re.compile(r"^\s*class\s+(\w+)"),           # Python, Swift, Kotlin, C#, Java, PHP, Crystal
+    re.compile(r"^\s*(?:pub\s+)?struct\s+(\w+)"),  # Rust, Go, Zig
+    re.compile(r"^\s*(?:pub\s+)?impl\s+(\w+)"),    # Rust impl block
+    re.compile(r"^\s*(?:pub\s+)?interface\s+(\w+)"),  # Go, TS, Java
+    re.compile(r"^\s*(?:pub\s+)?enum\s+(\w+)"),    # many languages
+    re.compile(r"^\s*(?:pub\s+)?object\s+(\w+)"),  # Scala, Kotlin
+    re.compile(r"^\s*(?:pub\s+)?trait\s+(\w+)"),   # Rust, Scala
+    re.compile(r"^\s*(?:pub\s+)?module\s+(\w+)"),  # Elixir, VB
+    re.compile(r"^\s*(?:pub\s+)?namespace\s+(\w+)"), # PHP, C#, C++
+]
 
 # ── COV keyword → token mappings ──────────────────────────────────────────────
 
@@ -112,6 +124,58 @@ _NAME_INIT     = re.compile(r"^(init|initialize|setup|start|new|create|open|main
 _NAME_TEARDOWN = re.compile(r"^(destroy|cleanup|close|shutdown|teardown|stop|dispose|free|__del__|tearDown|afterEach|afterAll|after)$", re.I)
 _NAME_TEST     = re.compile(r"^test[_A-Z]|^test$|^spec_|_test$|_spec$", re.I)
 _NAME_ASYNC    = re.compile(r"async|spawn|goroutine", re.I)
+
+# COV specificity: rarer/more precise tokens score higher.
+# When token count exceeds MAX_COV_TOKENS, lowest-scoring ones are dropped.
+_COV_SPECIFICITY: dict[COV, int] = {
+    COV.EMIT:     10, COV.MEASURE:  10,
+    COV.DEFER:     9, COV.SCOPE:     9,
+    COV.PERSIST:   8, COV.FETCH:     8, COV.VALIDATE: 8, COV.TRANSFORM: 8,
+    COV.RAISE:     7, COV.RECOVER:   7, COV.ASYNC:    7,
+    COV.MUTATE:    6, COV.SUBSCRIBE: 6,
+    COV.LOG:       5,
+    COV.LOOP:      4, COV.TEST:      4, COV.INIT:      4, COV.TEARDOWN: 4,
+    COV.CONDITIONAL: 3,
+    COV.OUTPUT:    2, COV.INTAKE:    1,
+}
+MAX_COV_TOKENS = 6
+
+# ── String/comment stripping — Enhancement 1 ─────────────────────────────────
+
+# Ordered: triple-quoted first (greedy), then single-quoted
+_STRIP_TRIPLE_DQ = re.compile(r'"""[\s\S]*?"""')
+_STRIP_TRIPLE_SQ = re.compile(r"'''[\s\S]*?'''")
+_STRIP_DQ        = re.compile(r'"[^"\\\n]*(?:\\.[^"\\\n]*)*"')
+_STRIP_SQ        = re.compile(r"'[^'\\\n]*(?:\\.[^'\\\n]*)*'")
+_STRIP_BACKTICK  = re.compile(r"`[^`\n]*`")
+# Line comments for common languages
+_STRIP_HASH      = re.compile(r"#[^\n]*")       # Python, Ruby, R, Bash
+_STRIP_SLASHSLASH= re.compile(r"//[^\n]*")      # Swift, Dart, JS, Go, Rust, C, Kotlin
+_STRIP_DASHDASH  = re.compile(r"--[^\n]*")      # Lua, Haskell, SQL
+_STRIP_PERCENT   = re.compile(r"%[^\n]*")       # Erlang, MATLAB
+# Block comments
+_STRIP_BLOCK     = re.compile(r"/\*[\s\S]*?\*/")
+_STRIP_BLOCK_LUA = re.compile(r"--\[\[[\s\S]*?\]\]")
+
+
+def _clean_body(text: str) -> str:
+    """Strip string literals and comments before COV keyword scanning."""
+    # Block comments first (multi-line)
+    text = _STRIP_BLOCK.sub(" ", text)
+    text = _STRIP_BLOCK_LUA.sub(" ", text)
+    # Triple-quoted strings (multi-line)
+    text = _STRIP_TRIPLE_DQ.sub(" ", text)
+    text = _STRIP_TRIPLE_SQ.sub(" ", text)
+    # Single-line strings
+    text = _STRIP_DQ.sub(" ", text)
+    text = _STRIP_SQ.sub(" ", text)
+    text = _STRIP_BACKTICK.sub(" ", text)
+    # Line comments (after strings so we don't strip # inside strings)
+    text = _STRIP_HASH.sub(" ", text)
+    text = _STRIP_SLASHSLASH.sub(" ", text)
+    text = _STRIP_DASHDASH.sub(" ", text)
+    text = _STRIP_PERCENT.sub(" ", text)
+    return text
 
 
 # ── Body extraction strategies ────────────────────────────────────────────────
@@ -183,11 +247,20 @@ def _extract_body(lines: list[str], start: int, strategy: str) -> tuple[int, int
 # ── COV token extraction from body text ──────────────────────────────────────
 
 def _analyze_body(body_text: str) -> list[tuple[COV, float]]:
+    """Run COV patterns against cleaned (string/comment-free) body text."""
+    clean = _clean_body(body_text)
     results: list[tuple[COV, float]] = []
     for pattern, token, conf in _BODY_PATTERNS:
-        if pattern.search(body_text):
+        if pattern.search(clean):
             results.append((token, conf))
     return results
+
+
+def _cap_tokens(tokens: list[COV]) -> list[COV]:
+    """Keep only the MAX_COV_TOKENS most-specific tokens to avoid noise floods."""
+    if len(tokens) <= MAX_COV_TOKENS:
+        return tokens
+    return sorted(tokens, key=lambda t: _COV_SPECIFICITY.get(t, 0), reverse=True)[:MAX_COV_TOKENS]
 
 
 def _analyze_name(func_name: str) -> list[tuple[COV, float]]:
@@ -214,6 +287,45 @@ def _has_params(header_line: str) -> bool:
     return bool(cleaned)
 
 
+# ── Class context tracking — Enhancement 2 ───────────────────────────────────
+
+def _build_class_map(lines: list[str]) -> dict[int, str]:
+    """
+    Returns a map of {line_index: class_name} for every line that falls
+    inside a class/struct/impl/module body. Uses indentation-based scoping
+    for indent languages and brace-depth for brace languages.
+
+    Strategy: on each class-opening line, record the indent level. Any
+    subsequent line indented deeper belongs to that class until indent
+    drops back to or below the class level.
+    """
+    class_stack: list[tuple[int, str]] = []  # (indent_level, class_name)
+    result: dict[int, str] = {}
+
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        indent = len(line) - len(line.lstrip())
+
+        # Pop classes whose indent level is >= current (we've exited them)
+        while class_stack and indent <= class_stack[-1][0]:
+            class_stack.pop()
+
+        # Check if this line opens a new class/struct/impl/...
+        for pat in _CLASS_PATTERNS:
+            m = pat.match(line)
+            if m:
+                class_stack.append((indent, m.group(1)))
+                break
+
+        # Record the innermost class for this line
+        if class_stack:
+            result[i] = class_stack[-1][1]
+
+    return result
+
+
 # ── Main scanner ──────────────────────────────────────────────────────────────
 
 @dataclass
@@ -224,11 +336,13 @@ class _FuncMatch:
     body: str
     header: str
     strategy: str
+    class_name: str | None = None  # set by class context pass
 
 
 def _detect_functions(source: str) -> list[_FuncMatch]:
-    """Apply all patterns and return detected function spans."""
+    """Apply all patterns and return detected function spans with class context."""
     lines = source.splitlines()
+    class_map = _build_class_map(lines)
     results: list[_FuncMatch] = []
     used_lines: set[int] = set()
 
@@ -263,6 +377,7 @@ def _detect_functions(source: str) -> list[_FuncMatch]:
                 body=body_text,
                 header=line,
                 strategy=strategy,
+                class_name=class_map.get(i),
             ))
 
     return results
@@ -297,7 +412,7 @@ def scan_file_generic(
         if _has_params(func.header):
             collected.append((COV.INTAKE, 0.85))
 
-        # Body keyword analysis
+        # Body keyword analysis (on string/comment-cleaned text)
         collected.extend(_analyze_body(func.body))
 
         # Unit-level AI fallback if nothing found
@@ -309,7 +424,8 @@ def scan_file_generic(
             if ai_results:
                 collected.extend(ai_results)
 
-        tokens = dedupe_ordered([t for t, _ in collected])
+        # Enhancement 3: cap tokens by specificity before finalising
+        tokens = _cap_tokens(dedupe_ordered([t for t, _ in collected]))
         confidences = [c for _, c in collected]
         confidence = min(confidences) if confidences else 0.7  # generic = lower baseline
 
@@ -321,12 +437,18 @@ def scan_file_generic(
         else:
             source_label = "deterministic"
 
-        unit_id = f"{rel_path}::{func.name}"
+        # Enhancement 2: include class context in unit_id and class_context field
+        if func.class_name:
+            unit_id = f"{rel_path}::{func.class_name}::{func.name}"
+            class_context = [func.class_name]
+        else:
+            unit_id = f"{rel_path}::{func.name}"
+            class_context = []
 
         fingerprints.append(COVFingerprint(
             unit_id=unit_id,
             tokens=tokens,
-            class_context=[],
+            class_context=class_context,
             confidence=confidence,
             source=source_label,
             language=language,
