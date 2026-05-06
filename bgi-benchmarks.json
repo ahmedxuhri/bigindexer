@@ -1,0 +1,17 @@
+{
+  "timestamp": 1778078423.913331,
+  "benchmarks": [
+    {
+      "name": "--repo (auto)",
+      "root": "--repo",
+      "gate1_time": 0.023067235946655273,
+      "gate2_time": null,
+      "gate3_time": null,
+      "total_time": 0.023067235946655273,
+      "total_fingerprints": 0,
+      "total_clusters": 0,
+      "max_cluster_size": 0,
+      "errors": []
+    }
+  ]
+}
