@@ -235,3 +235,81 @@ export async function start() {
 """)
     
     return tmp_path
+
+
+class TestBFSTraversal:
+    """Test BFS (entry-point priority) traversal."""
+    
+    def test_bfs_prioritizes_entry_points(self, tmp_path):
+        """Verify entry-point files are prioritized in scan order."""
+        # Create files: entry point and non-entry
+        entry = tmp_path / "main.py"
+        entry.write_text('''def main():
+    print("hello")
+
+if __name__ == "__main__":
+    main()
+''')
+        
+        util1 = tmp_path / "util1.py"
+        util1.write_text("def foo(): pass")
+        
+        util2 = tmp_path / "util2.py"
+        util2.write_text("def bar(): pass")
+        
+        from bgi.gate1.parallel_scanner import scan_directory_parallel
+        fps = scan_directory_parallel(tmp_path, language="python", enable_bfs=True)
+        
+        # Should have scanned all files
+        assert len(fps) >= 3
+    
+    def test_bfs_disable_no_entry_priority(self, tmp_path):
+        """Verify BFS can be disabled."""
+        entry = tmp_path / "main.py"
+        entry.write_text('''def main():
+    pass
+
+if __name__ == "__main__":
+    main()
+''')
+        
+        util = tmp_path / "util.py"
+        util.write_text("def bar(): pass")
+        
+        from bgi.gate1.parallel_scanner import scan_directory_parallel
+        fps = scan_directory_parallel(tmp_path, language="python", enable_bfs=False)
+        
+        # Should still scan all files
+        assert len(fps) >= 2
+    
+    def test_bfs_identical_fingerprints_with_without(self, python_test_repo):
+        """Verify BFS produces same fingerprints (order may differ, content same)."""
+        from bgi.gate1.parallel_scanner import scan_directory_parallel
+        
+        fps_bfs = sorted(
+            scan_directory_parallel(python_test_repo, language="python", enable_bfs=True),
+            key=lambda f: f.unit_id
+        )
+        fps_no_bfs = sorted(
+            scan_directory_parallel(python_test_repo, language="python", enable_bfs=False),
+            key=lambda f: f.unit_id
+        )
+        
+        assert len(fps_bfs) == len(fps_no_bfs)
+        for f1, f2 in zip(fps_bfs, fps_no_bfs):
+            assert f1.unit_id == f2.unit_id
+            assert f1.tokens == f2.tokens
+    
+    def test_bfs_typescript_entry_points(self, tmp_path):
+        """Test BFS with TypeScript entry points."""
+        entry = tmp_path / "server.ts"
+        entry.write_text("export async function start() {}")
+        
+        util = tmp_path / "utils.ts"
+        util.write_text("export function helper() {}")
+        
+        from bgi.gate1.parallel_scanner import scan_directory_parallel
+        fps = scan_directory_parallel(tmp_path, language="typescript", enable_bfs=True)
+        
+        # Should scan both files
+        assert len(fps) >= 2

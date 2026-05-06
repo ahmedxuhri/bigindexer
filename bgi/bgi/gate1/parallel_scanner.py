@@ -64,14 +64,19 @@ def scan_directory_parallel(
     root: Path,
     language: str = "python",
     max_workers: int | None = None,
+    enable_bfs: bool = True,
 ) -> list[COVFingerprint]:
     """
-    Scan directory using multiprocessing pool.
+    Scan directory using multiprocessing pool with optional BFS prioritization.
+    
+    If enable_bfs is True, entry-point files are scanned first, enabling faster
+    partial results and better cache locality. Non-entry files follow.
     
     Args:
         root: Repository root
         language: Language to scan
         max_workers: Number of worker processes (default: CPU count)
+        enable_bfs: Prioritize entry-point files first (default: True)
     
     Returns:
         List of COVFingerprints from all files
@@ -105,15 +110,25 @@ def scan_directory_parallel(
     if not source_files:
         return []
     
-    # Prepare worker arguments
+    # BFS prioritization: detect and prioritize entry-point files
+    if enable_bfs:
+        from bgi.gate1.entry_points import detect_entry_points
+        entry_points = detect_entry_points(root, language)
+        entry_set = set(entry_points)
+        
+        # Sort files: entry points first, then others
+        source_files = sorted(source_files, key=lambda f: (f not in entry_set, f))
+    
+    # Prepare worker arguments (in priority order)
     worker_args = [(f, root, language, "") for f in source_files]
     
-    # Run parallel scanning
+    # Run parallel scanning (imap preserves order, returns as ready)
     all_fingerprints: list[COVFingerprint] = []
     
     with Pool(processes=max_workers) as pool:
-        results = pool.imap_unordered(_worker_scan_file, worker_args)
-        for fps in results:
+        # Use imap (not imap_unordered) to preserve entry-point priority order
+        # Workers start on entry points first due to argument ordering
+        for fps in pool.imap(_worker_scan_file, worker_args):
             all_fingerprints.extend(fps)
     
     return all_fingerprints
