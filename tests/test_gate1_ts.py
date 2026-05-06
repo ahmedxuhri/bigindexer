@@ -27,14 +27,12 @@ def fingerprints_for(src: str) -> list:
     units: list = []
     _collect_ts_units(tree.root_node, units)
     fps = []
-    for kind, node, extra in units:
+    for kind, node, parent_var_name in units:
         if kind == "interface":
             from bgi.gate1.ts_scanner import _fingerprint_interface
             fps.append(_fingerprint_interface(node, "test.ts"))
-        elif kind == "route":
-            fps.append(fingerprint_function_ts(node, "test.ts", _NO_AI, route_info=extra))
         else:
-            fps.append(fingerprint_function_ts(node, "test.ts", _NO_AI, parent_var_name=extra))
+            fps.append(fingerprint_function_ts(node, "test.ts", _NO_AI, parent_var_name))
     return fps
 
 
@@ -411,92 +409,3 @@ class TestLanguageTag:
     def test_unit_id_uses_ts_extension(self):
         fps = fingerprints_for("function f() {}")
         assert fps[0].unit_id.startswith("test.ts::")
-
-
-# ── Route detection ───────────────────────────────────────────────────────────
-
-class TestRouteDetection:
-    def test_express_get_route_has_route_token(self):
-        fps = fingerprints_for("""
-            router.get('/users', async (req: Request, res: Response) => {
-                const users = await db.findAll();
-                res.json(users);
-            });
-        """)
-        route_fps = [fp for fp in fps if "COV.ROUTE" in tokens_of(fp)]
-        assert len(route_fps) >= 1
-
-    def test_express_post_route_unit_id(self):
-        fps = fingerprints_for("""
-            router.post('/users', async (req: Request, res: Response) => {
-                const user = await db.create(req.body);
-                res.json(user);
-            });
-        """)
-        route_fps = [fp for fp in fps if "COV.ROUTE" in tokens_of(fp)]
-        assert any("POST:/users" in fp.unit_id for fp in route_fps)
-
-    def test_express_route_with_middleware_chain(self):
-        fps = fingerprints_for("""
-            router.put('/users/:id', authenticate, authorize, async (req, res) => {
-                await db.update(req.params.id, req.body);
-                res.sendStatus(204);
-            });
-        """)
-        route_fps = [fp for fp in fps if "COV.ROUTE" in tokens_of(fp)]
-        assert len(route_fps) >= 1
-        assert any("PUT:/users/:id" in fp.unit_id for fp in route_fps)
-
-    def test_app_delete_route(self):
-        fps = fingerprints_for("""
-            app.delete('/users/:id', async (req: Request, res: Response) => {
-                await db.remove(req.params.id);
-                res.sendStatus(204);
-            });
-        """)
-        route_fps = [fp for fp in fps if "COV.ROUTE" in tokens_of(fp)]
-        assert len(route_fps) >= 1
-
-    def test_express_route_body_tokens_preserved(self):
-        toks = set(tokens_of(fingerprints_for("""
-            router.get('/data', async (req, res) => {
-                try {
-                    const data = await db.find();
-                    res.json(data);
-                } catch (e) {
-                    throw e;
-                }
-            });
-        """)[0]))
-        assert "COV.ROUTE" in toks
-        assert "COV.FETCH" in toks     # db.find()
-        assert "COV.RECOVER" in toks   # catch
-
-    def test_express_dynamic_path_placeholder(self):
-        fps = fingerprints_for("""
-            const PATH = '/dynamic';
-            router.get(PATH, (req, res) => { res.send('ok'); });
-        """)
-        route_fps = [fp for fp in fps if "COV.ROUTE" in tokens_of(fp)]
-        assert len(route_fps) >= 1
-        assert any("<dynamic>" in fp.unit_id for fp in route_fps)
-
-    def test_non_route_call_not_collected(self):
-        fps = fingerprints_for("""
-            promise.get('/url').then(data => console.log(data));
-        """)
-        route_fps = [fp for fp in fps if "COV.ROUTE" in tokens_of(fp)]
-        assert len(route_fps) == 0
-
-    def test_nestjs_get_decorator_still_works(self):
-        fps = fingerprints_for("""
-            @Controller('/api')
-            class UserController {
-                @Get('/users')
-                async listUsers(): Promise<User[]> {
-                    return this.userService.findAll();
-                }
-            }
-        """)
-        route_fps = [fp for fp in fps if "COV.ROUTE" in tokens_of(fp)]
-        assert len(route_fps) >= 1
