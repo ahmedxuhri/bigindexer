@@ -1,0 +1,2 @@
+[console_scripts]
+bgi = bgi.cli:main
