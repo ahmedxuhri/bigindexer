@@ -86,9 +86,15 @@ class TestFixtureClusters:
 # ── Namespace clustering (Pass 1.5) ──────────────────────────────────────────
 
 class TestNamespaceClustering:
-    """Files in the same subdirectory sharing high-prior tokens should merge."""
+    """
+    OLD: Files in the same subdirectory sharing high-prior tokens would merge (via _subdir).
+    NEW: Files are clustered based on import edges (MASK-4). Without import edges, they stay separate.
+    
+    These tests are kept for backward compatibility but now expect separate clusters.
+    """
 
-    def test_security_files_merge_into_one_cluster(self):
+    def test_security_files_without_imports_stay_separate(self):
+        """Without import edges, files don't namespace-merge (MASK-4 based on imports)."""
         fps = [
             make_fp("security/api_key.py::APIKeyAuth::authenticate",
                     [COV.AUTHENTICATE, COV.INTAKE, COV.OUTPUT]),
@@ -98,21 +104,20 @@ class TestNamespaceClustering:
                     [COV.AUTHENTICATE, COV.INTAKE, COV.OUTPUT]),
         ]
         result, _fuse = run_drs(fps, [])
+        # Without import edges, each file clusters separately
         security_clusters = [c for c in result.clusters
                              if any("security" in f for f in c.files)]
-        assert len(security_clusters) == 1, (
-            f"Expected 1 security cluster, got {len(security_clusters)}: "
-            f"{[c.files for c in security_clusters]}"
-        )
+        # Each file should be its own cluster (3 units, 3 clusters)
+        assert len(security_clusters) == 3
 
-    def test_namespace_cluster_is_cross_file(self):
+    def test_same_subdir_files_separate_without_edges(self):
         fps = [
             make_fp("security/api_key.py::f", [COV.AUTHENTICATE, COV.ROUTE]),
             make_fp("security/http.py::g", [COV.AUTHENTICATE, COV.ROUTE]),
         ]
         result, _fuse = run_drs(fps, [])
-        security_cluster = next(c for c in result.clusters if len(c.files) > 1)
-        assert security_cluster.is_cross_file
+        # Without import edges or Gate 2 edges, should be separate clusters
+        assert len(result.clusters) == 2
 
     def test_different_subdir_not_merged(self):
         fps = [
@@ -123,17 +128,15 @@ class TestNamespaceClustering:
         # Different subdirs, different tokens — should be separate
         assert len(result.clusters) == 2
 
-    def test_root_files_not_merged_by_namespace(self):
-        # Files in root (no subdir) should not namespace-merge with each other
+    def test_root_files_separate_without_imports(self):
+        # Files in root (no subdir, no imports) should not merge by MASK-4
         fps = [
             make_fp("a.py::f", [COV.AUTHENTICATE]),
             make_fp("b.py::g", [COV.AUTHENTICATE]),
         ]
         result, _fuse = run_drs(fps, [])
-        # They may or may not merge via cross-file edge logic, but namespace pass
-        # should not force them together (no shared subdir)
-        # Just verify the pipeline doesn't crash
-        assert len(result.clusters) >= 1
+        # Without import edges, they should be separate clusters
+        assert len(result.clusters) == 2
 
 
 # ── Cross-file merging via HARD edges (Pass 2) ────────────────────────────────

@@ -96,7 +96,7 @@ def run_scan(
     edges, suspended = match_fingerprints(fingerprints, census=census)
     print(f"[BGI] Gate 2 complete — {len(edges)} edges detected ({len(suspended)} suspended)")
 
-    drs, fuse_edges = run_drs(fingerprints, edges, max_cluster_pct=max_cluster_pct)
+    drs, fuse_edges = run_drs(fingerprints, edges, max_cluster_pct=max_cluster_pct, root_path=str(root_path))
     hard = sum(1 for c in drs.clusters if c.is_hard)
     print(f"[BGI] Gate 3 complete — {len(drs.clusters)} clusters ({hard} hard, {len(drs.seam_units)} seams, {len(fuse_edges)} fuse events)")
 

@@ -30,10 +30,12 @@ from __future__ import annotations
 import uuid
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from bgi.core.cov import COV
 from bgi.core.edges import BGIEdge
 from bgi.core.fingerprint import COVFingerprint
+from bgi.gate3.import_proximity import extract_import_edges, detect_cycles
 
 # ── FUSE-MAP: default cluster size cap ───────────────────────────────────────
 # Cap = max(50, total_units * MAX_CLUSTER_PCT).
@@ -239,11 +241,17 @@ def run_drs(
     fingerprints: list[COVFingerprint],
     edges: list[BGIEdge],
     max_cluster_pct: float = _DEFAULT_MAX_CLUSTER_PCT,
+    root_path: str | None = None,
 ) -> tuple[DRSResult, list[FuseEdge]]:
     """
     Run the Dynamic Radar Scope clustering algorithm.
     Returns (DRSResult, fuse_edges) where fuse_edges are refused merges.
-    max_cluster_pct: cluster size cap as fraction of total units (default 3%).
+    
+    Args:
+        fingerprints: Gate 1 output (COVFingerprints)
+        edges: Gate 2 output (BGIEdges)
+        max_cluster_pct: cluster size cap as fraction of total units (default 3%)
+        root_path: repo root (enables MASK-4: import-based proximity in Pass 1.5)
     """
     if not fingerprints:
         return DRSResult(clusters=[], unit_to_cluster={}, seam_units=set()), []
@@ -317,55 +325,43 @@ def run_drs(
             # Expire clusters whose radar no longer reaches (too far behind)
             open_clusters = [(end, uid) for end, uid in open_clusters if end >= start]
 
-    # ── Pass 1.5: Namespace clustering ───────────────────────────────────────
-    # Units in the same subdirectory that share a dominant high-prior token
-    # are likely part of the same component (e.g. security/, middleware/).
-    # Merge their clusters cross-file when they share a token with prior ≥ 0.7.
-
-    _NAMESPACE_THRESHOLD = 0.7   # minimum token prior to trigger namespace merge
-    _NAMESPACE_MIN_SHARED = 1    # minimum number of shared high-prior tokens
-
-    def _subdir(unit_id: str) -> str:
-        """Return up to 3 path segments from repo root — never just the leaf name."""
-        path = unit_id.split("::")[0]
-        parts = path.replace("\\", "/").split("/")
-        # Use up to 3 directory levels for stable namespace grouping
-        dir_parts = parts[:-1]  # strip filename
-        return "/".join(dir_parts[:3]) if dir_parts else ""
-
-    # Group units by subdir
-    by_subdir: dict[str, list[str]] = defaultdict(list)
-    for fp in fingerprints:
-        sd = _subdir(fp.unit_id)
-        if sd:  # only non-root subdirs
-            by_subdir[sd].append(fp.unit_id)
-
-    # For each subdir with multiple files, check token overlap
-    for subdir, unit_ids in by_subdir.items():
-        # Collect high-prior tokens per unit
-        unit_high_tokens: dict[str, set[COV]] = {}
-        for uid in unit_ids:
-            fp = fp_by_id.get(uid)
-            if fp:
-                high = {t for t in fp.all_tokens() if _COV_PRIOR.get(t, 0) >= _NAMESPACE_THRESHOLD}
-                if high:
-                    unit_high_tokens[uid] = high
-
-        # Find units in different files that share high-prior tokens
-        file_groups: dict[str, list[str]] = defaultdict(list)
-        for uid in unit_high_tokens:
-            file_groups[_file_of(uid)].append(uid)
-
-        if len(file_groups) < 2:
-            continue  # all in same file, already handled by Pass 1
-
-        # Pick a representative from each file and check token overlap
-        file_reps = [(f, uids[0]) for f, uids in file_groups.items()]
-        for i, (fi, ui) in enumerate(file_reps):
-            for fj, uj in file_reps[i + 1:]:
-                shared = unit_high_tokens.get(ui, set()) & unit_high_tokens.get(uj, set())
-                if len(shared) >= _NAMESPACE_MIN_SHARED:
-                    uf.union(ui, uj)  # namespace merges respect size cap too
+    # ── Pass 1.5: Import-based structural proximity (MASK-4) ────────────────────
+    # Files that import each other are architecturally proximate → clustering signal.
+    # If root_path provided: extract import edges, use for soft merging.
+    # If no root_path: skip (backward compatible).
+    
+    if root_path:
+        try:
+            import_edges = extract_import_edges(root_path, lang="python")
+            cycles = detect_cycles(import_edges)
+            
+            # Map unit_id to file
+            unit_to_file = {}
+            for fp in fingerprints:
+                unit_to_file[fp.unit_id] = fp.unit_id.split("::")[0]
+            
+            # For each import relationship, try to merge clusters
+            for file_a, imports_b in import_edges.items():
+                # Find units in file_a
+                units_a = [uid for uid, f in unit_to_file.items() if f == file_a]
+                
+                for file_b in imports_b:
+                    # Skip circular imports (both directions)
+                    pair = tuple(sorted([file_a, file_b]))
+                    if pair in cycles:
+                        continue
+                    
+                    # Find units in file_b
+                    units_b = [uid for uid, f in unit_to_file.items() if f == file_b]
+                    
+                    # Soft merge: pick one representative from each and merge clusters
+                    if units_a and units_b:
+                        rep_a = units_a[0]
+                        rep_b = units_b[0]
+                        # Try to merge (size cap is enforced by uf.union)
+                        uf.union(rep_a, rep_b)
+        except Exception:
+            pass  # If import extraction fails, continue without it
 
     # ── Pass 2: Cross-file merging via HARD edges (FUSE-MAP gated) ───────────
     # Only specific token pairs justify merging clusters across file boundaries.
