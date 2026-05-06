@@ -1,0 +1,86 @@
+# ── Python build / bytecode ──────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+.env
+
+# ── Test / coverage artifacts ─────────────────────────────────────────────────
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+
+# ── BGI runtime artifacts (not source code) ───────────────────────────────────
+# These files are PRODUCED by running BGI, not part of the project source.
+bgi-sep.db
+bgi-unresolved.jsonl
+*.bgi-cache.json
+agents.md
+bgi-graph.json
+graph.json
+graph.graphml
+routes.json
+
+# ── Session / workspace artifacts ─────────────────────────────────────────────
+# Copilot session logs and notes — belong in /root/mad/sessions/, NOT here.
+session.md
+sessions/
+shared.md
+sudolaps/
+
+# ── Rsync duplicates (dual-package structure artefact) ────────────────────────
+# The BGI Python package lives in bgi/bgi/ (the pip-installable package).
+# Running `rsync bgi/bgi/*.py bgi/` creates duplicates at bgi/ and repo root.
+# These duplicates are NEVER committed — they exist only to satisfy pytest imports.
+#
+# The following paths are rsync shadow copies — ignore them:
+/cli.py
+/pipeline.py
+/__init__.py
+/ai/
+/core/
+/delta/
+/gate1/
+/gate2/
+/gate3/
+/output/
+/sep/
+/bgi/cli.py
+/bgi/pipeline.py
+/bgi/__init__.py
+/bgi/ai/
+/bgi/core/
+/bgi/delta/
+/bgi/gate1/
+/bgi/gate2/
+/bgi/gate3/
+/bgi/output/
+/bgi/sep/
+/bgi/MEMORANDUM.md
+/bgi/README.md
+/bgi/TASKPLAN.md
+/bgi/pyproject.toml
+/bgi/brainstorming.md
+/bgi/agents/
+/bgi/tests/
+
+# ── Editor / OS ───────────────────────────────────────────────────────────────
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
