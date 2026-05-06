@@ -71,12 +71,12 @@ class TestFixtureClusters:
         fps = self._build_fps()
         edges = [make_edge("auth.py::AuthService::login", "auth.py::AuthService::logout",
                            key=COV.INIT, lock=COV.TEARDOWN)]
-        result = run_drs(fps, edges)
+        result, _fuse = run_drs(fps, edges)
         assert len(result.clusters) == 2
 
     def test_auth_and_payment_separate(self):
         fps = self._build_fps()
-        result = run_drs(fps, [])
+        result, _fuse = run_drs(fps, [])
         files_per_cluster = [frozenset(c.files) for c in result.clusters]
         auth_cluster = next(c for c in result.clusters if any("auth" in f for f in c.files))
         pay_cluster = next(c for c in result.clusters if any("payment" in f for f in c.files))
@@ -97,7 +97,7 @@ class TestNamespaceClustering:
             make_fp("security/oauth2.py::OAuth2::authenticate",
                     [COV.AUTHENTICATE, COV.INTAKE, COV.OUTPUT]),
         ]
-        result = run_drs(fps, [])
+        result, _fuse = run_drs(fps, [])
         security_clusters = [c for c in result.clusters
                              if any("security" in f for f in c.files)]
         assert len(security_clusters) == 1, (
@@ -110,7 +110,7 @@ class TestNamespaceClustering:
             make_fp("security/api_key.py::f", [COV.AUTHENTICATE, COV.ROUTE]),
             make_fp("security/http.py::g", [COV.AUTHENTICATE, COV.ROUTE]),
         ]
-        result = run_drs(fps, [])
+        result, _fuse = run_drs(fps, [])
         security_cluster = next(c for c in result.clusters if len(c.files) > 1)
         assert security_cluster.is_cross_file
 
@@ -119,7 +119,7 @@ class TestNamespaceClustering:
             make_fp("auth/login.py::f", [COV.AUTHENTICATE, COV.INTAKE]),
             make_fp("payment/charge.py::g", [COV.PERSIST, COV.FETCH]),
         ]
-        result = run_drs(fps, [])
+        result, _fuse = run_drs(fps, [])
         # Different subdirs, different tokens — should be separate
         assert len(result.clusters) == 2
 
@@ -129,7 +129,7 @@ class TestNamespaceClustering:
             make_fp("a.py::f", [COV.AUTHENTICATE]),
             make_fp("b.py::g", [COV.AUTHENTICATE]),
         ]
-        result = run_drs(fps, [])
+        result, _fuse = run_drs(fps, [])
         # They may or may not merge via cross-file edge logic, but namespace pass
         # should not force them together (no shared subdir)
         # Just verify the pipeline doesn't crash
@@ -155,7 +155,7 @@ class TestCrossFileMerging:
             confidence=0.95,
             edge_type="HARD",
         )
-        result = run_drs(fps, [edge])
+        result, _fuse = run_drs(fps, [edge])
         cross_file_clusters = [c for c in result.clusters if c.is_cross_file]
         assert len(cross_file_clusters) >= 1
 
@@ -165,7 +165,7 @@ class TestCrossFileMerging:
 class TestDRSSummary:
     def test_summary_has_expected_keys(self):
         fps = [make_fp("a.py::f", [COV.FETCH, COV.PERSIST])]
-        result = run_drs(fps, [])
+        result, _fuse = run_drs(fps, [])
         summary = drs_summary(result)
         assert "total_clusters" in summary
         assert "hard_clusters" in summary
@@ -175,7 +175,7 @@ class TestDRSSummary:
 
     def test_cluster_entry_has_expected_keys(self):
         fps = [make_fp("a.py::f", [COV.FETCH, COV.PERSIST])]
-        result = run_drs(fps, [])
+        result, _fuse = run_drs(fps, [])
         summary = drs_summary(result)
         for cluster in summary["clusters"]:
             assert "id" in cluster
@@ -187,7 +187,7 @@ class TestDRSSummary:
 
     def test_probability_in_range(self):
         fps = [make_fp("a.py::f", [COV.CONTRACT])]
-        result = run_drs(fps, [])
+        result, _fuse = run_drs(fps, [])
         for c in result.clusters:
             assert 0.0 <= c.probability <= 1.0
 
@@ -197,7 +197,7 @@ class TestDRSSummary:
             make_fp("a.py::A::define", [COV.CONTRACT, COV.INTAKE], line_range=(1, 20)),
             make_fp("a.py::A::validate", [COV.CONTRACT, COV.VALIDATE], line_range=(25, 40)),
         ]
-        result = run_drs(fps, [])
+        result, _fuse = run_drs(fps, [])
         assert any(c.is_hard for c in result.clusters)
 
 
@@ -210,7 +210,7 @@ class TestUnitToCluster:
             make_fp("b.py::g", [COV.PERSIST]),
             make_fp("c.py::h", [COV.EMIT]),
         ]
-        result = run_drs(fps, [])
+        result, _fuse = run_drs(fps, [])
         for fp in fps:
             assert fp.unit_id in result.unit_to_cluster, f"{fp.unit_id} has no cluster"
 
@@ -219,7 +219,7 @@ class TestUnitToCluster:
             make_fp("a.py::f", [COV.FETCH], line_range=(1, 20)),
             make_fp("a.py::g", [COV.PERSIST], line_range=(25, 40)),
         ]
-        result = run_drs(fps, [])
+        result, _fuse = run_drs(fps, [])
         cid_f = result.unit_to_cluster["a.py::f"]
         cid_g = result.unit_to_cluster["a.py::g"]
         assert cid_f == cid_g

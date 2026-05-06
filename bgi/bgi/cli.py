@@ -38,6 +38,10 @@ def main() -> None:
                       help="Also write a route manifest JSON (e.g. routes.json)")
     scan.add_argument("--graphml", default=None, metavar="FILE",
                       help="Also write a GraphML cluster graph (e.g. graph.graphml)")
+    scan.add_argument("--max-cluster-pct", type=float, default=0.03, metavar="FLOAT",
+                      help="FUSE-MAP max cluster size as fraction of total units (default: 0.03 = 3%%)")
+    scan.add_argument("--fuse-graph", default=None, metavar="FILE",
+                      help="Write fuse-graph JSON (architectural boundaries). Default: fuse-graph.json next to --out")
 
     curate = sub.add_parser("curate", help="Analyze unresolved patterns and propose COV extension tokens")
     curate.add_argument("--unresolved", default="bgi-unresolved.jsonl", help="AIFallback log path")
@@ -77,6 +81,8 @@ def main() -> None:
             cache_file=args.cache,
             routes_output=args.routes,
             graphml_output=args.graphml,
+            max_cluster_pct=args.max_cluster_pct,
+            fuse_graph_output=args.fuse_graph,
         )
 
     elif args.command == "curate":

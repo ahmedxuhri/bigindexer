@@ -12,6 +12,8 @@ Algorithm:
   Pass 2 — Cross-file merging via Gate 2 HARD/PREDICTED edges
       Units connected by edges are candidates for cluster merging.
       HARD edges merge clusters. PREDICTED edges create cross-cluster links.
+      Merges are gated by MAX_CLUSTER_SIZE (FUSE-MAP): refused merges become
+      FuseEdges — architectural boundary signals in fuse-graph.json.
 
   Pass 3 — Probability computation + cluster hardening
       Each cluster gets a probability score based on:
@@ -32,6 +34,11 @@ from dataclasses import dataclass, field
 from bgi.core.cov import COV
 from bgi.core.edges import BGIEdge
 from bgi.core.fingerprint import COVFingerprint
+
+# ── FUSE-MAP: default cluster size cap ───────────────────────────────────────
+# Cap = max(50, total_units * MAX_CLUSTER_PCT).
+# Refused merges become FuseEdges (see fuse_graph.py).
+_DEFAULT_MAX_CLUSTER_PCT = 0.03  # 3% of total units
 
 
 # ── COV token type priors ─────────────────────────────────────────────────────
@@ -173,18 +180,51 @@ def _radar_range(probability: float) -> int:
 
 # ── Union-Find for cluster merging ────────────────────────────────────────────
 
-class _UnionFind:
-    def __init__(self) -> None:
+@dataclass
+class FuseEdge:
+    """A refused cluster merge — emitted as an architectural boundary signal."""
+    from_cluster: str       # root representative of the larger/refusing cluster
+    to_cluster: str         # root representative of the other cluster
+    trigger_source: str     # edge.source_id that triggered the refused merge
+    trigger_target: str     # edge.target_id that triggered the refused merge
+    trigger_confidence: float  # edge confidence at time of refusal
+    refused_at_size: int    # combined size that exceeded the cap
+
+
+class _SizedUnionFind:
+    """Union-Find with per-root size tracking and a hard cluster size cap."""
+
+    def __init__(self, max_cluster_size: int) -> None:
         self._parent: dict[str, str] = {}
+        self._size: dict[str, int] = {}
+        self._max: int = max_cluster_size
 
     def find(self, x: str) -> str:
         self._parent.setdefault(x, x)
+        self._size.setdefault(x, 1)
         if self._parent[x] != x:
             self._parent[x] = self.find(self._parent[x])
         return self._parent[x]
 
-    def union(self, x: str, y: str) -> None:
-        self._parent[self.find(x)] = self.find(y)
+    def size(self, x: str) -> int:
+        return self._size.get(self.find(x), 1)
+
+    def union(self, x: str, y: str) -> bool:
+        """Merge x and y. Returns True if merged, False if refused (cap exceeded)."""
+        rx, ry = self.find(x), self.find(y)
+        if rx == ry:
+            return True
+        sx, sy = self._size.get(rx, 1), self._size.get(ry, 1)
+        if sx + sy > self._max:
+            return False  # FUSE: refused merge
+        # Union by size (attach smaller root to larger)
+        if sx >= sy:
+            self._parent[ry] = rx
+            self._size[rx] = sx + sy
+        else:
+            self._parent[rx] = ry
+            self._size[ry] = sx + sy
+        return True
 
     def groups(self) -> dict[str, list[str]]:
         result: dict[str, list[str]] = defaultdict(list)
@@ -198,13 +238,18 @@ class _UnionFind:
 def run_drs(
     fingerprints: list[COVFingerprint],
     edges: list[BGIEdge],
-) -> DRSResult:
+    max_cluster_pct: float = _DEFAULT_MAX_CLUSTER_PCT,
+) -> tuple[DRSResult, list[FuseEdge]]:
     """
     Run the Dynamic Radar Scope clustering algorithm.
-    Returns a DRSResult with clusters, unit→cluster mapping, and seam units.
+    Returns (DRSResult, fuse_edges) where fuse_edges are refused merges.
+    max_cluster_pct: cluster size cap as fraction of total units (default 3%).
     """
     if not fingerprints:
-        return DRSResult(clusters=[], unit_to_cluster={}, seam_units=set())
+        return DRSResult(clusters=[], unit_to_cluster={}, seam_units=set()), []
+
+    total_units = len(fingerprints)
+    max_cluster_size = max(50, int(total_units * max_cluster_pct))
 
     fp_by_id = {fp.unit_id: fp for fp in fingerprints}
 
@@ -217,7 +262,7 @@ def run_drs(
     for lst in by_file.values():
         lst.sort(key=lambda fp: fp.line_range[0])
 
-    uf = _UnionFind()
+    uf = _SizedUnionFind(max_cluster_size)
     # Initialize: each unit is its own group
     for fp in fingerprints:
         uf.find(fp.unit_id)
@@ -281,9 +326,12 @@ def run_drs(
     _NAMESPACE_MIN_SHARED = 1    # minimum number of shared high-prior tokens
 
     def _subdir(unit_id: str) -> str:
-        """Return the immediate parent directory of a unit, or '' for root."""
-        parts = unit_id.split("::")[0].split("/")
-        return parts[-2] if len(parts) >= 2 else ""
+        """Return up to 3 path segments from repo root — never just the leaf name."""
+        path = unit_id.split("::")[0]
+        parts = path.replace("\\", "/").split("/")
+        # Use up to 3 directory levels for stable namespace grouping
+        dir_parts = parts[:-1]  # strip filename
+        return "/".join(dir_parts[:3]) if dir_parts else ""
 
     # Group units by subdir
     by_subdir: dict[str, list[str]] = defaultdict(list)
@@ -317,9 +365,9 @@ def run_drs(
             for fj, uj in file_reps[i + 1:]:
                 shared = unit_high_tokens.get(ui, set()) & unit_high_tokens.get(uj, set())
                 if len(shared) >= _NAMESPACE_MIN_SHARED:
-                    uf.union(ui, uj)
+                    uf.union(ui, uj)  # namespace merges respect size cap too
 
-    # ── Pass 2: Cross-file merging via HARD edges ─────────────────────────────
+    # ── Pass 2: Cross-file merging via HARD edges (FUSE-MAP gated) ───────────
     # Only specific token pairs justify merging clusters across file boundaries.
     # INIT↔TEARDOWN, INTAKE↔OUTPUT are intra-component lifecycle/data flow —
     # they should NOT pull auth and payments into the same cluster.
@@ -347,6 +395,8 @@ def run_drs(
             or "/spec/" in path
         )
 
+    fuse_edges: list[FuseEdge] = []
+
     for edge in edges:
         if edge.edge_type != "HARD":
             continue
@@ -355,10 +405,18 @@ def run_drs(
         src_file = _file_of(edge.source_id)
         tgt_file = _file_of(edge.target_id)
         if src_file == tgt_file:
-            uf.union(edge.source_id, edge.target_id)
+            merged = uf.union(edge.source_id, edge.target_id)
+            if not merged:
+                ra = uf.find(edge.source_id)
+                rb = uf.find(edge.target_id)
+                fuse_edges.append(FuseEdge(
+                    from_cluster=ra, to_cluster=rb,
+                    trigger_source=edge.source_id, trigger_target=edge.target_id,
+                    trigger_confidence=getattr(edge, "confidence", 1.0),
+                    refused_at_size=uf.size(ra) + uf.size(rb),
+                ))
             continue
         # Cross-file: only merge if both units are in same domain
-        # (both test OR both production) AND pair is a merge-worthy pattern
         pair = (edge.key_token, edge.lock_token)
         pair_rev = (edge.lock_token, edge.key_token)
         src_is_test = _is_test_unit(edge.source_id)
@@ -366,7 +424,16 @@ def run_drs(
         if src_is_test != tgt_is_test:
             continue  # never merge test ↔ production across files
         if pair in _CROSS_FILE_MERGE_PAIRS or pair_rev in _CROSS_FILE_MERGE_PAIRS:
-            uf.union(edge.source_id, edge.target_id)
+            merged = uf.union(edge.source_id, edge.target_id)
+            if not merged:
+                ra = uf.find(edge.source_id)
+                rb = uf.find(edge.target_id)
+                fuse_edges.append(FuseEdge(
+                    from_cluster=ra, to_cluster=rb,
+                    trigger_source=edge.source_id, trigger_target=edge.target_id,
+                    trigger_confidence=getattr(edge, "confidence", 1.0),
+                    refused_at_size=uf.size(ra) + uf.size(rb),
+                ))
 
     # ── Pass 3: Build Cluster objects + compute probabilities ─────────────────
     edge_count_by_unit: dict[str, int] = defaultdict(int)
@@ -425,7 +492,7 @@ def run_drs(
         clusters=clusters,
         unit_to_cluster=unit_to_cluster,
         seam_units=confirmed_seams,
-    )
+    ), fuse_edges
 
 
 def drs_summary(result: DRSResult) -> dict:

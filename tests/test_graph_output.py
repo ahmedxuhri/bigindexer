@@ -54,7 +54,7 @@ def _build_small_graph():
         _fp("data.py::load",     [COV.FETCH],                   line_range=(20, 35)),
     ]
     edges, _ = match_fingerprints(fps)
-    drs = run_drs(fps, edges)
+    drs, _fuse = run_drs(fps, edges)
     return fps, edges, drs
 
 
@@ -115,14 +115,14 @@ class TestBuildClusterGraph:
             _fp("b.py::bar", [COV.PERSIST],  line_range=(1, 5)),
         ]
         cross_edge = _edge("a.py::foo", "b.py::bar", key=COV.ROUTE, lock=COV.PERSIST)
-        drs = run_drs(fps, [cross_edge])
+        drs, _fuse = run_drs(fps, [cross_edge])
         cg = build_cluster_graph([cross_edge], drs)
         # a and b are in different clusters; there must be at least one cluster edge
         assert cg["stats"]["cluster_edges"] >= 1
 
     def test_empty_edges_produces_no_cluster_edges(self):
         fps = [_fp("a.py::foo", [COV.FETCH])]
-        drs = run_drs(fps, [])
+        drs, _fuse = run_drs(fps, [])
         cg = build_cluster_graph([], drs)
         assert cg["edges"] == []
 

@@ -19,6 +19,9 @@ def run_scan(
     cache_file: str = ".bgi-cache.json",
     routes_output: str | None = None,
     graphml_output: str | None = None,
+    max_cluster_pct: float = 0.03,
+    fuse_graph_output: str | None = None,
+    exclude_dirs: set[str] | None = None,
 ) -> None:
     from bgi.gate1.scanner import scan_directory, scan_file, scan_repository, _scan_file_auto, _EXT_TO_LANG
     from bgi.gate2.keylock import match_fingerprints
@@ -84,9 +87,9 @@ def run_scan(
     edges, suspended = match_fingerprints(fingerprints)
     print(f"[BGI] Gate 2 complete — {len(edges)} edges detected ({len(suspended)} suspended)")
 
-    drs = run_drs(fingerprints, edges)
+    drs, fuse_edges = run_drs(fingerprints, edges, max_cluster_pct=max_cluster_pct)
     hard = sum(1 for c in drs.clusters if c.is_hard)
-    print(f"[BGI] Gate 3 complete — {len(drs.clusters)} clusters ({hard} hard, {len(drs.seam_units)} seams)")
+    print(f"[BGI] Gate 3 complete — {len(drs.clusters)} clusters ({hard} hard, {len(drs.seam_units)} seams, {len(fuse_edges)} fuse events)")
 
     # SEP — ingest suspended edges, attempt resurrection from current scan
     pool = SuspendedEdgePool(db)
@@ -113,6 +116,14 @@ def run_scan(
     print(f"[BGI] Graph written to {output}")
     if forecasts:
         print(f"[BGI] Resurrection forecasts: {len(forecasts)} odd group(s) analyzed")
+
+    # Fuse-graph output (architectural boundary map)
+    if fuse_edges:
+        fuse_path = fuse_graph_output or str(Path(output).parent / "fuse-graph.json")
+        from bgi.output.fuse_graph import write_fuse_graph
+        max_cap = max(50, int(len(fingerprints) * max_cluster_pct))
+        write_fuse_graph(fuse_edges, fuse_path, max_cluster_size=max_cap, total_units=len(fingerprints))
+        print(f"[BGI] Fuse-graph written to {fuse_path} ({len(fuse_edges)} boundary events)")
 
     # AI Position 3 — Architecture Narrator
     from bgi.ai.narrator import ArchitectureNarrator
