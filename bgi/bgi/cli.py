@@ -34,6 +34,10 @@ def main() -> None:
                       help="Only re-scan files changed since last run (uses .bgi-cache.json)")
     scan.add_argument("--cache", default=".bgi-cache.json",
                       help="Cache file for incremental mode (default: .bgi-cache.json)")
+    scan.add_argument("--parallel", action="store_true", default=False,
+                      help="Use multiprocessing for Gate 1 scanning (faster on large repos)")
+    scan.add_argument("--max-workers", type=int, default=None, metavar="N",
+                      help="Number of worker processes (default: CPU count)")
     scan.add_argument("--routes", default=None, metavar="FILE",
                       help="Also write a route manifest JSON (e.g. routes.json)")
     scan.add_argument("--graphml", default=None, metavar="FILE",
@@ -83,6 +87,8 @@ def main() -> None:
             graphml_output=args.graphml,
             max_cluster_pct=args.max_cluster_pct,
             fuse_graph_output=args.fuse_graph,
+            parallel=args.parallel,
+            max_workers=args.max_workers,
         )
 
     elif args.command == "curate":

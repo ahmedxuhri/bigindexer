@@ -22,6 +22,8 @@ def run_scan(
     max_cluster_pct: float = 0.03,
     fuse_graph_output: str | None = None,
     exclude_dirs: set[str] | None = None,
+    parallel: bool = False,
+    max_workers: int | None = None,
 ) -> None:
     from bgi.gate1.scanner import scan_directory, scan_file, scan_repository, _scan_file_auto, _EXT_TO_LANG
     from bgi.gate2.keylock import match_fingerprints
@@ -82,7 +84,11 @@ def run_scan(
 
     else:
         print(f"[BGI] Scanning {root_path} ...")
-        fingerprints = scan_directory(root_path, language=language, ai=ai, scan_run=scan_run)
+        if parallel and language.lower() != "auto":
+            from bgi.gate1.parallel_scanner import scan_directory_parallel
+            fingerprints = scan_directory_parallel(root_path, language=language, max_workers=max_workers)
+        else:
+            fingerprints = scan_directory(root_path, language=language, ai=ai, scan_run=scan_run)
         print(f"[BGI] Gate 1 complete — {len(fingerprints)} units fingerprinted")
 
     # TOKEN-CENSUS — classify COV tokens into frequency bands
