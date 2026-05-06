@@ -205,3 +205,51 @@ def apply_tier5(base_name: str) -> list[tuple[COV, float]]:
     if base_name in _BASE_ROUTE:
         results.append((COV.ROUTE, 0.9))
     return results
+
+
+# ── Decorator route path extraction ──────────────────────────────────────────
+# Parse the HTTP method and path from a route decorator string.
+# Handles: @app.get("/users"), @router.post('/items/{id}'), @api.route("/", methods=["GET"])
+
+_DECORATOR_ROUTE_RE = re.compile(
+    r"""
+    (?:app|router|blueprint|api|bp)             # object name
+    \.(?P<method>route|get|post|put|delete|patch|head|options)  # HTTP verb
+    \s*\(\s*                                    # opening paren
+    (?P<q>['"])(?P<path>[^'"]+)(?P=q)           # first string arg = path
+    """,
+    re.VERBOSE,
+)
+# For @router.route("/path", methods=["GET", "POST"]) — extract methods list
+_METHODS_ARG_RE = re.compile(r'methods\s*=\s*\[([^\]]+)\]')
+_HTTP_METHODS_PY = {"get", "post", "put", "delete", "patch", "head", "options"}
+
+
+def extract_python_route_info(decorator_text: str) -> tuple[str, str] | None:
+    """
+    Extract (METHOD, path) from a Python route decorator string.
+    Returns None if this is not a recognized route decorator.
+
+    Examples:
+      @app.get("/users")            → ("GET", "/users")
+      @router.post('/items/{id}')   → ("POST", "/items/{id}")
+      @api.route("/", methods=["GET", "POST"]) → ("GET", "/")  # first method
+    """
+    m = _DECORATOR_ROUTE_RE.search(decorator_text)
+    if not m:
+        return None
+    method_str = m.group("method").lower()
+    path = m.group("path")
+    if method_str == "route":
+        # Extract from methods=[...] arg, default to GET
+        mm = _METHODS_ARG_RE.search(decorator_text)
+        if mm:
+            raw = mm.group(1)
+            methods = [x.strip().strip("'\"") for x in raw.split(",")]
+            method_str = methods[0].lower() if methods else "get"
+        else:
+            method_str = "get"
+    if method_str not in _HTTP_METHODS_PY:
+        return None
+    return (method_str.upper(), path)
+

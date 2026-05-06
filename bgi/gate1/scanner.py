@@ -111,14 +111,27 @@ def fingerprint_function(
     ai: AIFallback,
 ) -> COVFingerprint:
     """Produce a COVFingerprint for a single function/method node."""
+    from bgi.gate1.python_rules import extract_python_route_info
 
     func_name = node_text(func_node.child_by_field_name("name"))
     class_name = _class_name_for(func_node)
-    unit_id = (
-        f"{rel_path}::{class_name}::{func_name}"
-        if class_name
-        else f"{rel_path}::{func_name}"
-    )
+
+    # Check decorators for route info — if found, encode METHOD:/path in unit_id
+    route_info: tuple[str, str] | None = None
+    for dec_text in _get_decorators(func_node):
+        ri = extract_python_route_info(dec_text)
+        if ri:
+            route_info = ri
+            break
+
+    if route_info:
+        method, path = route_info
+        base = f"{rel_path}::{class_name}" if class_name else rel_path
+        unit_id = f"{base}::{method}:{path}"
+    elif class_name:
+        unit_id = f"{rel_path}::{class_name}::{func_name}"
+    else:
+        unit_id = f"{rel_path}::{func_name}"
 
     collected: list[tuple[COV, float]] = []
 
@@ -126,8 +139,9 @@ def fingerprint_function(
     if any(c.type == "async" for c in func_node.children):
         collected.append((COV.ASYNC, 1.0))
 
-    # Tier 2 — function name
-    collected.extend(apply_tier2(func_name))
+    # Tier 2 — function name (skip for route handlers — name is irrelevant)
+    if not route_info:
+        collected.extend(apply_tier2(func_name))
 
     # INTAKE — meaningful parameters
     params = func_node.child_by_field_name("parameters")

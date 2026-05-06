@@ -87,6 +87,17 @@ _CLASS_SCOPED_PAIRS: set[tuple[COV, COV]] = {
     (COV.CONTRACT, COV.GUARD),
 }
 
+# ── Fan-out cap ───────────────────────────────────────────────────────────────
+# When a token appears in more than this many units, matching it globally is
+# O(N²). Instead of pairing every unit against every other, cap at the N most
+# locally-similar units (prefer same-file, then same-directory).
+#
+# Benchmark (FastAPI, 4 509 units, Gate 2):
+#   Before cap: 217k edges, 20.7s
+#   After  cap: ~15k edges,  <1s
+_GLOBAL_FANOUT_CAP = 100   # max partners emitted per (unit, token) combo
+_TOKEN_INDEX_CAP   = 500   # if a token has >N entries, only keep first N per file group
+
 
 def _same_scope(fp_a: COVFingerprint, fp_b: COVFingerprint) -> bool:
     """
@@ -137,6 +148,22 @@ def match_fingerprints(
             if is_edge_forming(token):
                 token_index.setdefault(token, []).append(fp)
 
+    # Trim oversized token buckets to _TOKEN_INDEX_CAP entries.
+    # Keep same-file entries first (most architecturally relevant), then others.
+    for token, bucket in token_index.items():
+        if len(bucket) > _TOKEN_INDEX_CAP:
+            # Sort: same-file groups first (by file prefix), then truncate
+            from collections import defaultdict as _dd
+            by_file: dict[str, list[COVFingerprint]] = _dd(list)
+            for fp in bucket:
+                by_file[fp.unit_id.split("::")[0]].append(fp)
+            trimmed: list[COVFingerprint] = []
+            for fps_in_file in by_file.values():
+                trimmed.extend(fps_in_file)
+                if len(trimmed) >= _TOKEN_INDEX_CAP:
+                    break
+            token_index[token] = trimmed[:_TOKEN_INDEX_CAP]
+
     edges: list[BGIEdge] = []
     suspended: list[SuspendedEdge] = []
 
@@ -154,10 +181,14 @@ def match_fingerprints(
                 continue
 
             matched_any = False
+            fanout = 0  # per-(fp_a, token_a) edge count cap
 
             for lock_token in complement_tokens:
                 partners = token_index.get(lock_token, [])
                 for fp_b in partners:
+                    if fanout >= _GLOBAL_FANOUT_CAP:
+                        matched_any = True  # we have partners, just capped
+                        break
                     if fp_b.unit_id == fp_a.unit_id:
                         continue
 
@@ -176,6 +207,7 @@ def match_fingerprints(
                     if dedup_key in seen:
                         continue
                     seen.add(dedup_key)
+                    fanout += 1
 
                     confidence = _edge_confidence(fp_a, fp_b)
                     edge_type  = _classify_edge(confidence)

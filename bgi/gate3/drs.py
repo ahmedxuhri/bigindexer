@@ -323,13 +323,29 @@ def run_drs(
     # Only specific token pairs justify merging clusters across file boundaries.
     # INIT↔TEARDOWN, INTAKE↔OUTPUT are intra-component lifecycle/data flow —
     # they should NOT pull auth and payments into the same cluster.
+    #
+    # TEST↔CONTRACT is intentionally excluded: test files should cluster
+    # among themselves, not merge with the production code they test.
+    # This prevents a single mega-cluster absorbing all test + production units.
     _CROSS_FILE_MERGE_PAIRS: set[tuple[COV, COV]] = {
         (COV.DELEGATE,     COV.CONTRACT),   # explicit cross-component delegation
-        (COV.TEST,         COV.CONTRACT),   # test file tests a contract
         (COV.EMIT,         COV.SUBSCRIBE),  # event producer → consumer (cross-service)
         (COV.AUTHENTICATE, COV.ROUTE),      # auth gate on a route (cross-module)
         (COV.AUTHORIZE,    COV.ROUTE),      # authz gate on a route (cross-module)
     }
+
+    def _is_test_unit(uid: str) -> bool:
+        """True if the unit lives in a test file or test directory."""
+        parts = uid.split("::")
+        path = parts[0].replace("\\", "/").lower()
+        return (
+            "/test" in path
+            or path.startswith("test")
+            or path.endswith("_test.py")
+            or path.endswith("test_.py")
+            or "/tests/" in path
+            or "/spec/" in path
+        )
 
     for edge in edges:
         if edge.edge_type != "HARD":
@@ -338,9 +354,18 @@ def run_drs(
             continue
         src_file = _file_of(edge.source_id)
         tgt_file = _file_of(edge.target_id)
+        if src_file == tgt_file:
+            uf.union(edge.source_id, edge.target_id)
+            continue
+        # Cross-file: only merge if both units are in same domain
+        # (both test OR both production) AND pair is a merge-worthy pattern
         pair = (edge.key_token, edge.lock_token)
         pair_rev = (edge.lock_token, edge.key_token)
-        if src_file == tgt_file or pair in _CROSS_FILE_MERGE_PAIRS or pair_rev in _CROSS_FILE_MERGE_PAIRS:
+        src_is_test = _is_test_unit(edge.source_id)
+        tgt_is_test = _is_test_unit(edge.target_id)
+        if src_is_test != tgt_is_test:
+            continue  # never merge test ↔ production across files
+        if pair in _CROSS_FILE_MERGE_PAIRS or pair_rev in _CROSS_FILE_MERGE_PAIRS:
             uf.union(edge.source_id, edge.target_id)
 
     # ── Pass 3: Build Cluster objects + compute probabilities ─────────────────
