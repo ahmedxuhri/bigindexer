@@ -1,81 +1,88 @@
-# 🧠 Innovation Engine
+# BGI — Bio-Gate Indexing
 
-> A multi-role AI innovation system where one AI plays all agent roles sequentially,
-> with structured human intervention at each step — producing genuinely novel solutions
-> through debate, critique, measurement, and evolution.
+**Language-agnostic hierarchical code intelligence pipeline.**
 
----
-
-## What This Is
-
-This is the **seed project** for building a Sourcegraph competitor with a unique angle:
-an **AI-Native Living Architecture Platform** — a system that automatically builds and
-continuously maintains a rich, structured, agent-optimized understanding layer on top of any codebase.
-
-Before building that platform, we use this Innovation Engine to **solve hard design challenges**
-through a structured multi-role thinking process.
+BGI fingerprints every function and method in a codebase with COV (Canonical Operation Vocabulary) semantic tokens, then groups units into architectural clusters via confidence-scored edges — producing a living architecture graph optimized for AI agent consumption.
 
 ---
 
-## How It Works
-
-One AI (you, Copilot) plays **6 distinct roles**, one at a time, each with a different
-personality, focus, and output. Between each role, the human (you) is consulted.
-All thinking happens transparently in `shared.md` — a living chat room.
-
-### The 6 Roles
-
-| Role | Symbol | Personality |
-|------|--------|-------------|
-| Archivist | 📚 | Researcher — what's already been tried |
-| Visionary | 🌌 | Explorer — wild, cross-domain ideas |
-| Pragmatist | ⚙️ | Engineer — concrete specs and trade-offs |
-| Skeptic | 🔴 | Red Team — attacks every assumption |
-| Measurer | 📊 | Evaluator — benchmarks, metrics, evidence |
-| Judge | ⚖️ | Synthesizer — scores, selects, synthesizes |
-
----
-
-## How to Start a New Innovation Cycle
-
-1. **Define the challenge** — write it at the top of `shared.md`
-2. **Tell me to begin** — say "start cycle: [your challenge]"
-3. I will play each role in order, posting to `shared.md`
-4. **At the end of each role's step**, open `brainstorming.md` — we'll chat freely there
-5. When your idea is fully formed, say **"submit"** — I'll distill it and post to `shared.md`
-6. All agents react to your insight, then the next role begins
-7. Repeat until the Judge produces a final synthesis
-
----
-
-## File Structure
+## What It Does
 
 ```
-mad/
-├── README.md          ← you are here
-├── WORKFLOW.md        ← detailed process rules
-├── shared.md          ← permanent agent chat room (all roles post here)
-├── brainstorming.md   ← recyclable human ↔ Copilot scratchpad at each gate
-├── agents/
-│   ├── ARCHIVIST.md   ← role instructions
-│   ├── VISIONARY.md
-│   ├── PRAGMATIST.md
-│   ├── SKEPTIC.md
-│   ├── MEASURER.md
-│   └── JUDGE.md
-└── sessions/          ← archived completed cycles
+Source files  (any language)
+      │
+      ▼
+[Gate 1]  COV Fingerprinting     — What does each unit DO?
+      ▼
+[Gate 2]  Key-Lock Matching      — What connects to what?
+      ▼
+[Gate 3]  DRS Clustering         — What are the architectural components?
+      ▼
+[Output]  Graph JSON + Route Manifest + GraphML + agents.md
+```
+
+28 semantic tokens. 14 key-lock relationships. Language-agnostic.
+
+---
+
+## Quickstart
+
+```bash
+pip install -e .
+
+# Scan a Python project
+bgi scan /path/to/project --out graph.json
+
+# Scan a multi-language repo
+bgi scan /path/to/repo --lang auto --routes routes.json --graphml graph.graphml
+
+# Diff two commits
+bgi diff /path/before /path/after --lang auto
+
+# Exclude noisy directories
+bgi scan /path/to/repo --lang auto --exclude-dirs docs_src examples benchmarks
 ```
 
 ---
 
-## The Product Vision
+## Benchmark Results
 
-> "While others help you **search** code, we help AI agents (and humans) truly
-> **understand** complex projects in minutes instead of days — by building and
-> maintaining a living, AI-native architecture intelligence layer."
+| Repo | Units | Total time | Clusters |
+|------|-------|-----------|----------|
+| FastAPI | 4,509 | 7.3s | 243 |
+| VS Code | 75,131 | 144s | 1,156 |
 
-**Primary outputs of the platform we're building:**
-- `ARCHITECTURE.md` — rich, human-readable
-- `context.json`, `containers.json`, `components.json`, `code-map.json`
-- `knowledge-graph.jsonl` — for GraphRAG
-- `AGENTS.md` — agent-specific consumption instructions
+---
+
+## Architecture
+
+See `MEMORANDUM.md` for full design contracts, gate contracts, COV vocabulary, and invariants.
+
+See `TASKPLAN.md` for implementation history and future roadmap.
+
+---
+
+## Supported Languages
+
+Python · TypeScript · JavaScript · Java · Go · Rust · Ruby · C# · PHP · Kotlin · C · Scala · Lua · Elixir · Swift · R · Dart · Bash · Nim · Zig · Haskell · OCaml · F# · Clojure · Erlang · MATLAB · VB · Crystal · COBOL · Groovy
+
+---
+
+## Project Layout
+
+```
+bgi/bgi/          Python package (pip-installable)
+  core/           COV vocabulary, fingerprint, edge types
+  gate1/          Language scanners (tree-sitter + generic regex)
+  gate2/          Key-Lock matching engine
+  gate3/          DRS clustering algorithm
+  ai/             AI positions (fallback, narrator, curator, forecaster)
+  delta/          Incremental scan cache + diff engine
+  output/         Graph serialization, GraphML, route manifest, HTML viz
+  sep/            Suspended Edge Pool (SQLite)
+tests/            600+ tests
+pyproject.toml    Package config
+MEMORANDUM.md     Full design spec and invariants
+TASKPLAN.md       Implementation roadmap
+problem.md        VS Code scale benchmark report
+```
