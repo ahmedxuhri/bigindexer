@@ -15,10 +15,14 @@ At scale, T and M are small constants — effectively linear in N.
 """
 from __future__ import annotations
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from bgi.core.cov import COV, LOCK_MAP, is_edge_forming, KEY_LOCK_PAIRS
 from bgi.core.edges import BGIEdge, EdgeType
 from bgi.core.fingerprint import COVFingerprint
+
+if TYPE_CHECKING:
+    from bgi.gate2.census import CensusResult
 
 
 # ── Edge confidence thresholds ────────────────────────────────────────────────
@@ -131,9 +135,14 @@ class SuspendedEdge:
 
 def match_fingerprints(
     fingerprints: list[COVFingerprint],
+    census: 'CensusResult | None' = None,
 ) -> tuple[list[BGIEdge], list[SuspendedEdge]]:
     """
     Match all fingerprints against each other using the LOCK_MAP.
+    
+    Args:
+        fingerprints: Gate 1 output (COVFingerprints)
+        census: Optional CensusResult from TOKEN-CENSUS (used by Step 3: SPECTRAL-MASKS)
 
     Returns:
         edges     — resolved BGIEdge list (GHOST / PREDICTED / HARD)

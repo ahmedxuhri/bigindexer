@@ -25,6 +25,7 @@ def run_scan(
 ) -> None:
     from bgi.gate1.scanner import scan_directory, scan_file, scan_repository, _scan_file_auto, _EXT_TO_LANG
     from bgi.gate2.keylock import match_fingerprints
+    from bgi.gate2.census import compute_census
     from bgi.gate3.drs import run_drs
     from bgi.sep.pool import SuspendedEdgePool
     from bgi.output.graph import serialize_graph
@@ -84,7 +85,15 @@ def run_scan(
         fingerprints = scan_directory(root_path, language=language, ai=ai, scan_run=scan_run)
         print(f"[BGI] Gate 1 complete — {len(fingerprints)} units fingerprinted")
 
-    edges, suspended = match_fingerprints(fingerprints)
+    # TOKEN-CENSUS — classify COV tokens into frequency bands
+    total_files = len({fp.unit_id.split("::")[0] for fp in fingerprints})
+    census = compute_census(fingerprints, total_files)
+    print(f"[BGI] TOKEN-CENSUS — {total_files} files, bands: "
+          f"Mask 1={sum(1 for b in census.token_bands.values() if b == 'Mask 1')}, "
+          f"Mask 2={sum(1 for b in census.token_bands.values() if b == 'Mask 2')}, "
+          f"Mask 3={sum(1 for b in census.token_bands.values() if b == 'Mask 3')}")
+
+    edges, suspended = match_fingerprints(fingerprints, census=census)
     print(f"[BGI] Gate 2 complete — {len(edges)} edges detected ({len(suspended)} suspended)")
 
     drs, fuse_edges = run_drs(fingerprints, edges, max_cluster_pct=max_cluster_pct)
