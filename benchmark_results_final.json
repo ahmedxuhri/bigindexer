@@ -1,0 +1,24 @@
+{
+  "fastapi_seq": {
+    "repo": "FastAPI",
+    "files": 67,
+    "time": 0.36186766624450684,
+    "units": 1429,
+    "parallel": false
+  },
+  "fastapi_par": {
+    "repo": "FastAPI",
+    "files": 67,
+    "time": 0.2656514644622803,
+    "units": 1429,
+    "parallel": true,
+    "workers": 4
+  },
+  "vscode_seq": {
+    "repo": "VS Code",
+    "files": 9813,
+    "time": 198.948970079422,
+    "units": 0,
+    "parallel": false
+  }
+}

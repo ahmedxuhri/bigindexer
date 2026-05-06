@@ -1,0 +1,18 @@
+{
+  "fastapi_sequential": {
+    "repo": "FastAPI",
+    "files": 67,
+    "gate1_time": 0.51,
+    "units": 1429,
+    "parallel": false,
+    "workers": null
+  },
+  "fastapi_parallel": {
+    "repo": "FastAPI",
+    "files": 67,
+    "gate1_time": 0.31,
+    "units": 1429,
+    "parallel": true,
+    "workers": 4
+  }
+}
