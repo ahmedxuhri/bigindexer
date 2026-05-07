@@ -84,3 +84,7 @@ sudolaps/
 .vscode/
 *.swp
 *.swo
+
+# ── JavaScript tooling ─────────────────────────────────────────────────────────
+node_modules/
+*.vsix

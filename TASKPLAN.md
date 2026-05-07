@@ -165,11 +165,11 @@ VS Code benchmark (75,131 units) exposed 3 structural problems:
 **Why:** BGI is strong on deep analysis but weak on interactive speed. Pre-indexed query layer enables real-time search for development workflows.
 
 **Tasks:**
-- **Task 1:** Index schema & design — what to index, query structures
-- **Task 2:** Pre-indexing engine — build indexes from Gate 1-3 output
-- **Task 3:** Query planner — scope narrowing strategies for fast lookups
-- **Task 4:** Query API — REST endpoints for search
-- **Task 5:** IDE plugin prototype — VS Code extension
+- **Task 1:** Index schema & design — ✅ complete
+- **Task 2:** Pre-indexing engine — ✅ complete
+- **Task 3:** Query planner — ✅ complete
+- **Task 4:** Query API — ✅ complete (FastAPI endpoints + tests)
+- **Task 5:** IDE plugin prototype — ✅ complete (`ide/vscode` prototype commands wired to Query API)
 
 **Success Metric:** Sub-second search on 3.6M LOC (kubernetes)
 

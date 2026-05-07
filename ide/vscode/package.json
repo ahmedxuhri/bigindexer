@@ -1,0 +1,60 @@
+{
+  "name": "bgi-search",
+  "displayName": "BGI Search",
+  "description": "Prototype VS Code integration for BGI interactive search index.",
+  "version": "0.0.1",
+  "publisher": "bgi",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:bgi.lookupSymbol",
+    "onCommand:bgi.searchPrefix",
+    "onCommand:bgi.findCallers"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "bgi.lookupSymbol",
+        "title": "BGI: Lookup Symbol"
+      },
+      {
+        "command": "bgi.searchPrefix",
+        "title": "BGI: Search Prefix"
+      },
+      {
+        "command": "bgi.findCallers",
+        "title": "BGI: Find Callers"
+      }
+    ],
+    "configuration": {
+      "title": "BGI Search",
+      "properties": {
+        "bgiSearch.apiBaseUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8000",
+          "description": "Base URL for the running BGI Query API server."
+        },
+        "bgiSearch.maxResults": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Maximum number of results returned per request."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc -p ."
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.5.2"
+  }
+}

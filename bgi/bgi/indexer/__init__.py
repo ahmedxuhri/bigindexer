@@ -11,9 +11,16 @@ Public API:
     - SearchAPI: REST endpoints (Phase 6 Task 4)
 """
 
-from bgi.indexer.schema import IndexSchema, init_index, SCHEMA_VERSION
+from bgi.indexer.api import SearchAPI, create_search_app
+from bgi.indexer.builder import IndexBuilder
+from bgi.indexer.planner import QueryPlanner
+from bgi.indexer.schema import IndexSchema, SCHEMA_VERSION, init_index
 
 __all__ = [
+    "SearchAPI",
+    "create_search_app",
+    "IndexBuilder",
+    "QueryPlanner",
     "IndexSchema",
     "init_index",
     "SCHEMA_VERSION",
