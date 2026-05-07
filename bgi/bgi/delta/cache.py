@@ -30,9 +30,7 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
-from dataclasses import asdict
 from pathlib import Path
-from typing import Iterator
 
 from bgi.core.cov import COV
 from bgi.core.fingerprint import COVFingerprint
@@ -226,7 +224,13 @@ class ScanCache:
 
         return dirty, cached_fps
 
-    def update(self, file_path: Path, root: Path, fingerprints: list[COVFingerprint]) -> None:
+    def update(
+        self,
+        file_path: Path,
+        root: Path,
+        fingerprints: list[COVFingerprint],
+        file_language: str | None = None,
+    ) -> None:
         """Store scan result for *file_path*."""
         rel = str(file_path.relative_to(root))
         try:
@@ -235,9 +239,13 @@ class ScanCache:
         except OSError:
             mtime = 0.0
             content_hash = ""
+        language = file_language
+        if not language and fingerprints:
+            language = fingerprints[0].language
         self._entries[rel] = {
             "mtime": mtime,
             "hash":  content_hash,
+            "language": language or "unknown",
             "units": [_fp_to_dict(fp) for fp in fingerprints],
         }
 
@@ -246,11 +254,17 @@ class ScanCache:
         file_paths: list[Path],
         root: Path,
         fps_by_rel: dict[str, list[COVFingerprint]],
+        file_languages: dict[str, str] | None = None,
     ) -> None:
         """Batch version of update(); keyed by rel_path strings."""
         for f in file_paths:
             rel = str(f.relative_to(root))
-            self.update(f, root, fps_by_rel.get(rel, []))
+            self.update(
+                f,
+                root,
+                fps_by_rel.get(rel, []),
+                file_language=(file_languages or {}).get(rel),
+            )
 
     def purge_deleted(self, source_files: list[Path], root: Path) -> list[str]:
         """Remove entries for files that no longer exist. Returns purged rel paths."""

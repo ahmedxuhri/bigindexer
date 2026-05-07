@@ -25,7 +25,14 @@ def run_scan(
     parallel: bool = False,
     max_workers: int | None = None,
 ) -> None:
-    from bgi.gate1.scanner import scan_directory, scan_file, scan_repository, _scan_file_auto, _EXT_TO_LANG
+    from bgi.gate1.scanner import (
+        scan_directory,
+        scan_file,
+        scan_repository,
+        _scan_file_auto,
+        _EXT_TO_LANG,
+        _SKIP_DIRS,
+    )
     from bgi.gate2.keylock import match_fingerprints
     from bgi.gate2.census import compute_census
     from bgi.gate3.drs import run_drs
@@ -39,43 +46,80 @@ def run_scan(
     ai = AIFallback(enabled=False)
     auto_mode = language.lower() == "auto"
 
-    if incremental and not auto_mode:
+    if incremental:
         from bgi.delta.cache import ScanCache
-
-        # Resolve per-language scanner function
-        lang = language.lower()
-        _scan_fn = _get_scanner_fn(lang)
-        exts = _get_lang_exts(lang, _EXT_TO_LANG)
-        source_files = _collect_source_files(root_path, exts, lang)
 
         cache_path = Path(output).parent / cache_file
         cache = ScanCache.load(cache_path)
-        dirty, cached_fps = cache.partition(source_files, root_path, use_git=True)
-        deleted = cache.purge_deleted(source_files, root_path)
+        if auto_mode:
+            source_files = _collect_auto_source_files(
+                root_path,
+                _EXT_TO_LANG,
+                _SKIP_DIRS,
+                exclude_dirs=exclude_dirs,
+            )
+            dirty, cached_fps = cache.partition(source_files, root_path, use_git=True)
+            deleted = cache.purge_deleted(source_files, root_path)
 
-        print(
-            f"[BGI] Incremental scan — "
-            f"{len(dirty)} dirty / {len(source_files) - len(dirty)} cached"
-            + (f" / {len(deleted)} deleted" if deleted else "")
-        )
+            print(
+                f"[BGI] Incremental auto scan — "
+                f"{len(dirty)} dirty / {len(source_files) - len(dirty)} cached"
+                + (f" / {len(deleted)} deleted" if deleted else "")
+            )
 
-        new_fps: list = []
-        fps_by_rel: dict = {}
-        for f in dirty:
-            try:
-                fps = _scan_fn(f, root_path, ai)
-            except Exception as exc:
-                print(f"[BGI] Warning: skipped {f}: {exc}")
-                fps = []
-            new_fps.extend(fps)
-            fps_by_rel[str(f.relative_to(root_path))] = fps
+            new_fps: list = []
+            fps_by_rel: dict[str, list] = {}
+            file_lang_by_rel: dict[str, str] = {}
+            for f in dirty:
+                try:
+                    fps = _scan_file_auto(f, root_path, ai)
+                except Exception as exc:
+                    print(f"[BGI] Warning: skipped {f}: {exc}")
+                    fps = []
+                rel = str(f.relative_to(root_path))
+                new_fps.extend(fps)
+                fps_by_rel[rel] = fps
+                file_lang_by_rel[rel] = _detect_file_language(f, _EXT_TO_LANG)
 
-        cache.update_many(dirty, root_path, fps_by_rel)
-        cache.save(cache_path)
-        ai.flush(scan_run=scan_run)
+            cache.update_many(dirty, root_path, fps_by_rel, file_languages=file_lang_by_rel)
+            cache.save(cache_path)
+            ai.flush(scan_run=scan_run)
 
-        fingerprints = cached_fps + new_fps
-        print(f"[BGI] Gate 1 complete — {len(fingerprints)} units ({len(new_fps)} re-scanned)")
+            fingerprints = cached_fps + new_fps
+            print(f"[BGI] Gate 1 complete — {len(fingerprints)} units ({len(new_fps)} re-scanned)")
+        else:
+            # Resolve per-language scanner function
+            lang = language.lower()
+            _scan_fn = _get_scanner_fn(lang)
+            exts = _get_lang_exts(lang, _EXT_TO_LANG)
+            source_files = _collect_source_files(root_path, exts, lang)
+
+            dirty, cached_fps = cache.partition(source_files, root_path, use_git=True)
+            deleted = cache.purge_deleted(source_files, root_path)
+
+            print(
+                f"[BGI] Incremental scan — "
+                f"{len(dirty)} dirty / {len(source_files) - len(dirty)} cached"
+                + (f" / {len(deleted)} deleted" if deleted else "")
+            )
+
+            new_fps: list = []
+            fps_by_rel: dict = {}
+            for f in dirty:
+                try:
+                    fps = _scan_fn(f, root_path, ai)
+                except Exception as exc:
+                    print(f"[BGI] Warning: skipped {f}: {exc}")
+                    fps = []
+                new_fps.extend(fps)
+                fps_by_rel[str(f.relative_to(root_path))] = fps
+
+            cache.update_many(dirty, root_path, fps_by_rel)
+            cache.save(cache_path)
+            ai.flush(scan_run=scan_run)
+
+            fingerprints = cached_fps + new_fps
+            print(f"[BGI] Gate 1 complete — {len(fingerprints)} units ({len(new_fps)} re-scanned)")
 
     elif auto_mode:
         print(f"[BGI] Auto-scan {root_path} (multi-language) ...")
@@ -248,3 +292,41 @@ def _collect_source_files(root: Path, exts: list[str], lang: str) -> list[Path]:
                 continue
             files.append(f)
     return sorted(set(files))
+
+
+def _detect_file_language(file_path: Path, ext_map: dict[str, str]) -> str:
+    """Resolve BGI language key for a source file path."""
+    ext = file_path.suffix.lower()
+    return ext_map.get(ext) or ext_map.get(file_path.suffix) or "unknown"
+
+
+def _collect_auto_source_files(
+    root: Path,
+    ext_map: dict[str, str],
+    default_skip_dirs: set[str] | frozenset[str],
+    exclude_dirs: set[str] | None = None,
+) -> list[Path]:
+    """Collect all supported source files for --lang auto incremental scans."""
+    skip = set(default_skip_dirs) | (exclude_dirs or set())
+    files: list[Path] = []
+
+    for dirpath, dirnames, filenames in _walk_paths(root):
+        dirnames[:] = sorted(d for d in dirnames if d not in skip)
+        dir_path = Path(dirpath)
+        for fname in sorted(filenames):
+            f = dir_path / fname
+            if f.name.endswith(".d.ts"):
+                continue
+            if _detect_file_language(f, ext_map) != "unknown":
+                files.append(f)
+
+    return files
+
+
+def _walk_paths(root: Path):
+    """Compatibility shim: use os.walk when Path.walk() is unavailable."""
+    if hasattr(root, "walk"):
+        yield from root.walk()
+        return
+    import os
+    yield from os.walk(root)

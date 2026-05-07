@@ -256,6 +256,12 @@ class TestUpdate:
         cache.update(f, tmp_path, [])
         assert cache._entries["mod.py"]["hash"] == _file_hash(f)
 
+    def test_update_stores_language_from_fingerprint(self, tmp_path):
+        f = _write(tmp_path / "mod.py")
+        cache = ScanCache()
+        cache.update(f, tmp_path, [_fp("mod.foo")])
+        assert cache._entries["mod.py"]["language"] == "python"
+
     def test_update_many(self, tmp_path):
         root = tmp_path
         f1 = _write(root / "a.py")
@@ -263,6 +269,20 @@ class TestUpdate:
         cache = ScanCache()
         cache.update_many([f1, f2], root, {"a.py": [_fp("a.x")], "b.py": [_fp("b.y")]})
         assert len(cache) == 2
+
+    def test_update_many_uses_file_languages(self, tmp_path):
+        root = tmp_path
+        f1 = _write(root / "a.py")
+        f2 = _write(root / "b.ts", "export function b() {}")
+        cache = ScanCache()
+        cache.update_many(
+            [f1, f2],
+            root,
+            {"a.py": [_fp("a.x")], "b.ts": []},
+            file_languages={"a.py": "python", "b.ts": "typescript"},
+        )
+        assert cache._entries["a.py"]["language"] == "python"
+        assert cache._entries["b.ts"]["language"] == "typescript"
 
     def test_update_overwrites_existing(self, tmp_path):
         f = _write(tmp_path / "mod.py")
