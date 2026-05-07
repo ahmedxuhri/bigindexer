@@ -102,6 +102,7 @@ _CLASS_SCOPED_PAIRS: set[tuple[COV, COV]] = {
 #   After  cap: ~15k edges,  <1s
 _GLOBAL_FANOUT_CAP = 100   # max partners emitted per (unit, token) combo
 _TOKEN_INDEX_CAP   = 500   # if a token has >N entries, only keep first N per file group
+_MASK3_TOKEN_INDEX_CAP = 300
 _PROCESS_POOL_MIN_FINGERPRINTS = 20000
 _OUTWARD_TOKENS = {COV.DELEGATE, COV.FETCH, COV.EMIT, COV.PERSIST, COV.ROUTE}
 _LAST_MATCH_PROFILE: dict[str, Any] = {}
@@ -143,6 +144,7 @@ class MaskIndex:
     band: str  # "Mask 1", "Mask 2", or "Mask 3"
     region: str | None  # None = global, "file" or "directory" for scoped
     token_index: dict[tuple[COV, str], list[COVFingerprint]]
+    class_token_index: dict[tuple[COV, str, str | None], list[COVFingerprint]]
 
 
 @dataclass
@@ -186,6 +188,11 @@ def _get_directory_path(unit_id: str) -> str:
 def _get_file_path(unit_id: str) -> str:
     """Extract file path from unit_id."""
     return unit_id.split("::")[0]
+
+
+def _is_class_scoped_pair(token_a: COV, token_b: COV) -> bool:
+    canonical = (token_a, token_b) if (token_a, token_b) in _CLASS_SCOPED_PAIRS else (token_b, token_a)
+    return canonical in _CLASS_SCOPED_PAIRS
 
 
 def _prepare_mask_worksets(
@@ -243,6 +250,8 @@ def _build_mask_index(
         scope: None (global), "file", or "directory" scoping
     """
     token_index: dict[tuple[COV, str], list[COVFingerprint]] = {}
+    class_token_index: dict[tuple[COV, str, str | None], list[COVFingerprint]] = {}
+    cap = _MASK3_TOKEN_INDEX_CAP if band == "Mask 3" and scope == "file" else _TOKEN_INDEX_CAP
 
     for item in work_items:
         if scope == "file":
@@ -255,10 +264,19 @@ def _build_mask_index(
         for token in item.tokens:
             key = (token, region_key)
             bucket = token_index.setdefault(key, [])
-            if len(bucket) < _TOKEN_INDEX_CAP:
+            if len(bucket) < cap:
                 bucket.append(item.fp)
+                class_key = (token, region_key, item.class_name)
+                class_bucket = class_token_index.setdefault(class_key, [])
+                if len(class_bucket) < cap:
+                    class_bucket.append(item.fp)
 
-    return MaskIndex(band=band, region=scope, token_index=token_index)
+    return MaskIndex(
+        band=band,
+        region=scope,
+        token_index=token_index,
+        class_token_index=class_token_index,
+    )
 
 
 def _run_mask_pass(
@@ -307,19 +325,32 @@ def _run_mask_pass(
             fanout = 0
 
             for lock_token in complement_tokens:
-                partners = mask_index.token_index.get((lock_token, region_a), [])
+                if (
+                    mask_index.region == "file"
+                    and _is_class_scoped_pair(token_a, lock_token)
+                    and item.class_name is not None
+                ):
+                    class_partners = mask_index.class_token_index.get(
+                        (lock_token, region_a, item.class_name), []
+                    )
+                    module_partners = mask_index.class_token_index.get((lock_token, region_a, None), [])
+                    if module_partners:
+                        partners = class_partners + module_partners
+                    else:
+                        partners = class_partners
+                else:
+                    partners = mask_index.token_index.get((lock_token, region_a), [])
+
                 for fp_b in partners:
-                    partner_checks += 1
                     if fanout >= _GLOBAL_FANOUT_CAP:
                         matched_any = True
                         break
                     if fp_b.unit_id == fp_a.unit_id:
                         continue
+                    partner_checks += 1
                     
                     # Scope gate (same as original)
-                    canonical = (token_a, lock_token) if (token_a, lock_token) in _CLASS_SCOPED_PAIRS \
-                                else (lock_token, token_a)
-                    if canonical in _CLASS_SCOPED_PAIRS:
+                    if _is_class_scoped_pair(token_a, lock_token):
                         file_a, class_a = scope_map.get(fp_a.unit_id, (item.file_path, item.class_name))
                         file_b, class_b = scope_map.get(fp_b.unit_id, (_get_file_path(fp_b.unit_id), None))
                         if file_a != file_b:
@@ -388,12 +419,12 @@ def _union_edges(edge_lists: list[list[BGIEdge]]) -> list[BGIEdge]:
     Union edges from multiple mask passes with deduplication.
     Uses (source_id, target_id, key_token, lock_token) as dedup key.
     """
-    seen: set[tuple[str, str, str, str]] = set()
+    seen: set[tuple[str, str, COV, COV]] = set()
     result: list[BGIEdge] = []
     
     for edge_list in edge_lists:
         for edge in edge_list:
-            dedup_key = (edge.source_id, edge.target_id, str(edge.key_token), str(edge.lock_token))
+            dedup_key = (edge.source_id, edge.target_id, edge.key_token, edge.lock_token)
             if dedup_key not in seen:
                 seen.add(dedup_key)
                 result.append(edge)

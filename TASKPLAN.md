@@ -207,11 +207,17 @@ VS Code benchmark (75,131 units) exposed 3 structural problems:
   - Gate 2: **49.274s**
   - Mask 3 partner checks: **7.3M** (down from 8.3M)
   - Mask 3 match time: ~25.9s (still dominant)
+- Added class-aware partner pruning path for class-scoped pairs in Mask 3
+- Tuned Mask 3 token bucket cap (`_MASK3_TOKEN_INDEX_CAP=300`)
+- Re-benchmark v3: `output/validation/kubernetes-optionb-gate2-profile-v3.json`
+  - Gate 2: **42.244s** (from 49.274s v2, 48.384s v1)
+  - Mask 3 partner checks: **4.0M** (from 7.3M v2, 8.3M v1)
+  - Mask 3 match time: **20.75s** (from ~25.87s v2)
 
 **Next implementation step:**
-- Add tighter high-frequency partner pruning for Mask 3 token buckets before inner loop
-- Optimize `_same_scope`/dedup path further with cached scope keys and lightweight keys
-- Re-run benchmark on full 162k-unit kubernetes baseline for direct comparability
+- Run the full 162,954-unit kubernetes baseline scan for direct comparability to 138.869s Gate 2 baseline
+- If needed, add adaptive per-token fanout (`_GLOBAL_FANOUT_CAP`) based on token frequency band
+- Start Gate 3 Union-Find optimization workstream (remaining Option B task)
 
 **Success Metric:** Total pipeline <60s on kubernetes
 
