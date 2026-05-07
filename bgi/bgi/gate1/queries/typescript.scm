@@ -1,110 +1,124 @@
-;; TypeScript/JavaScript COV Token Query Patterns
-;; Tree-sitter query file for extracting COV tokens from TypeScript/JavaScript AST
+;; TypeScript/JavaScript COV Token Query Patterns — WATER-CLOCK
+;; Covers Tier 1 (AST structure) and Tier 4 (call target method names).
+;; Run scoped to a function/method/arrow node for function-level fingerprinting.
+;; Tier 2 (func name), Tier 3 (decorators), Tier 5 (class context) handled separately.
 
 ;; ── Data Flow ────────────────────────────────────────────────────────────────
-;; INTAKE: function parameters
-((formal_parameters) @intake)
 
 ;; OUTPUT: return statements
 ((return_statement) @output)
 
-;; TRANSFORM: array/object destructuring, map/filter/reduce
-((array_pattern) @transform)
-((object_pattern) @transform)
+;; EMIT: yield expressions (generator emission)
+((yield_expression) @emit)
+
+;; TRANSFORM: array/object spread, map/filter/reduce calls
 ((call_expression
-  function: (identifier) @name
-  (#match? @name "^(map|filter|reduce|flatMap)$"))
+  function: (member_expression
+    property: (property_identifier) @name)
+  (#match? @name "^(map|filter|reduce|flatMap|forEach|transform|convert|serialize|deserialize)$"))
  @transform)
 
-;; MUTATE: variable/property assignments
-((assignment_expression) @mutate)
+;; MUTATE: augmented assignment (+=, -=, etc.)
+((augmented_assignment_expression) @mutate)
 
-;; SANITIZE: sanitization/encoding functions
+;; MUTATE: assignment where LHS is member_expression (obj.prop = x)
+((assignment_expression
+  left: (member_expression) @_lhs) @mutate)
+
+;; MUTATE: via method calls
 ((call_expression
-  function: (identifier) @name
-  (#match? @name "^(sanitize|escape|encode|decode|clean|filter)$"))
- @sanitize)
+  function: (member_expression
+    property: (property_identifier) @name)
+  (#match? @name "^(push|pop|shift|unshift|splice|set|delete|clear|update|assign)$"))
+ @mutate)
 
 ;; ── Control Flow ──────────────────────────────────────────────────────────────
-;; CONDITIONAL: if/else statements and ternary
+
+;; CONDITIONAL: if/else statements, ternary, switch
 ((if_statement) @conditional)
 ((ternary_expression) @conditional)
+((switch_statement) @conditional)
 
-;; LOOP: for/while/do-while loops
+;; LOOP: all loop forms
 ((for_statement) @loop)
 ((for_in_statement) @loop)
-((for_of_statement) @loop)
 ((while_statement) @loop)
 ((do_statement) @loop)
 
-;; GUARD: type guards and assertions
+;; GUARD: type assertion/guard function calls
 ((call_expression
   function: (identifier) @name
-  (#match? @name "^(assert|check)"))
+  (#match? @name "^(assert|invariant|ok)$"))
  @guard)
-
-;; ROUTE: decorators and method names for routing
-((decorator
-  (identifier) @name
-  (#match? @name "^(route|get|post|put|delete|patch)$"))
- @route)
 
 ;; SCOPE: try/catch/finally blocks
 ((try_statement) @scope)
 
 ;; ── State ────────────────────────────────────────────────────────────────────
-;; FETCH: fetch/get/retrieve calls
+
+;; FETCH: obj.get/find/read/query/fetch/load/retrieve/filter/select
 ((call_expression
-  function: (identifier) @name
-  (#match? @name "^(fetch|get|retrieve|find|select|query|load|read)$"))
+  function: (member_expression
+    property: (property_identifier) @name)
+  (#match? @name "^(find|findById|findOne|get|read|query|fetch|load|select|filter|all|first|last|retrieve|list|search)$"))
  @fetch)
 
-;; PERSIST: save/write/create calls
+;; FETCH: standalone fetch() call
 ((call_expression
   function: (identifier) @name
-  (#match? @name "^(save|write|create|insert|update|delete|remove|store)$"))
+  (#match? @name "^(fetch|axios)$"))
+ @fetch)
+
+;; PERSIST: obj.save/write/create/insert/put/store/upsert/post
+((call_expression
+  function: (member_expression
+    property: (property_identifier) @name)
+  (#match? @name "^(save|insert|create|write|persist|store|put|upsert|add|post)$"))
  @persist)
 
 ;; ── Communication ────────────────────────────────────────────────────────────
-;; EMIT: event emission and publishing
+
+;; EMIT: obj.emit/publish/dispatch/send/broadcast/trigger
 ((call_expression
-  function: (identifier) @name
-  (#match? @name "^(emit|send|publish|dispatch|broadcast|notify)$"))
+  function: (member_expression
+    property: (property_identifier) @name)
+  (#match? @name "^(emit|publish|dispatch|send|broadcast|trigger|notify)$"))
  @emit)
 
-;; SUBSCRIBE: event subscription and listening
+;; SUBSCRIBE: obj.on/subscribe/listen/addEventListener/register
 ((call_expression
-  function: (identifier) @name
-  (#match? @name "^(subscribe|listen|register|on|watch|observe)$"))
+  function: (member_expression
+    property: (property_identifier) @name)
+  (#match? @name "^(on|subscribe|listen|addEventListener|addListener|register|watch|observe)$"))
  @subscribe)
 
-;; DELEGATE: function delegation and invocation
+;; ── Cross-cutting ────────────────────────────────────────────────────────────
+
+;; VALIDATE: obj.validate/check/verify
 ((call_expression
-  function: (identifier) @name
-  (#match? @name "^(delegate|call|invoke|execute|run|perform)$"))
- @delegate)
+  function: (member_expression
+    property: (property_identifier) @name)
+  (#match? @name "^(validate|check|verify|assert|isValid)$"))
+ @validate)
 
-;; ── Structure ────────────────────────────────────────────────────────────────
-;; CONTRACT: type annotations and interfaces
-((type_annotation) @contract)
-((interface_declaration) @contract)
+;; LOG: console.log/debug/info/warn/error
+((call_expression
+  function: (member_expression
+    object: (identifier) @obj
+    property: (property_identifier) @method)
+  (#match? @obj "^(console|logger|log)$"))
+ @log)
 
-;; COMPOSE: higher-order functions and decorators
-((decorator) @compose)
-
-;; INIT: constructor methods and initialization
-((method_definition
-  name: (property_identifier) @name
-  (#match? @name "^(constructor|initialize|init|setup)$"))
- @init)
-
-;; TEARDOWN: cleanup methods
-((method_definition
-  name: (property_identifier) @name
-  (#match? @name "^(teardown|cleanup|finalize|destroy)$"))
- @teardown)
+;; MEASURE: performance.mark/measure, metrics.record etc.
+((call_expression
+  function: (member_expression
+    object: (identifier) @obj
+    property: (property_identifier) @method)
+  (#match? @obj "^(performance|metrics|statsd|counter|gauge|histogram|telemetry)$"))
+ @measure)
 
 ;; ── Error ────────────────────────────────────────────────────────────────────
+
 ;; RAISE: throw statements
 ((throw_statement) @raise)
 
@@ -114,44 +128,8 @@
 ;; DEFER: finally clauses
 ((finally_clause) @defer)
 
-;; ── Cross-cutting ───────────────────────────────────────────────────────────
-;; AUTHENTICATE: authentication-related functions
-((function_declaration
-  name: (identifier) @name
-  (#match? @name "^(authenticate|auth|login|verify)$"))
- @authenticate)
+;; ── Async ────────────────────────────────────────────────────────────────────
 
-;; AUTHORIZE: authorization-related functions
-((function_declaration
-  name: (identifier) @name
-  (#match? @name "^(authorize|checkPermission|hasRole|isAdmin)$"))
- @authorize)
-
-;; VALIDATE: validation functions
-((call_expression
-  function: (identifier) @name
-  (#match? @name "^(validate|check|verify)$"))
- @validate)
-
-;; LOG: logging functions
-((call_expression
-  function: (identifier) @name
-  (#match? @name "^(log|debug|info|warn|error)$"))
- @log)
-
-;; MEASURE: performance measurement
-((call_expression
-  function: (identifier) @name
-  (#match? @name "^(time|measure|profile|benchmark|record)$"))
- @measure)
-
-;; ASYNC: async/await
+;; ASYNC: await expressions inside function body
 ((await_expression) @async)
-((async_function_declaration) @async)
 
-;; ── Testing ──────────────────────────────────────────────────────────────────
-;; TEST: test definitions
-((call_expression
-  function: (identifier) @name
-  (#match? @name "^(test|it|describe)$"))
- @test)

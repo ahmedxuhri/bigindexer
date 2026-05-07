@@ -1,136 +1,129 @@
 """
-Query-based fingerprinting using tree-sitter .scm query files (WATER-CLOCK).
+WATER-CLOCK: Single-pass COV token extraction via tree-sitter .scm queries.
 
-Extracts COV tokens by running tree-sitter queries against source code AST.
-Falls back to regex-based extraction if .scm not available.
+Public API::
+
+    tokens = get_node_tokens(func_body_node, "python")
+    # returns list[(COV, confidence)] or None if no .scm file for the language
+
+The key design properties:
+  - Accepts an already-parsed tree-sitter Node (avoids re-parsing the file)
+  - Runs one compiled query call instead of iterating every body node in Python
+  - Caches compiled Language.query() objects per language (expensive to create)
+  - Returns None → caller falls back to the existing two-pass (Tier 1 + Tier 4) walk
+  - Returns [] → query ran successfully, function has no matching body patterns
 """
 from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from bgi.core.cov import COV
-from bgi.core.fingerprint import COVFingerprint
 
 if TYPE_CHECKING:
-    import tree_sitter as ts
+    from tree_sitter import Node
 
 
-# Query file capture name → COV token mapping
+# ── Capture name → COV mapping ────────────────────────────────────────────────
+# Only names that are actual COV tokens; internal filter captures (@name, @obj,
+# @method, @_lhs) are intentionally absent and will be silently skipped.
 _CAPTURE_TO_COV: dict[str, COV] = {
-    "intake": COV.INTAKE,
-    "output": COV.OUTPUT,
-    "transform": COV.TRANSFORM,
-    "mutate": COV.MUTATE,
-    "sanitize": COV.SANITIZE,
+    "output":      COV.OUTPUT,
+    "emit":        COV.EMIT,
+    "transform":   COV.TRANSFORM,
+    "mutate":      COV.MUTATE,
+    "sanitize":    COV.SANITIZE,
     "conditional": COV.CONDITIONAL,
-    "loop": COV.LOOP,
-    "guard": COV.GUARD,
-    "route": COV.ROUTE,
-    "scope": COV.SCOPE,
-    "fetch": COV.FETCH,
-    "persist": COV.PERSIST,
-    "emit": COV.EMIT,
-    "subscribe": COV.SUBSCRIBE,
-    "delegate": COV.DELEGATE,
-    "contract": COV.CONTRACT,
-    "compose": COV.COMPOSE,
-    "init": COV.INIT,
-    "teardown": COV.TEARDOWN,
-    "raise": COV.RAISE,
-    "recover": COV.RECOVER,
-    "defer": COV.DEFER,
-    "authenticate": COV.AUTHENTICATE,
-    "authorize": COV.AUTHORIZE,
-    "validate": COV.VALIDATE,
-    "log": COV.LOG,
-    "measure": COV.MEASURE,
-    "async": COV.ASYNC,
-    "test": COV.TEST,
+    "loop":        COV.LOOP,
+    "guard":       COV.GUARD,
+    "scope":       COV.SCOPE,
+    "fetch":       COV.FETCH,
+    "persist":     COV.PERSIST,
+    "subscribe":   COV.SUBSCRIBE,
+    "validate":    COV.VALIDATE,
+    "log":         COV.LOG,
+    "measure":     COV.MEASURE,
+    "raise":       COV.RAISE,
+    "recover":     COV.RECOVER,
+    "defer":       COV.DEFER,
+    "async":       COV.ASYNC,
 }
 
-
-def get_query_file(lang: str) -> Path | None:
-    """
-    Get path to .scm query file for language.
-    
-    Returns None if not available (will fall back to regex).
-    """
-    query_dir = Path(__file__).parent
-    query_file = query_dir / f"{lang}.scm"
-    return query_file if query_file.exists() else None
+# Captures produced by pure structural AST patterns (no #match? predicates).
+# These get confidence 1.0; all other (method-name predicate) captures get 0.75.
+_STRUCTURAL_CAPTURES = frozenset({
+    "output", "emit", "conditional", "loop", "guard",
+    "scope", "raise", "recover", "defer", "async",
+    "transform", "mutate",  # both have structural forms in the .scm files
+})
 
 
-def fingerprint_with_query(
-    source_code: str,
-    lang: str,
-    file_path: str,
-    unit_id: str,
-    start_line: int = 0,
-    end_line: int = 0,
-) -> COVFingerprint | None:
-    """
-    Extract COV tokens using tree-sitter queries.
-    
-    Args:
-        source_code: Source file content
-        lang: Language (python, typescript, js, etc.)
-        file_path: File path for context
-        unit_id: Function/method identifier
-        start_line: Start line (if known)
-        end_line: End line (if known)
-    
-    Returns:
-        COVFingerprint with extracted tokens, or None if parsing fails
-    """
-    query_file = get_query_file(lang)
-    if not query_file:
-        # No query file available — return None, let caller fall back to regex
+# ── Per-language query cache ──────────────────────────────────────────────────
+# Values: compiled Query object, or None if unavailable (prevents retrying)
+_QUERY_CACHE: dict[str, object] = {}
+
+
+def _load_query(lang: str) -> object | None:
+    """Compile and cache the .scm query for *lang*. Returns None if unavailable."""
+    if lang in _QUERY_CACHE:
+        return _QUERY_CACHE[lang]
+
+    scm_file = Path(__file__).parent / "queries" / f"{lang}.scm"
+    if not scm_file.exists():
+        _QUERY_CACHE[lang] = None
         return None
-    
+
     try:
-        # Try to import tree-sitter and parse
-        import tree_sitter_python as tsp
-        from tree_sitter import Language, Parser
-        
-        # Select language parser
+        from tree_sitter import Language
+
         if lang == "python":
-            parser = Parser()
-            parser.set_language(Language(tsp.language(), "python"))
+            import tree_sitter_python as tsp
+            ts_lang = Language(tsp.language())
+        elif lang in ("typescript", "tsx"):
+            import tree_sitter_typescript as tsts
+            ts_lang = Language(tsts.language_typescript())
+        elif lang == "javascript":
+            import tree_sitter_javascript as tsjs
+            ts_lang = Language(tsjs.language())
         else:
-            # For other languages, return None (no parser configured)
+            _QUERY_CACHE[lang] = None
             return None
-        
-        # Parse source
-        tree = parser.parse(source_code.encode("utf-8"))
-        
-        # Load and run queries
-        query_text = query_file.read_text()
-        query = Language(tsp.language(), "python").query(query_text)
-        
-        # Extract matched captures
-        tokens: set[COV] = set()
-        captures = query.captures(tree.root_node)
-        
-        for node, capture_name in captures:
-            # Map capture name to COV token
-            if capture_name in _CAPTURE_TO_COV:
-                tokens.add(_CAPTURE_TO_COV[capture_name])
-        
-        # Determine confidence (query-based is high confidence)
-        confidence = 0.95
-        
-        # Return fingerprint
-        return COVFingerprint(
-            unit_id=unit_id,
-            tokens=list(tokens),
-            class_context=[],
-            confidence=confidence,
-            source="query-based",
-            language=lang,
-            line_range=(start_line, end_line),
-        )
-    
+
+        compiled = ts_lang.query(scm_file.read_text())
+        _QUERY_CACHE[lang] = compiled
+        return compiled
     except Exception:
-        # If anything fails (import, parsing, querying), return None
-        # Caller will fall back to regex-based extraction
+        _QUERY_CACHE[lang] = None
         return None
+
+
+# ── Public API ────────────────────────────────────────────────────────────────
+
+def get_node_tokens(node: "Node", lang: str) -> list[tuple[COV, float]] | None:
+    """
+    Run the .scm query for *lang* against *node* (a function body or function node).
+
+    Returns:
+        None  — no .scm file for this language; caller should fall back to the
+                existing two-pass walk (Tier 1 + Tier 4).
+        []    — query ran successfully but found no matching patterns (trivial body).
+        [...]  — list of (COV, confidence) pairs, one per distinct capture name.
+    """
+    query = _load_query(lang)
+    if query is None:
+        return None
+
+    try:
+        captures: dict[str, list] = query.captures(node)
+    except Exception:
+        return None
+
+    results: list[tuple[COV, float]] = []
+    for capture_name, nodes in captures.items():
+        if not nodes:
+            continue
+        cov = _CAPTURE_TO_COV.get(capture_name)
+        if cov is None:
+            continue  # internal filter captures (@name, @obj, @method, @_lhs)
+        confidence = 1.0 if capture_name in _STRUCTURAL_CAPTURES else 0.75
+        results.append((cov, confidence))
+    return results

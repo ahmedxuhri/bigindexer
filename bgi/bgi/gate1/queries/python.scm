@@ -1,106 +1,129 @@
-;; Python COV Token Query Patterns
-;; Tree-sitter query file for extracting COV tokens from Python AST
-;; Format: (pattern) @capture_name
-;; Captured names are mapped to COV tokens
+;; Python COV Token Query Patterns — WATER-CLOCK (single-pass fingerprinting)
+;; Covers Tier 1 (AST structure) and Tier 4 (call target method names).
+;; Run scoped to a function_definition node for function-level fingerprinting.
+;; Tier 2 (func name), Tier 3 (decorators), Tier 5 (class context) handled separately.
 
 ;; ── Data Flow ────────────────────────────────────────────────────────────────
-;; INTAKE: function parameters, argument unpacking
-((parameters) @intake)
 
-;; OUTPUT: return statements, yield expressions
+;; OUTPUT: return statements
 ((return_statement) @output)
-((yield_expression) @output)
 
-;; TRANSFORM: comprehensions, map/filter/reduce calls
+;; EMIT: yield and yield_from (generator emission)
+((yield) @emit)
+
+;; TRANSFORM: comprehensions and generator expressions
 ((list_comprehension) @transform)
-((dict_comprehension) @transform)
+((dictionary_comprehension) @transform)
 ((set_comprehension) @transform)
 ((generator_expression) @transform)
 
-;; MUTATE: assignment to variables or object attributes
-((assignment) @mutate)
+;; MUTATE: augmented assignment (+=, -=, etc.) — always MUTATE
+((augmented_assignment) @mutate)
 
-;; SANITIZE: calls to sanitize, strip, encode, decode functions
+;; MUTATE: regular assignment where LHS is attribute or subscript
+((assignment
+  left: (attribute) @_lhs) @mutate)
+
+((assignment
+  left: (subscript) @_lhs) @mutate)
+
+;; MUTATE: via method calls (obj.update/append/pop etc.)
 ((call
-  function: (identifier) @name
-  (#match? @name "^(sanitize|strip|encode|decode|escape|clean|filter)"))
+  function: (attribute
+    attribute: (identifier) @name)
+  (#match? @name "^(update|append|extend|remove|pop|delete|clear|setdefault|discard|insert)$"))
+ @mutate)
+
+;; SANITIZE: sanitization/encoding functions
+((call
+  function: (attribute
+    attribute: (identifier) @name)
+  (#match? @name "^(sanitize|escape|clean|strip)$"))
  @sanitize)
 
 ;; ── Control Flow ──────────────────────────────────────────────────────────────
-;; CONDITIONAL: if/else statements and ternary
-((if_statement) @conditional)
 
-;; LOOP: for/while loops
+;; CONDITIONAL: if/elif/match statements
+((if_statement) @conditional)
+((elif_clause) @conditional)
+((match_statement) @conditional)
+
+;; LOOP: for and while loops
 ((for_statement) @loop)
 ((while_statement) @loop)
 
 ;; GUARD: assert statements
 ((assert_statement) @guard)
 
-;; ROUTE: decorators like @app.route, @router.get, etc.
-((decorator
-  (call
-    function: (attribute
-      object: (identifier) @obj
-      attribute: (identifier) @attr)
-    (#match? @attr "^(route|get|post|put|delete|patch|head|options)$")))
- @route)
-
-;; SCOPE: try/except/finally blocks
-((try_statement) @scope)
+;; SCOPE: with statements (resource/transaction scope)
+((with_statement) @scope)
 
 ;; ── State ────────────────────────────────────────────────────────────────────
-;; FETCH: calls to get, retrieve, fetch, find, select functions
+
+;; FETCH: obj.get/find/read/query/fetch/load/retrieve/filter/select/all etc.
 ((call
-  function: (identifier) @name
-  (#match? @name "^(fetch|get|retrieve|find|select|query|load|read)"))
+  function: (attribute
+    attribute: (identifier) @name)
+  (#match? @name "^(find|get|read|query|fetch|load|select|filter|all|first|last|retrieve|list)$"))
  @fetch)
 
-;; PERSIST: calls to save, write, create, insert, update, delete functions
+;; PERSIST: obj.save/write/create/insert/put/store/dump/export etc.
 ((call
-  function: (identifier) @name
-  (#match? @name "^(save|write|create|insert|update|delete|remove|persist|store)"))
+  function: (attribute
+    attribute: (identifier) @name)
+  (#match? @name "^(save|insert|create|write|persist|add|put|store|dump|export)$"))
  @persist)
 
 ;; ── Communication ────────────────────────────────────────────────────────────
-;; EMIT: calls to send, publish, dispatch, emit functions
+
+;; EMIT: obj.emit/send/publish/dispatch/broadcast/trigger
 ((call
-  function: (identifier) @name
-  (#match? @name "^(emit|send|publish|dispatch|broadcast|post|notify)"))
+  function: (attribute
+    attribute: (identifier) @name)
+  (#match? @name "^(emit|publish|dispatch|send|broadcast|trigger)$"))
  @emit)
 
-;; SUBSCRIBE: calls to listen, subscribe, register, on, watch functions
+;; SUBSCRIBE: obj.on/subscribe/listen/attach/connect/register
 ((call
-  function: (identifier) @name
-  (#match? @name "^(subscribe|listen|register|on|watch|observe|handle)"))
+  function: (attribute
+    attribute: (identifier) @name)
+  (#match? @name "^(on|subscribe|listen|attach|connect|register)$"))
  @subscribe)
 
-;; DELEGATE: calls to call, invoke, execute, run functions
+;; ── Cross-cutting ────────────────────────────────────────────────────────────
+
+;; VALIDATE: obj.validate/check/ensure/verify
 ((call
-  function: (identifier) @name
-  (#match? @name "^(delegate|call|invoke|execute|run|do|perform)"))
- @delegate)
+  function: (attribute
+    attribute: (identifier) @name)
+  (#match? @name "^(validate|check|ensure|verify|assert_valid)$"))
+ @validate)
 
-;; ── Structure ────────────────────────────────────────────────────────────────
-;; CONTRACT: decorators, type hints, assertions
-((type_hint) @contract)
+;; TRANSFORM: obj.map/transform/convert/serialize/deserialize/encode/decode
+((call
+  function: (attribute
+    attribute: (identifier) @name)
+  (#match? @name "^(map|transform|convert|project|serialize|deserialize|encode|decode)$"))
+ @transform)
 
-;; COMPOSE: function calls chaining or decorators
-((decorator) @compose)
+;; LOG: logger.info/debug/warning/error/critical
+((call
+  function: (attribute
+    object: (identifier) @obj
+    attribute: (identifier) @method)
+  (#match? @obj "^(logging|logger|log|LOG)$"))
+ @log)
 
-;; INIT: __init__ methods and initialization functions
-((function_definition
-  name: (identifier) @name
-  (#match? @name "^(__init__|initialize|init|setup|configure)"))
- @init)
-
-;; TEARDOWN: __del__ methods and cleanup functions
-((function_definition
-  name: (identifier) @name
-  (#match? @name "^(__del__|teardown|cleanup|finalize|dispose)"))
- @teardown)
+;; MEASURE: metrics.record/gauge/counter/histogram etc.
+((call
+  function: (attribute
+    object: (identifier) @obj
+    attribute: (identifier) @method)
+  (#match? @obj "^(metrics|statsd|counter|gauge|histogram|timer|telemetry)$"))
+ @measure)
 
 ;; ── Error ────────────────────────────────────────────────────────────────────
+
 ;; RAISE: raise statements
 ((raise_statement) @raise)
 
@@ -110,43 +133,8 @@
 ;; DEFER: finally blocks
 ((finally_clause) @defer)
 
-;; ── Cross-cutting ───────────────────────────────────────────────────────────
-;; AUTHENTICATE: function/class names with auth-related keywords
-((function_definition
-  name: (identifier) @name
-  (#match? @name "^(authenticate|auth|login|verify|validate_token)"))
- @authenticate)
+;; ── Async ────────────────────────────────────────────────────────────────────
 
-;; AUTHORIZE: function/class names with authorization keywords
-((function_definition
-  name: (identifier) @name
-  (#match? @name "^(authorize|check_permission|has_role|is_admin)"))
- @authorize)
+;; ASYNC: await expressions inside function body
+((await) @async)
 
-;; VALIDATE: validation function calls
-((call
-  function: (identifier) @name
-  (#match? @name "^(validate|check|verify|assert_valid)"))
- @validate)
-
-;; LOG: logging function calls
-((call
-  function: (identifier) @name
-  (#match? @name "^(log|print|debug|info|warning|error)"))
- @log)
-
-;; MEASURE: performance/metrics functions
-((call
-  function: (identifier) @name
-  (#match? @name "^(time|measure|profile|metric|benchmark|record)"))
- @measure)
-
-;; ASYNC: async/await keywords
-((await_expression) @async)
-
-;; ── Testing ──────────────────────────────────────────────────────────────────
-;; TEST: test function definitions
-((function_definition
-  name: (identifier) @name
-  (#match? @name "^test_"))
- @test)

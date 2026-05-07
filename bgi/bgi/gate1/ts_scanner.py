@@ -24,12 +24,14 @@ from tree_sitter import Language, Parser, Node
 from bgi.core.cov import COV
 from bgi.core.fingerprint import COVFingerprint
 from bgi.gate1.rules import dedupe_ordered
+from bgi.gate1.ast_cache import ASTCache
 from bgi.gate1.typescript_rules import (
     apply_tier1, apply_tier2, apply_tier3, apply_tier4, apply_tier5,
     node_text, INTERFACE_TOKEN,
     extract_route_call_info, extract_route_handler,
 )
 from bgi.gate1.ai_fallback import AIFallback
+from bgi.gate1.query_fingerprinter import get_node_tokens
 
 
 _TS_LANGUAGE  = Language(tsts.language_typescript())
@@ -235,6 +237,15 @@ def fingerprint_function_ts(
     if _is_async(func_node):
         collected.append((COV.ASYNC, 1.0))
 
+    # SCOPE — export status discrimination (TypeScript-specific optimization)
+    export_type = _get_ts_export_type(func_node)
+    if export_type == "export-default":
+        collected.append((COV.SCOPE, 0.99))  # Default exports are explicit
+    elif export_type == "export-public":
+        collected.append((COV.SCOPE, 0.95))  # Named exports are public
+    elif _is_internal_ts_function(func_node):
+        collected.append((COV.SCOPE, 0.92))  # Internal/private functions
+
     # Tier 2 — function name (skip for route handlers: name is synthetic)
     if not route_info:
         collected.extend(apply_tier2(func_name))
@@ -248,22 +259,27 @@ def fingerprint_function_ts(
     for dec_text in _get_decorators(func_node):
         collected.extend(apply_tier3(dec_text))
 
-    # Walk body — Tier 1 + Tier 4
+    # WATER-CLOCK: single-pass body fingerprinting via .scm queries.
+    # Falls back to two-pass walk (Tier 1 + Tier 4) when no query file exists.
     body = _get_body(func_node)
     if body:
-        for node in _walk_body(body):
-            t1 = apply_tier1(node)
-            if t1:
-                collected.append(t1)
-                continue
-            if node.type == "call_expression":
-                t4 = apply_tier4(node)
-                if t4:
-                    collected.extend(t4)
-                else:
-                    ai_result = ai.classify(node, context_snippet=node_text(node))
-                    if ai_result:
-                        collected.append(ai_result)
+        query_tokens = get_node_tokens(body, "typescript")
+        if query_tokens is not None:
+            collected.extend(query_tokens)
+        else:
+            for node in _walk_body(body):
+                t1 = apply_tier1(node)
+                if t1:
+                    collected.append(t1)
+                    continue
+                if node.type == "call_expression":
+                    t4 = apply_tier4(node)
+                    if t4:
+                        collected.extend(t4)
+                    else:
+                        ai_result = ai.classify(node, context_snippet=node_text(node))
+                        if ai_result:
+                            collected.append(ai_result)
 
     # Class context (Tier 5) — kept separate
     class_context_raw = _get_class_context(func_node)
@@ -272,7 +288,7 @@ def fingerprint_function_ts(
     tokens = dedupe_ordered([t for t, _ in collected])
 
     # Unit-level AI fallback — fires when no behavioural tokens were found
-    _STRUCTURAL = {COV.ASYNC, COV.INTAKE}
+    _STRUCTURAL = {COV.ASYNC, COV.INTAKE, COV.SCOPE}
     if not any(t not in _STRUCTURAL for t in tokens):
         source_text = node_text(func_node)
         unit_results = ai.classify_unit(unit_id, source_text, language="typescript")
@@ -397,11 +413,22 @@ def scan_file_ts(
     file_path: Path,
     root: Path,
     ai: AIFallback,
+    ast_cache: ASTCache | None = None,
 ) -> list[COVFingerprint]:
     """Parse one TypeScript/TSX file and return fingerprints for all units."""
-    source = file_path.read_bytes()
-    parser = _make_parser(file_path.suffix)
-    tree = parser.parse(source)
+    # Try to get cached AST if available
+    tree = None
+    if ast_cache:
+        tree = ast_cache.get(file_path)
+    
+    if tree is None:
+        # Parse and cache
+        source = file_path.read_bytes()
+        parser = _make_parser(file_path.suffix)
+        tree = parser.parse(source)
+        if ast_cache:
+            ast_cache.set(file_path, tree)
+    
     rel_path = str(file_path.relative_to(root))
 
     units: list = []
@@ -417,3 +444,48 @@ def scan_file_ts(
             fingerprints.append(fingerprint_function_ts(node, rel_path, ai, parent_var_name=extra))
 
     return fingerprints
+
+
+def _get_ts_export_type(func_node: Node) -> str | None:
+    """
+    Determine export type of TypeScript function.
+    
+    Returns:
+        - "export-default": export default function/class/const
+        - "export-public": export function/class/interface
+        - "export-named": export named export (re-export or inline)
+        - None: not exported
+    """
+    parent = func_node.parent
+    
+    # Check if parent is export_statement
+    if parent and parent.type == "export_statement":
+        export_text = node_text(parent)
+        if "export default" in export_text:
+            return "export-default"
+        else:
+            return "export-public"
+    
+    # Check for decorator-based exports (rare in TS but possible)
+    return None
+
+
+def _is_internal_ts_function(func_node: Node) -> bool:
+    """
+    Check if TypeScript function is marked as internal/private.
+    
+    Returns True for:
+    - Private members (private keyword)
+    - _internal or __internal naming
+    - Functions inside internal namespaces
+    """
+    # Check private keyword
+    for child in func_node.children:
+        if child.type == "accessibility_modifier" and child.text == "private":
+            return True
+    
+    func_name = node_text(func_node.child_by_field_name("name")) or ""
+    if func_name.startswith("_"):
+        return True
+    
+    return False

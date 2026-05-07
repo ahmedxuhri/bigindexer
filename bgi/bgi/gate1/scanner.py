@@ -16,6 +16,7 @@ from bgi.gate1.python_rules import (
     apply_tier1, apply_tier2, apply_tier3, apply_tier4, apply_tier5,
 )
 from bgi.gate1.ai_fallback import AIFallback
+from bgi.gate1.query_fingerprinter import get_node_tokens
 
 _PY_LANGUAGE = Language(tspython.language())
 _PARSER = Parser(_PY_LANGUAGE)
@@ -139,6 +140,16 @@ def fingerprint_function(
     if any(c.type == "async" for c in func_node.children):
         collected.append((COV.ASYNC, 1.0))
 
+    # SCOPE — nested functions and export status (Python-specific optimization)
+    if _is_nested_function(func_node):
+        collected.append((COV.SCOPE, 0.95))  # High confidence for nesting detection
+    
+    export_info = _get_py_export_info(func_node)
+    if export_info == "export-dunder":
+        collected.append((COV.SCOPE, 0.98))  # Dunder methods are always in scope
+    elif export_info == "export-module":
+        collected.append((COV.SCOPE, 0.9))   # Top-level public functions
+
     # Tier 2 — function name (skip for route handlers — name is irrelevant)
     if not route_info:
         collected.extend(apply_tier2(func_name))
@@ -152,23 +163,27 @@ def fingerprint_function(
     for dec_text in _get_decorators(func_node):
         collected.extend(apply_tier3(dec_text))
 
-    # Walk function body — Tier 1 + Tier 4
+    # WATER-CLOCK: single-pass body fingerprinting via .scm queries.
+    # Falls back to two-pass walk (Tier 1 + Tier 4) when no query file exists.
     body = func_node.child_by_field_name("body")
     if body:
-        for node in _walk_body(body):
-            t1 = apply_tier1(node)
-            if t1:
-                collected.append(t1)
-                continue
-            if node.type == "call":
-                t4 = apply_tier4(node)
-                if t4:
-                    collected.extend(t4)
-                else:
-                    # Tier 6 — AI fallback for unclassified calls
-                    ai_result = ai.classify(node, context_snippet=node_text(node))
-                    if ai_result:
-                        collected.append(ai_result)
+        query_tokens = get_node_tokens(body, "python")
+        if query_tokens is not None:
+            collected.extend(query_tokens)
+        else:
+            for node in _walk_body(body):
+                t1 = apply_tier1(node)
+                if t1:
+                    collected.append(t1)
+                    continue
+                if node.type == "call":
+                    t4 = apply_tier4(node)
+                    if t4:
+                        collected.extend(t4)
+                    else:
+                        ai_result = ai.classify(node, context_snippet=node_text(node))
+                        if ai_result:
+                            collected.append(ai_result)
 
     # Class context (Tier 5) — kept separate
     class_context_raw = _get_class_context(func_node)
@@ -178,7 +193,7 @@ def fingerprint_function(
     tokens = dedupe_ordered([t for t, _ in collected])
 
     # Unit-level AI fallback — fires when no behavioural tokens were found
-    _STRUCTURAL = {COV.ASYNC, COV.INTAKE}
+    _STRUCTURAL = {COV.ASYNC, COV.INTAKE, COV.SCOPE}
     if not any(t not in _STRUCTURAL for t in tokens):
         source_text = node_text(func_node)
         unit_results = ai.classify_unit(unit_id, source_text, language="python")
@@ -558,3 +573,46 @@ def _os_walk(root: Path):
     """Compatibility shim: use os.walk when Path.walk() is unavailable (Python < 3.12)."""
     import os
     yield from os.walk(root)
+
+
+def _is_nested_function(func_node: Node) -> bool:
+    """
+    Check if a function is nested inside another function (Python).
+    
+    Nested functions are typically closures or local scope helpers.
+    """
+    parent = func_node.parent
+    while parent:
+        if parent.type == "block":
+            parent = parent.parent
+            continue
+        if parent.type == "function_definition":
+            return True
+        parent = parent.parent
+    return False
+
+
+def _get_py_export_info(func_node: Node) -> str | None:
+    """
+    Detect if Python function is exported (__all__, module-level, or __init__).
+    
+    Returns:
+        - "export-dunder": __init__, __main__, __all__ magic functions
+        - "export-module": Top-level public function (no __)
+        - None: Local, private, or nested
+    """
+    func_name = node_text(func_node.child_by_field_name("name")) or ""
+    
+    if func_name.startswith("__") and func_name.endswith("__"):
+        return "export-dunder"
+    
+    # Check if at module level (parent is module body, not class/func)
+    parent = func_node.parent
+    if parent and parent.type == "block":
+        parent = parent.parent
+    
+    if parent and parent.type in ("module", None):
+        if not func_name.startswith("_"):
+            return "export-module"
+    
+    return None
