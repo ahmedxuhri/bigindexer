@@ -213,9 +213,16 @@ VS Code benchmark (75,131 units) exposed 3 structural problems:
   - Gate 2: **42.244s** (from 49.274s v2, 48.384s v1)
   - Mask 3 partner checks: **4.0M** (from 7.3M v2, 8.3M v1)
   - Mask 3 match time: **20.75s** (from ~25.87s v2)
+- Full pipeline profile rerun v4: `output/validation/kubernetes-optionb-gate2-profile-full-v4.json`
+  - Units/files observed: **105,830 / 10,852**
+  - Gate 2: **48.214s** (65.28% faster vs historical 138.869s baseline)
+  - Gate 3: **5.584s**
+  - Total (G1+G2+G3): **137.316s**
+  - Mask 3 partner checks remain **4.0M**; Mask 3 remains dominant Gate 2 cost
 
 **Next implementation step:**
-- Run the full 162,954-unit kubernetes baseline scan for direct comparability to 138.869s Gate 2 baseline
+- Resolve baseline comparability gap: current workspace snapshot scans at 105,830 units, not the historical 162,954-unit run
+- Recreate or restore the 162,954-unit kubernetes snapshot, then rerun v4 profile for apples-to-apples Gate 2 comparison
 - If needed, add adaptive per-token fanout (`_GLOBAL_FANOUT_CAP`) based on token frequency band
 - Start Gate 3 Union-Find optimization workstream (remaining Option B task)
 
