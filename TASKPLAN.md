@@ -157,6 +157,46 @@ VS Code benchmark (75,131 units) exposed 3 structural problems:
 
 ---
 
+## Phase 6 — Next Frontier (Options A/B/C)
+
+### Option A: Interactive Search Index (SELECTED) 🎯
+**Goal:** Make BGI viable for sub-second search during coding (closes Sourcegraph gap)
+
+**Why:** BGI is strong on deep analysis but weak on interactive speed. Pre-indexed query layer enables real-time search for development workflows.
+
+**Tasks:**
+- **Task 1:** Index schema & design — what to index, query structures
+- **Task 2:** Pre-indexing engine — build indexes from Gate 1-3 output
+- **Task 3:** Query planner — scope narrowing strategies for fast lookups
+- **Task 4:** Query API — REST endpoints for search
+- **Task 5:** IDE plugin prototype — VS Code extension
+
+**Success Metric:** Sub-second search on 3.6M LOC (kubernetes)
+
+---
+
+### Option B: Performance Optimization (Future)
+**Goal:** Gate 2: 138s → <60s on large repos
+
+**Tasks:**
+- Profile & parallelize SPECTRAL-MASKS matching
+- Streaming edge accumulation
+- Gate 3 Union-Find optimizations
+
+**Success Metric:** Total pipeline <60s on kubernetes
+
+---
+
+### Option C: Language Expansion (Community-Driven)
+**Goal:** Support 5+ new languages via community .scm contributions
+
+**Tasks:**
+- Add Rust, Go, Java .scm patterns
+- Set up contributor bounty & review process
+- Track coverage metrics
+
+---
+
 ## Completed (v1.0 baseline)
 
 - Gate 1: 30+ language scanner (tree-sitter + generic regex)
