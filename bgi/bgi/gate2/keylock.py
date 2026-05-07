@@ -165,6 +165,7 @@ class MaskPassResult:
     suspended: list[SuspendedEdge]
     elapsed_ms: float
     partner_checks: int
+    probe_cap_hits: int
 
 
 def _set_last_match_profile(profile: dict[str, Any]) -> None:
@@ -193,6 +194,67 @@ def _get_file_path(unit_id: str) -> str:
 def _is_class_scoped_pair(token_a: COV, token_b: COV) -> bool:
     canonical = (token_a, token_b) if (token_a, token_b) in _CLASS_SCOPED_PAIRS else (token_b, token_a)
     return canonical in _CLASS_SCOPED_PAIRS
+
+
+def _adaptive_fanout_cap(band: str, partner_count: int, class_scoped: bool) -> int:
+    """
+    Dynamic per-token fanout for high-frequency Mask 3 candidates.
+    Lower caps only activate on very large partner buckets.
+    """
+    cap = _GLOBAL_FANOUT_CAP
+    if band != "Mask 3":
+        return cap
+
+    if class_scoped:
+        if partner_count >= 1200:
+            return 24
+        if partner_count >= 800:
+            return 32
+        if partner_count >= 500:
+            return 40
+        if partner_count >= 300:
+            return 56
+        return cap
+
+    if partner_count >= 2000:
+        return 32
+    if partner_count >= 1200:
+        return 48
+    if partner_count >= 700:
+        return 64
+    if partner_count >= 400:
+        return 80
+    return cap
+
+
+def _adaptive_probe_cap(band: str, partner_count: int, class_scoped: bool) -> int:
+    """
+    Bound raw partner probes for very dense Mask 3 buckets.
+    This directly controls worst-case partner_checks growth.
+    """
+    if band != "Mask 3":
+        return 1_000_000
+
+    if class_scoped:
+        if partner_count >= 260:
+            return 120
+        if partner_count >= 220:
+            return 140
+        if partner_count >= 180:
+            return 160
+        if partner_count >= 140:
+            return 180
+        return 220
+
+    if partner_count >= 260:
+        return 140
+    if partner_count >= 220:
+        return 160
+    if partner_count >= 180:
+        return 180
+    if partner_count >= 140:
+        return 220
+    return 260
 
 
 def _prepare_mask_worksets(
@@ -294,6 +356,7 @@ def _run_mask_pass(
     suspended: list[SuspendedEdge] = []
     seen: set[tuple[str, str, COV, COV]] = set()
     partner_checks = 0
+    probe_cap_hits = 0
     scope_map: dict[str, tuple[str, str | None]] = {
         item.fp.unit_id: (item.file_path, item.class_name) for item in work_items
     }
@@ -305,6 +368,7 @@ def _run_mask_pass(
             suspended=[],
             elapsed_ms=round((time.perf_counter() - start) * 1000.0, 3),
             partner_checks=0,
+            probe_cap_hits=0,
         )
 
     for item in work_items:
@@ -325,9 +389,10 @@ def _run_mask_pass(
             fanout = 0
 
             for lock_token in complement_tokens:
+                class_scoped_pair = _is_class_scoped_pair(token_a, lock_token)
                 if (
                     mask_index.region == "file"
-                    and _is_class_scoped_pair(token_a, lock_token)
+                    and class_scoped_pair
                     and item.class_name is not None
                 ):
                     class_partners = mask_index.class_token_index.get(
@@ -341,16 +406,24 @@ def _run_mask_pass(
                 else:
                     partners = mask_index.token_index.get((lock_token, region_a), [])
 
+                token_fanout_cap = _adaptive_fanout_cap(mask_index.band, len(partners), class_scoped_pair)
+                token_probe_cap = _adaptive_probe_cap(mask_index.band, len(partners), class_scoped_pair)
+                token_probes = 0
                 for fp_b in partners:
-                    if fanout >= _GLOBAL_FANOUT_CAP:
+                    if token_probes >= token_probe_cap:
+                        matched_any = True
+                        probe_cap_hits += 1
+                        break
+                    if fanout >= token_fanout_cap:
                         matched_any = True
                         break
+                    token_probes += 1
                     if fp_b.unit_id == fp_a.unit_id:
                         continue
                     partner_checks += 1
                     
                     # Scope gate (same as original)
-                    if _is_class_scoped_pair(token_a, lock_token):
+                    if class_scoped_pair:
                         file_a, class_a = scope_map.get(fp_a.unit_id, (item.file_path, item.class_name))
                         file_b, class_b = scope_map.get(fp_b.unit_id, (_get_file_path(fp_b.unit_id), None))
                         if file_a != file_b:
@@ -411,6 +484,7 @@ def _run_mask_pass(
         suspended=suspended,
         elapsed_ms=round((time.perf_counter() - start) * 1000.0, 3),
         partner_checks=partner_checks,
+        probe_cap_hits=probe_cap_hits,
     )
 
 
@@ -511,6 +585,8 @@ def match_fingerprints(
             "mask_work_items": {band: len(worksets[band]) for band in ("Mask 1", "Mask 2", "Mask 3")},
             "mask_edges": {band: len(result.edges) for band, result in pass_results.items()},
             "mask_partner_checks": {band: result.partner_checks for band, result in pass_results.items()},
+            "mask_probe_cap_hits": {band: result.probe_cap_hits for band, result in pass_results.items()},
+            "fanout": {"global_cap": _GLOBAL_FANOUT_CAP, "adaptive_mask3": True},
             "total_edges": len(all_edges),
             "total_suspended": len(all_suspended),
             "total_ms": round((time.perf_counter() - run_start) * 1000.0, 3),

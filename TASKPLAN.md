@@ -219,12 +219,30 @@ VS Code benchmark (75,131 units) exposed 3 structural problems:
   - Gate 3: **5.584s**
   - Total (G1+G2+G3): **137.316s**
   - Mask 3 partner checks remain **4.0M**; Mask 3 remains dominant Gate 2 cost
+- Resolved baseline comparability gap:
+  - Historical baseline used go-only scan mode; auto-scan excludes `vendor` and reports 105,830 units.
+  - Comparable go-only scan now yields **162,917 units / 14,370 files** (near historical 162,954 / 14,381).
+- Comparable run v5: `output/validation/kubernetes-optionb-gate2-profile-go-comparable-v5.json`
+  - Gate 2: **74.777s** (46.15% faster vs 138.869s baseline)
+  - Mask 3: **7.67M** partner checks, **37.67s** mask time
+- Implemented adaptive Mask 3 caps in `bgi/bgi/gate2/keylock.py`:
+  - Dynamic per-token fanout (`_adaptive_fanout_cap`)
+  - Dynamic per-token probe bounds (`_adaptive_probe_cap`)
+  - Added profile metric `mask_probe_cap_hits`
+- Comparable run v8: `output/validation/kubernetes-optionb-gate2-profile-go-comparable-v8.json`
+  - Gate 2: **61.466s**
+  - Mask 3: **6.52M** partner checks, **2,861** probe-cap hits, **29.19s** mask time
+  - Edges: **2,320,404** (down from 2,691,909 in v5)
+- Comparable full run v10 (quality check): `output/validation/kubernetes-optionb-gate2-profile-go-comparable-v10.json`
+  - Gate 2: **63.746s** (55.74% faster vs baseline), total **186.406s**
+  - Quality guardrails held: **max cluster = 1.113%**, **fuse events = 0**
+- Comparable Gate2-focused rerun v9: `output/validation/kubernetes-optionb-gate2-profile-go-comparable-v9.json`
+  - Gate 2 observed at **62.447s**
+  - Additional measurement (same config): **59.582s** Gate 2 (transient run; not persisted as JSON)
 
 **Next implementation step:**
-- Resolve baseline comparability gap: current workspace snapshot scans at 105,830 units, not the historical 162,954-unit run
-- Recreate or restore the 162,954-unit kubernetes snapshot, then rerun v4 profile for apples-to-apples Gate 2 comparison
-- If needed, add adaptive per-token fanout (`_GLOBAL_FANOUT_CAP`) based on token frequency band
-- Start Gate 3 Union-Find optimization workstream (remaining Option B task)
+- Tune adaptive probe/fanout thresholds to make `<60s` Gate 2 consistent on comparable runs while monitoring edge retention.
+- Start Gate 3 Union-Find optimization workstream (remaining Option B task).
 
 **Success Metric:** Total pipeline <60s on kubernetes
 
