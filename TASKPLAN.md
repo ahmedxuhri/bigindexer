@@ -2,7 +2,7 @@
 
 ## Current Version: v1.0 Complete
 ## Active Version: v2.0 — Spectral-Fuse Architecture (Phase 1 Complete)
-## Next Version: v2.1 — Water-Clock (Phase 5)
+## Completed: v2.1 — Water-Clock (Phase 5) ✅
 
 ---
 
@@ -118,7 +118,23 @@ VS Code benchmark (75,131 units) exposed 3 structural problems:
 
 ---
 
-## Phase 2 — Speed (Next: Phase 5 — Water-Clock)
+## Completed: Phase 5 — Water-Clock (v2.1) ✅
+
+**Status:** All 4 tasks complete. Single-pass fingerprinting, multiprocessing, incremental caching, community extensions ready.
+
+**Commits:**
+- `d0d5ffa` — Phase 5.3: Incremental auto mode for monorepo scanning
+- `02ee5bb` — Phase 5.4: Language support documentation & registration system
+- `cf8c5e6` — Phase 5.4 CI: Validation script & conftest
+
+**Validation Completed:**
+- kubernetes/kubernetes (3.6M LOC): 219.2s total, max cluster 1.113% ✅ under 3% bound
+- All 733 tests passing
+- Language registry: Python & TypeScript .scm patterns, Go/Rust/JavaScript fallback
+
+---
+
+## Phase 2 — Speed (Completed: Phase 5 — Water-Clock)
 
 ### Step 5 — WATER-CLOCK + .scm queries
 
