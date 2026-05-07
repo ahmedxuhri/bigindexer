@@ -79,12 +79,16 @@ def run_scan(
 
     elif auto_mode:
         print(f"[BGI] Auto-scan {root_path} (multi-language) ...")
-        fingerprints = scan_repository(root_path, ai=ai, scan_run=scan_run)
+        if parallel:
+            from bgi.gate1.parallel_scanner import scan_directory_parallel
+            fingerprints = scan_directory_parallel(root_path, language="auto", max_workers=max_workers)
+        else:
+            fingerprints = scan_repository(root_path, ai=ai, scan_run=scan_run)
         print(f"[BGI] Gate 1 complete — {len(fingerprints)} units fingerprinted")
 
     else:
         print(f"[BGI] Scanning {root_path} ...")
-        if parallel and language.lower() != "auto":
+        if parallel:
             from bgi.gate1.parallel_scanner import scan_directory_parallel
             fingerprints = scan_directory_parallel(root_path, language=language, max_workers=max_workers)
         else:

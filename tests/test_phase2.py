@@ -1,7 +1,7 @@
 """Tests for Phase 2 multiprocessing and entry-point detection."""
 import pytest
 from pathlib import Path
-from bgi.gate1.parallel_scanner import scan_directory_parallel, _worker_scan_file
+from bgi.gate1.parallel_scanner import scan_directory_parallel, _worker_scan_batch
 from bgi.gate1.entry_points import detect_entry_points, scan_from_entries
 from bgi.core.fingerprint import COVFingerprint
 import tempfile
@@ -36,12 +36,11 @@ class TestParallelScanner:
         assert all(isinstance(f, COVFingerprint) for f in fps)
     
     def test_parallel_scan_worker_function(self, tmp_path):
-        """Test individual worker function."""
-        # Create a test Python file
+        """Test batch worker function directly."""
         test_file = tmp_path / "test.py"
         test_file.write_text("def hello(): pass")
-        
-        result = _worker_scan_file((test_file, tmp_path, "python", ""))
+
+        result = _worker_scan_batch(([str(test_file)], str(tmp_path), "python"))
         assert isinstance(result, list)
         assert len(result) >= 1
     
