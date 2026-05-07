@@ -173,6 +173,15 @@ VS Code benchmark (75,131 units) exposed 3 structural problems:
 
 **Success Metric:** Sub-second search on 3.6M LOC (kubernetes)
 
+**Validation snapshot (2026-05-07):**
+- Query API packaged and exercised on kubernetes validation workspace
+- Phase 6 search report: `output/validation/kubernetes-phase6-search-latency.json`
+- Index artifact (local): `output/validation/kubernetes-phase6-index.db` (~340MB)
+- VS Code artifact: `output/validation/bgi-search-0.0.1.vsix`
+- Planner latency (p95): `lookup_symbol=158.61ms`, `search_prefix=144.545ms`
+- API latency (p95): `/api/symbols=17.828ms`, `/api/search=142.493ms`
+- Read-path target met for symbol lookup; prefix search remains the slowest path.
+
 ---
 
 ### Option B: Performance Optimization (Future)
@@ -182,6 +191,12 @@ VS Code benchmark (75,131 units) exposed 3 structural problems:
 - Profile & parallelize SPECTRAL-MASKS matching
 - Streaming edge accumulation
 - Gate 3 Union-Find optimizations
+
+**Kickoff (next implementation step):**
+- Profile `bgi/bgi/gate2/keylock.py::match_fingerprints()` with per-mask timing
+- Replace `ThreadPoolExecutor` mask execution with CPU-parallel strategy (process workers)
+- Remove repeated full-pass token scans (`_build_mask_index` + `_run_mask_pass` both walk fingerprints) by pre-grouping once and reusing scoped views
+- Re-benchmark on kubernetes validation repo and compare against current Gate 2 baseline (`138.869s`)
 
 **Success Metric:** Total pipeline <60s on kubernetes
 
