@@ -189,7 +189,7 @@ VS Code benchmark (75,131 units) exposed 3 structural problems:
 
 **Tasks:**
 - ✅ Profile & parallelize SPECTRAL-MASKS matching
-- ⏳ Streaming edge accumulation
+- ✅ Streaming edge accumulation
 - ⏳ Gate 3 Union-Find optimizations
 
 **Progress snapshot (2026-05-07):**
@@ -201,10 +201,16 @@ VS Code benchmark (75,131 units) exposed 3 structural problems:
   - Gate 2: **48.384s** (process spectral profile)
   - Mask hot path: Mask 3 match = 25,821ms, 8.3M partner checks
   - Edges: 1,511,657
+- Implemented streaming-style edge row accumulation in Mask passes (materialize `BGIEdge` once per pass)
+- Added micro-bench harness: `scripts/benchmark_mask3_pass.py`
+- Re-benchmark after optimization: `output/validation/kubernetes-optionb-gate2-profile-v2.json`
+  - Gate 2: **49.274s**
+  - Mask 3 partner checks: **7.3M** (down from 8.3M)
+  - Mask 3 match time: ~25.9s (still dominant)
 
 **Next implementation step:**
-- Streaming edge accumulation for Mask 3 to cut memory churn and Python object overhead
-- Add micro-bench harness around `_run_mask_pass` to track per-optimization deltas
+- Add tighter high-frequency partner pruning for Mask 3 token buckets before inner loop
+- Optimize `_same_scope`/dedup path further with cached scope keys and lightweight keys
 - Re-run benchmark on full 162k-unit kubernetes baseline for direct comparability
 
 **Success Metric:** Total pipeline <60s on kubernetes

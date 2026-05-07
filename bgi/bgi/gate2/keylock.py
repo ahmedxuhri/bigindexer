@@ -152,6 +152,7 @@ class MaskWorkItem:
     tokens: tuple[COV, ...]
     file_path: str
     dir_path: str
+    class_name: str | None
 
 
 @dataclass
@@ -204,6 +205,8 @@ def _prepare_mask_worksets(
     for fp in fingerprints:
         file_path = _get_file_path(fp.unit_id)
         dir_path = _get_directory_path(fp.unit_id)
+        parts = fp.unit_id.split("::")
+        class_name = parts[1] if len(parts) == 3 else None
         band_tokens: dict[str, list[COV]] = {"Mask 1": [], "Mask 2": [], "Mask 3": []}
 
         for token in fp.all_tokens():
@@ -220,6 +223,7 @@ def _prepare_mask_worksets(
                     tokens=tuple(tokens),
                     file_path=file_path,
                     dir_path=dir_path,
+                    class_name=class_name,
                 ))
 
     return worksets
@@ -249,7 +253,10 @@ def _build_mask_index(
             region_key = "global"
 
         for token in item.tokens:
-            token_index.setdefault((token, region_key), []).append(item.fp)
+            key = (token, region_key)
+            bucket = token_index.setdefault(key, [])
+            if len(bucket) < _TOKEN_INDEX_CAP:
+                bucket.append(item.fp)
 
     return MaskIndex(band=band, region=scope, token_index=token_index)
 
@@ -265,10 +272,13 @@ def _run_mask_pass(
         MaskPassResult with edges, suspended refs, and timing stats.
     """
     start = time.perf_counter()
-    edges: list[BGIEdge] = []
+    edge_rows: list[tuple[str, str, COV, COV, float, EdgeType, str]] = []
     suspended: list[SuspendedEdge] = []
-    seen: set[tuple[str, str, str, str]] = set()
+    seen: set[tuple[str, str, COV, COV]] = set()
     partner_checks = 0
+    scope_map: dict[str, tuple[str, str | None]] = {
+        item.fp.unit_id: (item.file_path, item.class_name) for item in work_items
+    }
 
     if not mask_index.token_index:
         return MaskPassResult(
@@ -309,12 +319,17 @@ def _run_mask_pass(
                     # Scope gate (same as original)
                     canonical = (token_a, lock_token) if (token_a, lock_token) in _CLASS_SCOPED_PAIRS \
                                 else (lock_token, token_a)
-                    if canonical in _CLASS_SCOPED_PAIRS and not _same_scope(fp_a, fp_b):
-                        continue
+                    if canonical in _CLASS_SCOPED_PAIRS:
+                        file_a, class_a = scope_map.get(fp_a.unit_id, (item.file_path, item.class_name))
+                        file_b, class_b = scope_map.get(fp_b.unit_id, (_get_file_path(fp_b.unit_id), None))
+                        if file_a != file_b:
+                            continue
+                        if class_a is not None and class_b is not None and class_a != class_b:
+                            continue
                     
                     key_tok, lk_tok = _directed(token_a, lock_token)
                     uid_pair = tuple(sorted([fp_a.unit_id, fp_b.unit_id]))
-                    dedup_key = (uid_pair[0], uid_pair[1], str(key_tok), str(lk_tok))
+                    dedup_key = (uid_pair[0], uid_pair[1], key_tok, lk_tok)
                     matched_any = True
                     if dedup_key in seen:
                         continue
@@ -329,14 +344,14 @@ def _run_mask_pass(
                     else:
                         source_id, target_id = fp_b.unit_id, fp_a.unit_id
                     
-                    edges.append(BGIEdge(
-                        source_id=source_id,
-                        target_id=target_id,
-                        key_token=key_tok,
-                        lock_token=lk_tok,
-                        confidence=confidence,
-                        edge_type=edge_type,
-                        provenance=f"gate2:spectral-{mask_index.band}:{fp_a.source}/{fp_b.source}",
+                    edge_rows.append((
+                        source_id,
+                        target_id,
+                        key_tok,
+                        lk_tok,
+                        confidence,
+                        edge_type,
+                        f"gate2:spectral-{mask_index.band}:{fp_a.source}/{fp_b.source}",
                     ))
             
             if not matched_any and token_a in _OUTWARD_TOKENS:
@@ -345,6 +360,19 @@ def _run_mask_pass(
                     token=token_a,
                     raw_callee=fp_a.unit_id,
                 ))
+
+    edges = [
+        BGIEdge(
+            source_id=source_id,
+            target_id=target_id,
+            key_token=key_tok,
+            lock_token=lock_tok,
+            confidence=confidence,
+            edge_type=edge_type,
+            provenance=provenance,
+        )
+        for source_id, target_id, key_tok, lock_tok, confidence, edge_type, provenance in edge_rows
+    ]
 
     return MaskPassResult(
         band=mask_index.band,
