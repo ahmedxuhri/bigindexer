@@ -13,9 +13,10 @@ At scale, T and M are small constants — effectively linear in N.
 Spectral passes reduce M by scope partitioning (3x–50x reduction in common cases).
 """
 from __future__ import annotations
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+import time
+from typing import TYPE_CHECKING, Any
 
 from bgi.core.cov import COV, LOCK_MAP, is_edge_forming, KEY_LOCK_PAIRS
 from bgi.core.edges import BGIEdge, EdgeType
@@ -101,6 +102,9 @@ _CLASS_SCOPED_PAIRS: set[tuple[COV, COV]] = {
 #   After  cap: ~15k edges,  <1s
 _GLOBAL_FANOUT_CAP = 100   # max partners emitted per (unit, token) combo
 _TOKEN_INDEX_CAP   = 500   # if a token has >N entries, only keep first N per file group
+_PROCESS_POOL_MIN_FINGERPRINTS = 20000
+_OUTWARD_TOKENS = {COV.DELEGATE, COV.FETCH, COV.EMIT, COV.PERSIST, COV.ROUTE}
+_LAST_MATCH_PROFILE: dict[str, Any] = {}
 
 
 def _same_scope(fp_a: COVFingerprint, fp_b: COVFingerprint) -> bool:
@@ -137,8 +141,37 @@ class SuspendedEdge:
 class MaskIndex:
     """Token index scoped to a frequency band and spatial region."""
     band: str  # "Mask 1", "Mask 2", or "Mask 3"
-    region: str | None  # None = global, "file:path" or "dir:path" for scoped
-    token_index: dict[COV, list[COVFingerprint]]
+    region: str | None  # None = global, "file" or "directory" for scoped
+    token_index: dict[tuple[COV, str], list[COVFingerprint]]
+
+
+@dataclass
+class MaskWorkItem:
+    """Pre-grouped source fingerprint + tokens for one spectral mask."""
+    fp: COVFingerprint
+    tokens: tuple[COV, ...]
+    file_path: str
+    dir_path: str
+
+
+@dataclass
+class MaskPassResult:
+    """One mask pass execution result."""
+    band: str
+    edges: list[BGIEdge]
+    suspended: list[SuspendedEdge]
+    elapsed_ms: float
+    partner_checks: int
+
+
+def _set_last_match_profile(profile: dict[str, Any]) -> None:
+    global _LAST_MATCH_PROFILE
+    _LAST_MATCH_PROFILE = profile
+
+
+def get_last_match_profile() -> dict[str, Any]:
+    """Return profiling stats from the most recent match_fingerprints call."""
+    return dict(_LAST_MATCH_PROFILE)
 
 
 def _get_directory_path(unit_id: str) -> str:
@@ -154,9 +187,46 @@ def _get_file_path(unit_id: str) -> str:
     return unit_id.split("::")[0]
 
 
-def _build_mask_index(
+def _prepare_mask_worksets(
     fingerprints: list[COVFingerprint],
-    census: CensusResult,
+    census: 'CensusResult',
+) -> dict[str, list[MaskWorkItem]]:
+    """
+    Build per-mask worksets in a single pass over fingerprints/tokens.
+    This avoids repeated full scans during mask index and pass setup.
+    """
+    worksets: dict[str, list[MaskWorkItem]] = {
+        "Mask 1": [],
+        "Mask 2": [],
+        "Mask 3": [],
+    }
+
+    for fp in fingerprints:
+        file_path = _get_file_path(fp.unit_id)
+        dir_path = _get_directory_path(fp.unit_id)
+        band_tokens: dict[str, list[COV]] = {"Mask 1": [], "Mask 2": [], "Mask 3": []}
+
+        for token in fp.all_tokens():
+            if not is_edge_forming(token):
+                continue
+            band = census.token_bands.get(token)
+            if band in band_tokens:
+                band_tokens[band].append(token)
+
+        for band, tokens in band_tokens.items():
+            if tokens:
+                worksets[band].append(MaskWorkItem(
+                    fp=fp,
+                    tokens=tuple(tokens),
+                    file_path=file_path,
+                    dir_path=dir_path,
+                ))
+
+    return worksets
+
+
+def _build_mask_index(
+    work_items: list[MaskWorkItem],
     band: str,
     scope: str | None = None,  # None=global, "file", or "directory"
 ) -> MaskIndex:
@@ -164,84 +234,72 @@ def _build_mask_index(
     Build token index for a single mask (frequency band + spatial scope).
     
     Args:
-        fingerprints: All fingerprints from Gate 1
-        census: TOKEN-CENSUS result with band assignments
+        work_items: Pre-grouped work items for this band
         band: "Mask 1", "Mask 2", or "Mask 3"
         scope: None (global), "file", or "directory" scoping
     """
-    token_index: dict[COV, list[COVFingerprint]] = {}
-    
-    for fp in fingerprints:
-        for token in fp.all_tokens():
-            if not is_edge_forming(token):
-                continue
-            if census.token_bands.get(token) != band:
-                continue
-            
-            # Apply scope filter
-            if scope == "file":
-                # Group by file path only
-                region_key = _get_file_path(fp.unit_id)
-            elif scope == "directory":
-                # Group by directory (3-level path)
-                region_key = _get_directory_path(fp.unit_id)
-            else:
-                # Global scope
-                region_key = "global"
-            
-            key = f"{token}:{region_key}"
-            token_index.setdefault(key, []).append(fp)
-    
+    token_index: dict[tuple[COV, str], list[COVFingerprint]] = {}
+
+    for item in work_items:
+        if scope == "file":
+            region_key = item.file_path
+        elif scope == "directory":
+            region_key = item.dir_path
+        else:
+            region_key = "global"
+
+        for token in item.tokens:
+            token_index.setdefault((token, region_key), []).append(item.fp)
+
     return MaskIndex(band=band, region=scope, token_index=token_index)
 
 
 def _run_mask_pass(
-    fingerprints: list[COVFingerprint],
+    work_items: list[MaskWorkItem],
     mask_index: MaskIndex,
-) -> tuple[list[BGIEdge], list[SuspendedEdge]]:
+) -> MaskPassResult:
     """
     Run matching pass for a single spectral mask.
     
     Returns:
-        (edges, suspended) from this mask only
+        MaskPassResult with edges, suspended refs, and timing stats.
     """
+    start = time.perf_counter()
     edges: list[BGIEdge] = []
     suspended: list[SuspendedEdge] = []
     seen: set[tuple[str, str, str, str]] = set()
-    
-    for fp_a in fingerprints:
-        for token_a in fp_a.all_tokens():
-            if not is_edge_forming(token_a):
-                continue
-            if not mask_index.token_index:  # Empty mask
-                continue
-            
-            # Get scoped index key
-            if mask_index.region == "file":
-                region_a = _get_file_path(fp_a.unit_id)
-            elif mask_index.region == "directory":
-                region_a = _get_directory_path(fp_a.unit_id)
-            else:
-                region_a = "global"
-            
+    partner_checks = 0
+
+    if not mask_index.token_index:
+        return MaskPassResult(
+            band=mask_index.band,
+            edges=[],
+            suspended=[],
+            elapsed_ms=round((time.perf_counter() - start) * 1000.0, 3),
+            partner_checks=0,
+        )
+
+    for item in work_items:
+        fp_a = item.fp
+        if mask_index.region == "file":
+            region_a = item.file_path
+        elif mask_index.region == "directory":
+            region_a = item.dir_path
+        else:
+            region_a = "global"
+
+        for token_a in item.tokens:
             complement_tokens = LOCK_MAP.get(token_a, set())
             if not complement_tokens:
                 continue
-            
+
             matched_any = False
             fanout = 0
-            
+
             for lock_token in complement_tokens:
-                # Look up in scoped index
-                if mask_index.region == "file":
-                    region_key = f"{lock_token}:{region_a}"
-                elif mask_index.region == "directory":
-                    region_key = f"{lock_token}:{region_a}"
-                else:
-                    region_key = f"{lock_token}:global"
-                
-                partners = mask_index.token_index.get(region_key, [])
+                partners = mask_index.token_index.get((lock_token, region_a), [])
                 for fp_b in partners:
+                    partner_checks += 1
                     if fanout >= _GLOBAL_FANOUT_CAP:
                         matched_any = True
                         break
@@ -281,16 +339,20 @@ def _run_mask_pass(
                         provenance=f"gate2:spectral-{mask_index.band}:{fp_a.source}/{fp_b.source}",
                     ))
             
-            if not matched_any:
-                _OUTWARD = {COV.DELEGATE, COV.FETCH, COV.EMIT, COV.PERSIST, COV.ROUTE}
-                if token_a in _OUTWARD:
-                    suspended.append(SuspendedEdge(
-                        source_id=fp_a.unit_id,
-                        token=token_a,
-                        raw_callee=fp_a.unit_id,
-                    ))
-    
-    return edges, suspended
+            if not matched_any and token_a in _OUTWARD_TOKENS:
+                suspended.append(SuspendedEdge(
+                    source_id=fp_a.unit_id,
+                    token=token_a,
+                    raw_callee=fp_a.unit_id,
+                ))
+
+    return MaskPassResult(
+        band=mask_index.band,
+        edges=edges,
+        suspended=suspended,
+        elapsed_ms=round((time.perf_counter() - start) * 1000.0, 3),
+        partner_checks=partner_checks,
+    )
 
 
 def _union_edges(edge_lists: list[list[BGIEdge]]) -> list[BGIEdge]:
@@ -332,29 +394,69 @@ def match_fingerprints(
         suspended — unresolved references for the SEP
     """
     
+    run_start = time.perf_counter()
+
     # ── SPECTRAL-MASKS (if census available) ──────────────────────────────────
     if census is not None:
-        # Build 3 mask indices (one per frequency band + spatial scope)
-        mask1 = _build_mask_index(fingerprints, census, "Mask 1", scope=None)  # global
-        mask2 = _build_mask_index(fingerprints, census, "Mask 2", scope="directory")  # dir
-        mask3 = _build_mask_index(fingerprints, census, "Mask 3", scope="file")  # file
-        
-        # Run 3 passes in parallel (independent, I/O-bound in practice)
-        with ThreadPoolExecutor(max_workers=3) as executor:
-            future_mask1 = executor.submit(_run_mask_pass, fingerprints, mask1)
-            future_mask2 = executor.submit(_run_mask_pass, fingerprints, mask2)
-            future_mask3 = executor.submit(_run_mask_pass, fingerprints, mask3)
-            
-            edges_m1, susp_m1 = future_mask1.result()
-            edges_m2, susp_m2 = future_mask2.result()
-            edges_m3, susp_m3 = future_mask3.result()
-        
+        # Pre-group once to avoid repeated full-pass token scans.
+        prepare_start = time.perf_counter()
+        worksets = _prepare_mask_worksets(fingerprints, census)
+        prepare_ms = round((time.perf_counter() - prepare_start) * 1000.0, 3)
+
+        build_times: dict[str, float] = {}
+        build_start = time.perf_counter()
+        mask1 = _build_mask_index(worksets["Mask 1"], "Mask 1", scope=None)  # global
+        build_times["Mask 1"] = round((time.perf_counter() - build_start) * 1000.0, 3)
+
+        build_start = time.perf_counter()
+        mask2 = _build_mask_index(worksets["Mask 2"], "Mask 2", scope="directory")  # dir
+        build_times["Mask 2"] = round((time.perf_counter() - build_start) * 1000.0, 3)
+
+        build_start = time.perf_counter()
+        mask3 = _build_mask_index(worksets["Mask 3"], "Mask 3", scope="file")  # file
+        build_times["Mask 3"] = round((time.perf_counter() - build_start) * 1000.0, 3)
+
+        use_process_pool = len(fingerprints) >= _PROCESS_POOL_MIN_FINGERPRINTS
+        executor_cls = ProcessPoolExecutor if use_process_pool else ThreadPoolExecutor
+
+        # Run 3 passes in parallel
+        with executor_cls(max_workers=3) as executor:
+            futures = {
+                "Mask 1": executor.submit(_run_mask_pass, worksets["Mask 1"], mask1),
+                "Mask 2": executor.submit(_run_mask_pass, worksets["Mask 2"], mask2),
+                "Mask 3": executor.submit(_run_mask_pass, worksets["Mask 3"], mask3),
+            }
+            pass_results = {band: future.result() for band, future in futures.items()}
+
         # Union edges with deduplication
-        all_edges = _union_edges([edges_m1, edges_m2, edges_m3])
-        
+        all_edges = _union_edges([
+            pass_results["Mask 1"].edges,
+            pass_results["Mask 2"].edges,
+            pass_results["Mask 3"].edges,
+        ])
+
         # Merge suspended (keep all, SEP dedupes)
-        all_suspended = susp_m1 + susp_m2 + susp_m3
-        
+        all_suspended = (
+            pass_results["Mask 1"].suspended
+            + pass_results["Mask 2"].suspended
+            + pass_results["Mask 3"].suspended
+        )
+
+        _set_last_match_profile({
+            "mode": "spectral",
+            "executor": "process" if use_process_pool else "thread",
+            "fingerprints": len(fingerprints),
+            "prepare_worksets_ms": prepare_ms,
+            "build_index_ms": build_times,
+            "mask_match_ms": {band: result.elapsed_ms for band, result in pass_results.items()},
+            "mask_work_items": {band: len(worksets[band]) for band in ("Mask 1", "Mask 2", "Mask 3")},
+            "mask_edges": {band: len(result.edges) for band, result in pass_results.items()},
+            "mask_partner_checks": {band: result.partner_checks for band, result in pass_results.items()},
+            "total_edges": len(all_edges),
+            "total_suspended": len(all_suspended),
+            "total_ms": round((time.perf_counter() - run_start) * 1000.0, 3),
+        })
+
         return all_edges, all_suspended
     
     # ── Flat global matching (fallback, no census) ────────────────────────────
@@ -450,13 +552,21 @@ def match_fingerprints(
             # If this edge-forming token found NO partners at all → suspend it
             if not matched_any:
                 # Only suspend tokens that imply an outward reference
-                _OUTWARD = {COV.DELEGATE, COV.FETCH, COV.EMIT, COV.PERSIST, COV.ROUTE}
-                if token_a in _OUTWARD:
+                if token_a in _OUTWARD_TOKENS:
                     suspended.append(SuspendedEdge(
                         source_id=fp_a.unit_id,
                         token=token_a,
                         raw_callee=fp_a.unit_id,
                     ))
+
+    _set_last_match_profile({
+        "mode": "flat",
+        "executor": "single",
+        "fingerprints": len(fingerprints),
+        "total_edges": len(edges),
+        "total_suspended": len(suspended),
+        "total_ms": round((time.perf_counter() - run_start) * 1000.0, 3),
+    })
 
     return edges, suspended
 

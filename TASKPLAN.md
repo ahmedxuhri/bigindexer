@@ -184,19 +184,28 @@ VS Code benchmark (75,131 units) exposed 3 structural problems:
 
 ---
 
-### Option B: Performance Optimization (Future)
+### Option B: Performance Optimization (IN PROGRESS)
 **Goal:** Gate 2: 138s → <60s on large repos
 
 **Tasks:**
-- Profile & parallelize SPECTRAL-MASKS matching
-- Streaming edge accumulation
-- Gate 3 Union-Find optimizations
+- ✅ Profile & parallelize SPECTRAL-MASKS matching
+- ⏳ Streaming edge accumulation
+- ⏳ Gate 3 Union-Find optimizations
 
-**Kickoff (next implementation step):**
-- Profile `bgi/bgi/gate2/keylock.py::match_fingerprints()` with per-mask timing
-- Replace `ThreadPoolExecutor` mask execution with CPU-parallel strategy (process workers)
-- Remove repeated full-pass token scans (`_build_mask_index` + `_run_mask_pass` both walk fingerprints) by pre-grouping once and reusing scoped views
-- Re-benchmark on kubernetes validation repo and compare against current Gate 2 baseline (`138.869s`)
+**Progress snapshot (2026-05-07):**
+- Implemented per-mask profiling in `bgi/bgi/gate2/keylock.py`
+- Added single-pass workset preparation to avoid repeated token scans
+- Replaced thread execution with process workers for large scans (auto-threshold)
+- Added `get_last_match_profile()` for benchmark introspection
+- Benchmark on `output/validation/kubernetes` (105,830 units):
+  - Gate 2: **48.384s** (process spectral profile)
+  - Mask hot path: Mask 3 match = 25,821ms, 8.3M partner checks
+  - Edges: 1,511,657
+
+**Next implementation step:**
+- Streaming edge accumulation for Mask 3 to cut memory churn and Python object overhead
+- Add micro-bench harness around `_run_mask_pass` to track per-optimization deltas
+- Re-run benchmark on full 162k-unit kubernetes baseline for direct comparability
 
 **Success Metric:** Total pipeline <60s on kubernetes
 

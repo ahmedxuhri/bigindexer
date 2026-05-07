@@ -6,6 +6,7 @@ from bgi.core.cov import COV
 from bgi.core.fingerprint import COVFingerprint
 from bgi.gate2.census import compute_census
 from bgi.gate2.keylock import (
+    get_last_match_profile,
     match_fingerprints,
     _get_directory_path,
     _get_file_path,
@@ -126,6 +127,37 @@ class TestSpectralMasksWithCensus:
             token_pair = (str(edge.key_token), str(edge.lock_token))
             assert token_pair not in [("INTAKE", "OUTPUT"), ("OUTPUT", "INTAKE")]
 
+    def test_records_per_mask_profile_stats(self):
+        """Spectral path should expose per-mask profiling details."""
+        fps = [
+            COVFingerprint(
+                unit_id="file_a.py::authenticate",
+                tokens=[COV.AUTHENTICATE],
+                class_context=[],
+                confidence=1.0,
+                source="deterministic",
+                language="python",
+                line_range=(1, 10),
+            ),
+            COVFingerprint(
+                unit_id="file_b.py::route",
+                tokens=[COV.ROUTE],
+                class_context=[],
+                confidence=1.0,
+                source="deterministic",
+                language="python",
+                line_range=(1, 10),
+            ),
+        ]
+        census = compute_census(fps, total_files=2)
+        edges, _ = match_fingerprints(fps, census=census)
+
+        profile = get_last_match_profile()
+        assert profile["mode"] == "spectral"
+        assert set(profile["mask_match_ms"].keys()) == {"Mask 1", "Mask 2", "Mask 3"}
+        assert set(profile["mask_work_items"].keys()) == {"Mask 1", "Mask 2", "Mask 3"}
+        assert profile["total_edges"] == len(edges)
+
 
 class TestSpectralWithoutCensus:
     """Test backward compatibility when census is not provided."""
@@ -160,3 +192,4 @@ class TestSpectralWithoutCensus:
         assert len(edges) > 0
         # Provenance should NOT mention spectral
         assert not any("spectral" in e.provenance for e in edges)
+        assert get_last_match_profile()["mode"] == "flat"
