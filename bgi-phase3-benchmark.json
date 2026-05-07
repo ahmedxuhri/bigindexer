@@ -1,0 +1,17 @@
+{
+  "benchmark": "Phase 3 Performance",
+  "sequential": {
+    "time_sec": 2.32,
+    "files": 1119
+  },
+  "parallel": {
+    "time_sec": 2.11,
+    "files": 1119
+  },
+  "speedup": 1.1,
+  "projections": {
+    "vs_code_seq": 19.3,
+    "vs_code_par": 17.6
+  },
+  "status": "PASS"
+}
