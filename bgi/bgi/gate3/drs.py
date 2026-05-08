@@ -403,7 +403,7 @@ def run_drs(
         )
 
     unit_is_test: dict[str, bool] = {
-        fp.unit_id: _is_test_path(_file_of(fp.unit_id)) for fp in fingerprints
+        fp.unit_id: _is_test_path(unit_files[fp.unit_id]) for fp in fingerprints
     }
 
     fuse_edges: list[FuseEdge] = []
