@@ -335,15 +335,19 @@ def run_drs(
             import_edges = extract_import_edges(root_path, lang="python")
             cycles = detect_cycles(import_edges)
             
-            # Map unit_id to file
-            unit_to_file = {}
+            # Build unit/file lookup once for import proximity joins.
+            unit_to_file: dict[str, str] = {}
+            file_to_units: dict[str, list[str]] = defaultdict(list)
             for fp in fingerprints:
-                unit_to_file[fp.unit_id] = fp.unit_id.split("::")[0]
+                file_path = fp.unit_id.split("::")[0]
+                unit_to_file[fp.unit_id] = file_path
+                file_to_units[file_path].append(fp.unit_id)
             
             # For each import relationship, try to merge clusters
             for file_a, imports_b in import_edges.items():
-                # Find units in file_a
-                units_a = [uid for uid, f in unit_to_file.items() if f == file_a]
+                units_a = file_to_units.get(file_a)
+                if not units_a:
+                    continue
                 
                 for file_b in imports_b:
                     # Skip circular imports (both directions)
@@ -351,8 +355,7 @@ def run_drs(
                     if pair in cycles:
                         continue
                     
-                    # Find units in file_b
-                    units_b = [uid for uid, f in unit_to_file.items() if f == file_b]
+                    units_b = file_to_units.get(file_b)
                     
                     # Soft merge: pick one representative from each and merge clusters
                     if units_a and units_b:
@@ -378,10 +381,9 @@ def run_drs(
         (COV.AUTHORIZE,    COV.ROUTE),      # authz gate on a route (cross-module)
     }
 
-    def _is_test_unit(uid: str) -> bool:
-        """True if the unit lives in a test file or test directory."""
-        parts = uid.split("::")
-        path = parts[0].replace("\\", "/").lower()
+    def _is_test_path(path: str) -> bool:
+        """True if the file path points to test code."""
+        path = path.replace("\\", "/").lower()
         return (
             "/test" in path
             or path.startswith("test")
@@ -390,6 +392,10 @@ def run_drs(
             or "/tests/" in path
             or "/spec/" in path
         )
+
+    unit_is_test: dict[str, bool] = {
+        fp.unit_id: _is_test_path(_file_of(fp.unit_id)) for fp in fingerprints
+    }
 
     fuse_edges: list[FuseEdge] = []
 
@@ -415,8 +421,8 @@ def run_drs(
         # Cross-file: only merge if both units are in same domain
         pair = (edge.key_token, edge.lock_token)
         pair_rev = (edge.lock_token, edge.key_token)
-        src_is_test = _is_test_unit(edge.source_id)
-        tgt_is_test = _is_test_unit(edge.target_id)
+        src_is_test = unit_is_test.get(edge.source_id, False)
+        tgt_is_test = unit_is_test.get(edge.target_id, False)
         if src_is_test != tgt_is_test:
             continue  # never merge test ↔ production across files
         if pair in _CROSS_FILE_MERGE_PAIRS or pair_rev in _CROSS_FILE_MERGE_PAIRS:
@@ -472,6 +478,8 @@ def run_drs(
         for uid in members:
             unit_to_cluster[uid] = cluster_id
 
+    cluster_by_id = {c.cluster_id: c for c in clusters}
+
     # ── Pass 4: Seam finalization ─────────────────────────────────────────────
     # A seam unit is one where its cluster and an adjacent cluster's probability
     # are within SEAM_THRESHOLD of each other AND the unit bridges them via edges.
@@ -479,7 +487,7 @@ def run_drs(
 
     for uid in potential_seams:
         cid = unit_to_cluster.get(uid)
-        cluster = next((c for c in clusters if c.cluster_id == cid), None)
+        cluster = cluster_by_id.get(cid) if cid else None
         if cluster:
             cluster.seam_unit_ids.add(uid)
             confirmed_seams.add(uid)

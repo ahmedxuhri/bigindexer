@@ -239,10 +239,19 @@ VS Code benchmark (75,131 units) exposed 3 structural problems:
 - Comparable Gate2-focused rerun v9: `output/validation/kubernetes-optionb-gate2-profile-go-comparable-v9.json`
   - Gate 2 observed at **62.447s**
   - Additional measurement (same config): **59.582s** Gate 2 (transient run; not persisted as JSON)
+- Attempted a more aggressive Mask 3 adaptive-cap profile (probe/fanout) but observed slower Gate 2 under shared-load runs; reverted to prior adaptive thresholds.
+- Started Gate 3 Union-Find optimization pass in `bgi/bgi/gate3/drs.py`:
+  - Added `file_to_units` cache for import-proximity merges (replaces repeated full-map scans per import edge)
+  - Added `unit_is_test` cache for Pass 2 cross-file test/prod gating
+  - Added `cluster_by_id` cache for seam finalization (replaces linear cluster lookup per seam)
+- Post-change comparable artifacts:
+  - `output/validation/kubernetes-optionb-gate2-profile-go-comparable-v12-gate3start.json`
+  - `output/validation/kubernetes-optionb-gate2-profile-go-comparable-v13-gate2only.json`
+  - Shared-host runs observed Gate 2 in **66–68s** range; quality guards held (**max cluster 1.113%**, **fuse events 0**)
 
 **Next implementation step:**
-- Tune adaptive probe/fanout thresholds to make `<60s` Gate 2 consistent on comparable runs while monitoring edge retention.
-- Start Gate 3 Union-Find optimization workstream (remaining Option B task).
+- Continue Gate 3 optimization (next hotspot after caching pass: Pass 1 open-cluster bookkeeping / merge-path costs).
+- Re-run comparable benchmarking as controlled medians (multiple runs) to reduce shared-host variance before further Gate 2 threshold tuning.
 
 **Success Metric:** Total pipeline <60s on kubernetes
 
