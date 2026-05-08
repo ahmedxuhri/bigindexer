@@ -269,13 +269,15 @@ def run_drs(
     max_cluster_size = max(50, int(total_units * max_cluster_pct))
 
     fp_by_id = {fp.unit_id: fp for fp in fingerprints}
+    unit_tokens = {fp.unit_id: fp.all_tokens() for fp in fingerprints}
+    unit_files = {fp.unit_id: _file_of(fp.unit_id) for fp in fingerprints}
 
     # ── Pass 1: Within-file proximity grouping ────────────────────────────────
     # Group units by file, sort by line number, do a radar-scan
 
     by_file: dict[str, list[COVFingerprint]] = defaultdict(list)
     for fp in fingerprints:
-        by_file[_file_of(fp.unit_id)].append(fp)
+        by_file[unit_files[fp.unit_id]].append(fp)
     for lst in by_file.values():
         lst.sort(key=lambda fp: fp.line_range[0])
 
@@ -292,7 +294,7 @@ def run_drs(
 
         for fp in units:
             start = fp.line_range[0]
-            unit_prior = _token_prior(fp.all_tokens())
+            unit_prior = _token_prior(unit_tokens[fp.unit_id])
             unit_radar = _radar_range(unit_prior)
             unit_end = start + unit_radar
 
@@ -460,8 +462,8 @@ def run_drs(
         for uid in members:
             fp = fp_by_id.get(uid)
             if fp:
-                all_tokens_flat.extend(fp.all_tokens())
-                files.add(_file_of(uid))
+                all_tokens_flat.extend(unit_tokens[uid])
+                files.add(unit_files[uid])
             total_edges += edge_count_by_unit.get(uid, 0)
 
         token_counts = Counter(all_tokens_flat)

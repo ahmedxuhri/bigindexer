@@ -253,6 +253,11 @@ VS Code benchmark (75,131 units) exposed 3 structural problems:
   - Gate 3: **9.258s**
   - Total: **196.705s**
   - Quality guards still held: **max cluster 1.113%**, **fuse events 0**
+- Latest single-run sample after token-cache reuse: `output/validation/kubernetes-optionb-controlled-v16.json`
+  - Gate 2: **68.133s**
+  - Gate 3: **9.341s**
+  - Total: **181.120s**
+  - Quality guards still held: **max cluster 1.113%**, **fuse events 0**
 
 **Next implementation step:**
 - Continue Gate 3 optimization (next hotspot after caching pass: Pass 1 open-cluster bookkeeping / merge-path costs).
