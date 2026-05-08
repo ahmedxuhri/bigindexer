@@ -213,20 +213,29 @@ class _SizedUnionFind:
 
     def union(self, x: str, y: str) -> bool:
         """Merge x and y. Returns True if merged, False if refused (cap exceeded)."""
+        merged, _, _, _ = self.union_with_meta(x, y)
+        return merged
+
+    def union_with_meta(self, x: str, y: str) -> tuple[bool, str, str, int]:
+        """
+        Merge x and y with metadata for fast refusal reporting.
+        Returns: (merged, root_x, root_y, combined_size_before_merge_or_same_size)
+        """
         rx, ry = self.find(x), self.find(y)
         if rx == ry:
-            return True
+            return True, rx, ry, self._size.get(rx, 1)
         sx, sy = self._size.get(rx, 1), self._size.get(ry, 1)
-        if sx + sy > self._max:
-            return False  # FUSE: refused merge
+        combined = sx + sy
+        if combined > self._max:
+            return False, rx, ry, combined  # FUSE: refused merge
         # Union by size (attach smaller root to larger)
         if sx >= sy:
             self._parent[ry] = rx
-            self._size[rx] = sx + sy
+            self._size[rx] = combined
         else:
             self._parent[rx] = ry
-            self._size[ry] = sx + sy
-        return True
+            self._size[ry] = combined
+        return True, rx, ry, combined
 
     def groups(self) -> dict[str, list[str]]:
         result: dict[str, list[str]] = defaultdict(list)
@@ -278,52 +287,53 @@ def run_drs(
     potential_seams: set[str] = set()
 
     for file_path, units in by_file.items():
-        # Open clusters within this file: (end_line, representative_unit_id)
-        open_clusters: list[tuple[int, str]] = []  # (radar_end_line, unit_id)
+        # Open clusters within this file: representative_root -> radar_end_line.
+        open_clusters: dict[str, int] = {}
 
         for fp in units:
             start = fp.line_range[0]
             unit_prior = _token_prior(fp.all_tokens())
             unit_radar = _radar_range(unit_prior)
+            unit_end = start + unit_radar
 
-            # Find all open clusters whose radar reaches this unit
-            candidates = [
-                (end, uid) for end, uid in open_clusters if end >= start
-            ]
+            # Expire clusters whose radar no longer reaches this unit.
+            if open_clusters:
+                expired = [uid for uid, end in open_clusters.items() if end < start]
+                for uid in expired:
+                    open_clusters.pop(uid, None)
+
+            candidates = [(uid, end) for uid, end in open_clusters.items() if end >= start]
 
             if len(candidates) == 0:
                 # No cluster reaches this unit — start a new one
-                open_clusters.append((start + unit_radar, fp.unit_id))
+                open_clusters[uf.find(fp.unit_id)] = unit_end
 
             elif len(candidates) == 1:
                 # One cluster claims this unit
-                _, rep_uid = candidates[0]
+                rep_uid, end_line = candidates[0]
                 uf.union(fp.unit_id, rep_uid)
-                # Extend the cluster's radar
-                new_end = max(candidates[0][0], start + unit_radar)
-                open_clusters = [
-                    (new_end if uid == rep_uid else end, uid)
-                    for end, uid in open_clusters
-                ]
+                root = uf.find(rep_uid)
+                open_clusters.pop(rep_uid, None)
+                existing = open_clusters.get(root)
+                new_end = max(end_line, unit_end)
+                open_clusters[root] = new_end if existing is None else max(existing, new_end)
 
             else:
                 # Multiple clusters claim this unit — seam candidate
                 # Merge all claiming clusters into one (the unit bridges them)
                 potential_seams.add(fp.unit_id)
-                rep = candidates[0][1]
-                for _, uid in candidates[1:]:
-                    uf.union(rep, uid)
+                rep = candidates[0][0]
+                merged_end = unit_end
+                for uid, end in candidates:
+                    merged_end = max(merged_end, end)
+                    if uid != rep:
+                        uf.union(rep, uid)
                 uf.union(fp.unit_id, rep)
-                new_end = max(max(end for end, _ in candidates), start + unit_radar)
-                seen_reps = {uf.find(uid) for _, uid in candidates}
-                open_clusters = [
-                    (end, uid) for end, uid in open_clusters
-                    if uf.find(uid) not in seen_reps
-                ]
-                open_clusters.append((new_end, rep))
-
-            # Expire clusters whose radar no longer reaches (too far behind)
-            open_clusters = [(end, uid) for end, uid in open_clusters if end >= start]
+                for uid, _ in candidates:
+                    open_clusters.pop(uid, None)
+                root = uf.find(rep)
+                existing = open_clusters.get(root)
+                open_clusters[root] = merged_end if existing is None else max(existing, merged_end)
 
     # ── Pass 1.5: Import-based structural proximity (MASK-4) ────────────────────
     # Files that import each other are architecturally proximate → clustering signal.
@@ -335,12 +345,9 @@ def run_drs(
             import_edges = extract_import_edges(root_path, lang="python")
             cycles = detect_cycles(import_edges)
             
-            # Build unit/file lookup once for import proximity joins.
-            unit_to_file: dict[str, str] = {}
             file_to_units: dict[str, list[str]] = defaultdict(list)
             for fp in fingerprints:
                 file_path = fp.unit_id.split("::")[0]
-                unit_to_file[fp.unit_id] = file_path
                 file_to_units[file_path].append(fp.unit_id)
             
             # For each import relationship, try to merge clusters
@@ -407,15 +414,13 @@ def run_drs(
         src_file = _file_of(edge.source_id)
         tgt_file = _file_of(edge.target_id)
         if src_file == tgt_file:
-            merged = uf.union(edge.source_id, edge.target_id)
+            merged, ra, rb, refused_size = uf.union_with_meta(edge.source_id, edge.target_id)
             if not merged:
-                ra = uf.find(edge.source_id)
-                rb = uf.find(edge.target_id)
                 fuse_edges.append(FuseEdge(
                     from_cluster=ra, to_cluster=rb,
                     trigger_source=edge.source_id, trigger_target=edge.target_id,
                     trigger_confidence=getattr(edge, "confidence", 1.0),
-                    refused_at_size=uf.size(ra) + uf.size(rb),
+                    refused_at_size=refused_size,
                 ))
             continue
         # Cross-file: only merge if both units are in same domain
@@ -426,15 +431,13 @@ def run_drs(
         if src_is_test != tgt_is_test:
             continue  # never merge test ↔ production across files
         if pair in _CROSS_FILE_MERGE_PAIRS or pair_rev in _CROSS_FILE_MERGE_PAIRS:
-            merged = uf.union(edge.source_id, edge.target_id)
+            merged, ra, rb, refused_size = uf.union_with_meta(edge.source_id, edge.target_id)
             if not merged:
-                ra = uf.find(edge.source_id)
-                rb = uf.find(edge.target_id)
                 fuse_edges.append(FuseEdge(
                     from_cluster=ra, to_cluster=rb,
                     trigger_source=edge.source_id, trigger_target=edge.target_id,
                     trigger_confidence=getattr(edge, "confidence", 1.0),
-                    refused_at_size=uf.size(ra) + uf.size(rb),
+                    refused_at_size=refused_size,
                 ))
 
     # ── Pass 3: Build Cluster objects + compute probabilities ─────────────────

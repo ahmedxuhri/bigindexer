@@ -248,6 +248,11 @@ VS Code benchmark (75,131 units) exposed 3 structural problems:
   - `output/validation/kubernetes-optionb-gate2-profile-go-comparable-v12-gate3start.json`
   - `output/validation/kubernetes-optionb-gate2-profile-go-comparable-v13-gate2only.json`
   - Shared-host runs observed Gate 2 in **66–68s** range; quality guards held (**max cluster 1.113%**, **fuse events 0**)
+- Latest single-run sample after Pass 1 cleanup: `output/validation/kubernetes-optionb-controlled-median-v15.json`
+  - Gate 2: **64.121s**
+  - Gate 3: **9.258s**
+  - Total: **196.705s**
+  - Quality guards still held: **max cluster 1.113%**, **fuse events 0**
 
 **Next implementation step:**
 - Continue Gate 3 optimization (next hotspot after caching pass: Pass 1 open-cluster bookkeeping / merge-path costs).
