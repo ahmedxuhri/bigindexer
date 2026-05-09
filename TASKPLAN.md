@@ -86,10 +86,43 @@ Completed in this kickoff:
 
 Next for MCP track:
 
-1. Validate MCP with real client sessions (OpenCode/Gemini/Copilot).
-2. Add demo script + example transcript for public launch.
+1. ~~Validate MCP with real client sessions (OpenCode/Gemini/Copilot)~~ - **COMPLETE (Step 1)**
+2. ~~Add demo script + example transcript for public launch~~ - **COMPLETE (Step 2)**
 3. Add thin website/waitlist flow on `bigindexer.com`.
 4. Use `validation/` workspace for managed A/B runs and public evidence collection.
+
+Phase 8 Step 2 evidence (demo script and example transcripts) - COMPLETE:
+
+- **Demo script**: `scripts/mcp-demo.sh` with support for OpenCode, Copilot, Gemini CLIs
+  - Automates: repo cloning, scanning, MCP setup, guided query execution
+  - Usage: `./mcp-demo.sh fastapi opencode` or `./mcp-demo.sh django copilot`
+  - Artifact: Executable script with inline documentation
+
+- **Quickstart guide**: `docs/MCP_QUICKSTART_DEMO.md` (5-minute end-to-end)
+  - Step-by-step commands for each CLI
+  - Troubleshooting section (common errors and fixes)
+  - Links to full documentation
+
+- **Example transcripts**: `docs/MCP_EXAMPLE_TRANSCRIPTS.md` (multi-client coverage)
+  - FastAPI analysis (OpenCode)
+  - Django analysis (OpenCode)
+  - Copilot CLI with reasoning tokens
+  - Performance comparison table
+  - Prompt guidance for reliable invocation
+
+- **Real transcript**: `docs/MCP_REAL_TRANSCRIPT.md` (unedited Copilot output)
+  - Direct capture from FastAPI (2,511 units, 333 clusters)
+  - MCP tool invocation evidence with explicit JSON response
+  - Latency: 29s (includes reasoning overhead)
+  - Token metrics: 37.4k sent, 2.0k reasoning
+  - Reproducibility instructions
+
+Deliverables:
+- 1 executable demo script
+- 3 new documentation files
+- Real-world latency metrics and token costs
+- Cross-CLI validation (OpenCode 9.38s, Copilot 29s)
+- Prompt templates for reliable MCP tool invocation
 
 Phase 8 Step 1 evidence (multi-client real-world validation) - COMPLETE:
 
