@@ -66,6 +66,32 @@ Engineering execution in this file remains focused on core quality/performance.
 
 ---
 
+### MCP implementation kickoff (2026-05-09) - IN PROGRESS
+
+Completed in this kickoff:
+
+1. Added MCP architecture context service (`bgi/bgi/mcp/context.py`) with tools for:
+   - cluster lookup by file
+   - boundary edge lookup
+   - high-coupling seam extraction
+   - impact-neighbor blast radius
+   - architecture summary
+   - symbol search (index DB when available, graph fallback otherwise)
+2. Added MCP server runtime (`bgi/bgi/mcp/server.py`) and CLI command:
+   - `bgi mcp --graph ... --fuse-graph ... --index-db ...`
+3. Added setup documentation:
+   - `docs/MCP_SETUP.md`
+4. Added tests:
+   - `tests/test_mcp_context.py`
+
+Next for MCP track:
+
+1. Validate MCP with real client session (Claude/Cursor).
+2. Add demo script + example transcript for public launch.
+3. Add thin website/waitlist flow on `bigindexer.com`.
+
+---
+
 ## Completed milestones
 
 ### Phase 1 (quality fixes) - COMPLETE

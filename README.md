@@ -176,6 +176,9 @@ bgi scan /path/to/repo --lang auto --incremental --cache .bgi-cache.json
 
 # diff
 bgi diff /path/before /path/after --lang auto --out diff.json
+
+# run MCP server over generated artifacts
+bgi mcp --graph bgi-graph.json --fuse-graph fuse-graph.json
 ```
 
 ---
@@ -201,3 +204,4 @@ Roadmap details: `TASKPLAN.md`
 - `docs/INDEX_SCHEMA.md` - interactive index schema
 - `docs/QUERY_PLANNER.md` - query planner scoring
 - `masterplan.md` - MCP product and monetization execution plan
+- `docs/MCP_SETUP.md` - MCP server setup and usage

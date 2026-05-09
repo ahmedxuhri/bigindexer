@@ -67,6 +67,14 @@ def main() -> None:
     diff_cmd.add_argument("--verbose", action="store_true", default=False,
                           help="Show full added/removed/changed unit lists")
 
+    mcp_cmd = sub.add_parser("mcp", help="Run Big Indexer MCP server over graph artifacts")
+    mcp_cmd.add_argument("--graph", default="bgi-graph.json",
+                         help="Path to bgi-graph.json (default: bgi-graph.json)")
+    mcp_cmd.add_argument("--fuse-graph", default=None,
+                         help="Path to fuse-graph.json (default: sibling of --graph)")
+    mcp_cmd.add_argument("--index-db", default=None,
+                         help="Path to Big Indexer index DB (optional, enables ranked symbol search)")
+
     args = parser.parse_args()
 
     if args.command == "scan":
@@ -145,6 +153,19 @@ def main() -> None:
         if args.out:
             Path(args.out).write_text(json.dumps(serialize_diff(diff), indent=2))
             print(f"\n[BGI] Diff written to {args.out}")
+
+    elif args.command == "mcp":
+        from bgi.mcp.server import run_server
+
+        try:
+            run_server(
+                graph_path=args.graph,
+                fuse_graph_path=args.fuse_graph,
+                index_db_path=args.index_db,
+            )
+        except RuntimeError as exc:
+            print(f"[BGI] MCP startup error: {exc}")
+            sys.exit(2)
 
 
 if __name__ == "__main__":
