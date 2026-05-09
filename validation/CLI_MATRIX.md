@@ -9,6 +9,7 @@ This matrix defines how each CLI is used and how model identity is recorded.
 - Prompt mode: `opencode run "<prompt>"`
 - MCP capability: configured via `opencode mcp ...`, but `opencode run` can complete without invoking MCP tools
 - Recommended for quantitative A/B timing: **baseline yes, MCP only if invocation is proven**
+- Important path rule: when using `--dir <repo_dir>`, OpenCode resolves MCP config from that project context; keep a valid `opencode.json` in `<repo_dir>` (use absolute artifact paths when artifacts live elsewhere).
 
 Command template:
 
