@@ -1,0 +1,79 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m⚙ [0mbigindexer_architecture_summary {"path_scope":"pydantic/v1/main.py","top_clusters":5,"seam_limit":10}
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"pydantic/v1/main.py","limit":20}
+[0m⚙ [0mbigindexer_impact_neighbors {"symbol_or_file":"pydantic/v1/main.py","depth":2,"limit":50}
+[0m⚙ [0mbigindexer_high_coupling_seams {"file_or_cluster":"pydantic/v1/main.py","limit":20}
+[0m⚙ [0mbigindexer_cluster_of_file {"file_path":"pydantic/v1/main.py"}
+[0m→ [0mRead pydantic/v1/main.py
+## Evidence Mode: Architectural Boundaries for `pydantic/v1/main.py`
+
+### Source → BigIndexer Tools
+
+| Tool | Result |
+|------|--------|
+| `cluster_of_file` | Cluster: `cluster_pydantic_v1_validators_py_strict` (hard, 100% probability, 242 units, 13 files) |
+| `boundary_edges` | 0 bridge edges found (file is fully internal to its cluster) |
+| `high_coupling_seams` | 3 cross-cluster seams (see below) |
+| `impact_neighbors` (depth 2) | 125 impacted units across 10 clusters |
+
+---
+
+### Current State
+
+**VERIFIED** — `pydantic/v1/main.py` is a **leaf cluster-internal file** with no bridge edges to other clusters. It lives entirely within the `cluster_pydantic_v1_validators_py_strict` hard cluster alongside 12 sibling files under `pydantic/v1/`. It exports 3 symbols: `BaseModel`, `create_model`, `validate_model` (`pydantic/v1/main.py:93`).
+
+**VERIFIED** — The file directly imports from 11 sibling `pydantic/v1/*` modules within the same cluster (`class_validators`, `config`, `error_wrappers`, `errors`, `fields`, `json`, `parse`, `schema`, `types`, `typing`, `utils`) — see imports at lines 30–72.
+
+---
+
+### Seams (Cross-Cluster Boundaries Touched by Editing This File)
+
+**SEAM 1** — `cluster_pydantic_v1_validators_py_strict` → `cluster__github_actions_people_people_py`
+- **9 edges**, confidence 0.75, predicted type COV.FETCH→COV.PERSIST
+- **VERIFIED**: This likely reflects CI type-checking (e.g., `mypy`) or GitHub Actions workflows that use this file. Editing signatures or exports could break CI.
+- **HYPOTHESIS**: The `people_py` cluster name suggests this may be related to the `people` module or GitHub Actions configuration.
+
+**SEAM 2** — `cluster_pydantic_v1_validators_py_strict` → `cluster_tests_test_edge_cases_py_test_st`
+- **8 edges**, confidence 0.75, predicted type COV.EMIT→COV.SUBSCRIBE
+- **VERIFIED**: 21 impacted test units at distance ≤2 (from `impact_neighbors`). Any change to `BaseModel` behavior will cascade into v1 test assertions.
+
+**SEAM 3** — `cluster_pydantic__internal__generate_sch` → `cluster_pydantic_v1_validators_py_strict` (inbound)
+- **7 edges**, confidence 0.75, predicted type COV.FETCH→COV.PERSIST
+- **VERIFIED**: `pydantic/_internal/_model_construction.py::ModelMetaclass::register` appears at impact distance 1. The v2 schema generation code (`_generate_sch`) reads from the v1 cluster.
+
+---
+
+### Impact Blast Radius (top 10 clusters, distance ≤2)
+
+| Cluster | Impacted Units | Boundary Type |
+|---------|---------------|---------------|
+| `cluster_pydantic_v1_validators_py_strict` (same) | 41 | Internal |
+| `cluster_tests_test_edge_cases_py_test_st` | 21 | **Test** |
+| `cluster_pydantic-core_tests_validators_t` | 12 | **pydantic-core** |
+| `cluster_pydantic_v1_utils_py_truncate` | 7 | Adjacent v1 |
+| `cluster_pydantic__internal__generate_sch` | 5 | **v2 internal** |
+| `cluster_tests_test_forward_ref_py_test_st` | 5 | **Test** |
+| `cluster_pydantic_json_schema_py__Definit` | 3 | **v2 JSON schema** |
+| `cluster_pydantic_v1_generics_py__cache_k` | 3 | Adjacent v1 |
+| `cluster_tests_test_json_schema_py_test_r` | 3 | **Test** |
+| `cluster_tests_test_plugins_py_test_on_va` | 3 | **Test** |
+
+---
+
+### Historical Context
+
+**VERIFIED** — This file is the **pydantic v1 compatibility shim** within pydantic v2. The file itself is based on the old `pydantic/main.py` from pydantic v1.x but relocated under `pydantic/v1/`. The v2 `_internal` modules (`_generate_sch`, `_model_construction`) reach into this file to extract metadata during schema generation for backward compatibility. This bidirectional dependency (v2 reads v1, but v1 doesn't import v2) is the primary historical design constraint.
+
+---
+
+### Summary
+
+Editing `pydantic/v1/main.py` crosses **3 architectural boundaries**:
+
+1. **v1 internal → v2 internal** (COV.FETCH→COV.PERSIST, 7 edges) — `_generate_sch` reads schema config from v1 models. Changing `BaseModel.__init__`, `validate_model`, or `__fields__` structure breaks v2 schema generation.
+2. **v1 cluster → test cluster** (COV.EMIT→COV.SUBSCRIBE, 8 edges) — Test fixtures validate v1 model behavior; any behavioral change surfaces here.
+3. **v1 cluster → CI/people cluster** (COV.FETCH→COV.PERSIST, 9 edges) — Type-checking/CI pipeline validates this file's public surface.
+
+**UNKNOWN**: Whether changing private implementation details (e.g., `_iter`, `_calculate_keys`) affects v2 internals without test coverage — the boundary_edges tool returned 0 direct bridges, so cross-cluster coupling is mediated entirely through v2's `_generate_sch` reading the file's public schema API.

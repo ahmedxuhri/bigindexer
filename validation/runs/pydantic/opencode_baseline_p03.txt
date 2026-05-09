@@ -1,0 +1,143 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m• [0mExplore pydantic v1 structure[90m Explore Agent[0m
+[0m
+[0m$ [0mls -la /tmp/bgi-ab-repos/pydantic/pydantic/v1/
+total 516
+drwxr-xr-x 2 root root  4096 May  9 15:16 .
+drwxr-xr-x 8 root root  4096 May  9 15:17 ..
+-rw-r--r-- 1 root root  2946 May  9 15:16 __init__.py
+-rw-r--r-- 1 root root 14847 May  9 15:16 _hypothesis_plugin.py
+-rw-r--r-- 1 root root  3157 May  9 15:16 annotated_types.py
+-rw-r--r-- 1 root root 14672 May  9 15:16 class_validators.py
+-rw-r--r-- 1 root root 16844 May  9 15:16 color.py
+-rw-r--r-- 1 root root  6532 May  9 15:16 config.py
+-rw-r--r-- 1 root root 18172 May  9 15:16 dataclasses.py
+-rw-r--r-- 1 root root  7724 May  9 15:16 datetime_parse.py
+-rw-r--r-- 1 root root 10339 May  9 15:16 decorator.py
+-rw-r--r-- 1 root root 14105 May  9 15:16 env_settings.py
+-rw-r--r-- 1 root root  5196 May  9 15:16 error_wrappers.py
+-rw-r--r-- 1 root root 17726 May  9 15:16 errors.py
+-rw-r--r-- 1 root root 50649 May  9 15:16 fields.py
+-rw-r--r-- 1 root root 17829 May  9 15:16 generics.py
+-rw-r--r-- 1 root root  3390 May  9 15:16 json.py
+-rw-r--r-- 1 root root 45697 May  9 15:16 main.py
+-rw-r--r-- 1 root root 38860 May  9 15:16 mypy.py
+-rw-r--r-- 1 root root 22124 May  9 15:16 networks.py
+-rw-r--r-- 1 root root  1821 May  9 15:16 parse.py
+-rw-r--r-- 1 root root     0 May  9 15:16 py.typed
+-rw-r--r-- 1 root root 47801 May  9 15:16 schema.py
+-rw-r--r-- 1 root root  2881 May  9 15:16 tools.py
+-rw-r--r-- 1 root root 35455 May  9 15:16 types.py
+-rw-r--r-- 1 root root 20102 May  9 15:16 typing.py
+-rw-r--r-- 1 root root 26014 May  9 15:16 utils.py
+-rw-r--r-- 1 root root 22187 May  9 15:16 validators.py
+-rw-r--r-- 1 root root  1039 May  9 15:16 version.py
+[0m
+[0m$ [0mgit -C /tmp/bgi-ab-repos/pydantic log --oneline -20 -- 'pydantic/v1/*'
+7a369fb Document tagging conventions (#13128)
+[0m
+[0m✓ [0mExplore pydantic v1 structure[90m Explore Agent[0m
+[0m✱ [0mGlob "pydantic/v1/**/*.py"[90m in . · 26 matches[0m
+[0m✱ [0mGrep "from pydantic\.v1\.main import|from pydantic\.v1 import.*BaseModel|from pydantic\.v1 import.*create_model|from pydantic\.v1 import.*validate_model"[90m in . · 26 matches[0m
+[0m✱ [0mGrep "from pydantic\.v1\.main import"[90m in pydantic/v1 · 19 matches[0m
+[0m✱ [0mGrep "from pydantic\.v1 import"[90m in pydantic/v1 · 1 match[0m
+[0m→ [0mRead pydantic/_migration.py
+Let me gather a few more specific pieces of evidence.
+[0m→ [0mRead pydantic/_internal/_generate_schema.py[90m [offset=935, limit=30][0m
+[0m→ [0mRead pydantic/v1/_hypothesis_plugin.py[90m [limit=50][0m
+[0m→ [0mRead tests/test_v1.py
+[0m
+[0m$ [0mrg -l 'pydantic\.v1' /tmp/bgi-ab-repos/pydantic --type py | wc -l
+/bin/bash: rg: command not found
+0
+[0m
+[0m✱ [0mGrep "pydantic\.v1"[90m in . · 169 matches[0m
+[0m✱ [0mGrep "pydantic\.v1"[90m in . · 34 matches[0m
+[0m✱ [0mGrep "pydantic\.v1"[90m in . · 0 matches[0m
+## Blast Radius Analysis: Changing `pydantic/v1/main.py`
+
+### Architecture Context
+
+`pydantic/v1/` is a **vendored copy of pydantic v1.10.x** (sourced from the `1.10.X-fixes` branch via `update_v1.sh`). It is excluded from all tooling: ruff, coverage, mypy, isort (`pyproject.toml:213,265,288,295`).
+
+---
+
+### What `pydantic/v1/main.py` Exports
+
+**VERIFIED** — `pydantic/v1/main.py:93`: `__all__ = 'BaseModel', 'create_model', 'validate_model'`
+
+These three symbols — plus `ModelMetaclass` — are the critical exports.
+
+---
+
+### DIRECT CONSUMERS (within `pydantic/v1/`)
+
+**VERIFIED** — 13 sibling files import directly from `pydantic.v1.main`:
+
+| File | What it imports | Impact Type |
+|---|---|---|
+| `__init__.py:11` | `from pydantic.v1.main import *` | Re-exports all 3 symbols to the `pydantic.v1` namespace |
+| `annotated_types.py:5` | `BaseModel`, `create_model` | Breaks if signatures/types change |
+| `dataclasses.py:55,59` | `create_model`, `validate_model`, `BaseModel` | Breaks on any change |
+| `decorator.py:7` | `BaseModel`, `create_model` | Breaks on any change |
+| `env_settings.py:8` | `BaseModel` | `BaseSettings` subclasses `BaseModel` |
+| `fields.py:1163` | `BaseModel` (lazy inside function) | Breaks if `BaseModel` API changes |
+| `generics.py:29` | `BaseModel`, `create_model` | `GenericModel` subclasses `BaseModel` |
+| `json.py:75` | `BaseModel` (lazy inside function) | Serialization path |
+| `schema.py:87,381,448,841,977` | `BaseModel` (lazy, 5 sites) | Schema generation |
+| `tools.py:24` | `create_model` (lazy inside function) | Parsing utilities |
+| `types.py:127` | `BaseModel` (lazy inside function) | Type system |
+| `utils.py:51,302` | `BaseModel` (lazy inside 2 functions) | Utility layer |
+| `config.py:15` | `BaseModel` (lazy inside function) | Config inheritance |
+
+**HYPOTHESIS** — All 13 files plus their own transitive dependents (the remaining ~11 `.py` files in `pydantic/v1/` that don't directly import from main) will be affected. Essentially **the entire `pydantic/v1/` subpackage (26 files)** is in the blast radius.
+
+---
+
+### CROSS-BOUNDARY CONSUMERS (outside `pydantic/v1/`)
+
+**VERIFIED** — Exactly **1 production file** outside `pydantic/v1/` imports V1 BaseModel:
+
+| File | What it does | Blast Radius |
+|---|---|---|
+| `pydantic/_internal/_generate_schema.py:944` | Imports `pydantic.v1.BaseModel` as `BaseModelV1` for `issubclass` check to detect V1/V2 mixing and emit warning | **Low** — only uses `issubclass(obj, BaseModelV1)` — most changes to `main.py` won't affect this unless the MRO or metaclass changes |
+
+**VERIFIED** — `pydantic/v1/_hypothesis_plugin.py` imports `pydantic.v1.utils.lenient_issubclass` (not main directly), so it's only indirectly affected via `utils.py`.
+
+---
+
+### TEST CONSUMERS
+
+**VERIFIED** — 3 test files import from `pydantic.v1`:
+
+| File | Import | What it tests |
+|---|---|---|
+| `tests/test_v1.py:9` | `BaseModel as V1BaseModel` | V1 root_validator, V1/V2 isinstance interop |
+| `tests/test_main.py:54` | `BaseModel as BaseModelV1` | `test_nested_v1_model_warns` |
+| `tests/mypy/modules/from_orm_v1_noconflict.py:9` | `BaseModel as BaseModelV1` | mypy plugin V1 compatibility |
+
+---
+
+### MIGRATION LAYER
+
+**VERIFIED** — `pydantic/_migration.py:34-49` — `REDIRECT_TO_V1` only points to `pydantic.v1.utils.*`, **not** to `pydantic.v1.main`. Indirect only.
+
+**VERIFIED** — `pydantic/__init__.py` does **not** import from `pydantic.v1.main`. The `__getattr__` hook does not reference main either.
+
+---
+
+### SUMMARY
+
+| Layer | Scope | Severity |
+|---|---|---|
+| **pydantic/v1/ (26 files)** | Complete subpackage | **CRITICAL** — every file in the vendored v1 namespace |
+| **pydantic/_internal/_generate_schema.py** | 1 site, `issubclass` only | **LOW** |
+| **Tests (3 files)** | 3 test files, 4 test functions | **MEDIUM** |
+| **Top-level `pydantic` namespace** | None | **NONE** |
+| **`_migration.py`** | Indirect via `utils.py` | **NONE** |
+| **Documentation** | `docs/migration.md`, `docs/integrations/mypy.md` | **LOW** |
+| **User code** | Any code doing `from pydantic.v1 import BaseModel` | **CRITICAL** — this is the public API surface for V1 users |
+
+**Bottom line**: The blast radius is **wide but shallow**. It destroys the entire `pydantic/v1/` vendored subpackage (26 files) and 3 test files, but has **minimal impact** on the V2 codebase itself — only 1 production file (`_generate_schema.py:944`) touches the V1 boundary. Since `pyproject.toml` already excludes `pydantic/v1/` from all tooling, CI linting/type-checking won't catch breakage within the V1 subpackage. Tests in `tests/test_v1.py` are the primary safety net.

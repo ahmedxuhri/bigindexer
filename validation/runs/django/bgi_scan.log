@@ -1,0 +1,9 @@
+[BGI] Scanning /tmp/bgi-ab-repos/django ...
+[BGI] Gate 1 complete — 31824 units fingerprinted
+[BGI] TOKEN-CENSUS — 1678 files, bands: Mask 1=9, Mask 2=10, Mask 3=10
+[BGI] Gate 2 complete — 280219 edges detected (1414 suspended)
+[BGI] Gate 3 complete — 1102 clusters (606 hard, 0 seams, 128 fuse events)
+[BGI] SEP — 1387 new suspended, 3625 resurrected, 0 promoted to INTENTIONAL_BOUNDARY
+[BGI] Graph written to /root/mad/sessions/bgi/output/validation/mcp-ab/django/bgi-graph.json
+[BGI] Fuse-graph written to /root/mad/sessions/bgi/output/validation/mcp-ab/django/fuse-graph.json (128 boundary events)
+[BGI] Architecture narration written to /root/mad/sessions/bgi/output/validation/mcp-ab/django/agents.md

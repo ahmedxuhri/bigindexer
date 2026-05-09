@@ -1,0 +1,39 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m• [0mAnalyze blast radius of urls.py[90m Explore Agent[0m
+[0m✓ [0mAnalyze blast radius of urls.py[90m Explore Agent[0m
+[0m→ [0mRead tests/generic_inline_admin/urls.py
+[0m→ [0mRead tests/generic_inline_admin/tests.py[90m [limit=30][0m
+**VERIFIED** — blast radius is confined entirely to `tests/generic_inline_admin/`.
+
+---
+
+## VERIFIED Claims
+
+| Claim | Evidence |
+|---|---|
+| **File defines 1 URL pattern** | `tests/generic_inline_admin/urls.py:5-7` — single `path("generic_inline_admin/admin/", admin.site.urls)` |
+| **Only 1 file references this module** | `tests/generic_inline_admin/tests.py:24,98,257,297,409,417` — 6 `@override_settings(ROOT_URLCONF="generic_inline_admin.urls")` decorators |
+| **Zero `import` statements reference it** | Entire codebase grep: no `from generic_inline_admin.urls` or `import generic_inline_admin.urls` anywhere |
+| **Package has 5 files, all self-contained** | `__init__.py`, `admin.py`, `models.py`, `tests.py`, `urls.py` — no external package depends on any of them |
+| **No CI/docs/config references** | Grep of `.ini`, `.toml`, `.cfg`, `.yaml`, `.yml`, `.md`, `.rst` — no matches |
+| **6 test classes depend on it** | `tests.py` lines 24, 98, 257, 297, 409, 417 — `GenericAdminViewTest`, `GenericInlineAdminParametersTest`, `GenericInlineAdminWithUniqueTogetherTest`, `GenericInlineAdminPermissionsTest`, `NoInlineDeletionTest`, `GenericInlineModelAdminTest` |
+
+## HYPOTHESIS
+
+| Claim | Reasoning |
+|---|---|
+| ~25 individual test methods affected | Each test class contains methods that call `reverse("admin:...")` with URL names derived from the admin site registered in `admin.py`. Count confirmed by scanning `tests.py` for URL name references. |
+
+## UNKNOWN
+
+| Claim |
+|---|
+| Whether third-party packages outside this repo import `generic_inline_admin` — no external dependency scan was performed. |
+
+## Summary
+
+**Blast radius: 1 file** (`tests/generic_inline_admin/tests.py`), **6 test classes**, ~25 test methods. Zero files outside the `tests/generic_inline_admin/` package reference this module. The module is never `import`-ed — only used as a string in `@override_settings(ROOT_URLCONF=...)`. Any change to the URL prefix or admin site name would require corresponding updates to `reverse()` calls and inline form prefix strings within `tests.py` only.
+
+*Note: No bigindexer MCP tools were detected in the available toolset, so the requested calls could not be made.*

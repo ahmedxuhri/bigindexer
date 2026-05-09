@@ -1,0 +1,159 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m→ [0mRead tests/generic_inline_admin/urls.py
+[0m• [0mExplore general architecture[90m Explore Agent[0m
+[0m✓ [0mExplore general architecture[90m Explore Agent[0m
+[0m→ [0mRead django/core/handlers/base.py[90m [offset=280, limit=50][0m
+[0m→ [0mRead django/urls/resolvers.py[90m [offset=640, limit=60][0m
+[0m→ [0mRead django/urls/base.py
+[0m→ [0mRead django/utils/log.py
+[0m→ [0mRead tests/generic_inline_admin/tests.py[90m [limit=80][0m
+[0m→ [0mRead django/urls/resolvers.py[90m [offset=700, limit=142][0m
+[0m→ [0mRead tests/runtests.py[90m [offset=190, limit=60][0m
+[0m→ [0mRead django/urls/resolvers.py[90m [offset=190, limit=60][0m
+Now let me examine URL resolution internals and the test runner for full context:
+[0m✱ [0mGrep "def get_resolver"[90m in django/urls · 1 match[0m
+[0m✱ [0mGrep "def _get_cached_resolver"[90m in django/urls · 1 match[0m
+[0m→ [0mRead django/urls/resolvers.py[90m [limit=30][0m
+[0m→ [0mRead django/urls/resolvers.py[90m [offset=108, limit=30][0m
+## Evidence Mode Analysis: `tests/generic_inline_admin/urls.py`
+
+### MCP Tool Availability
+**VERIFIED** — No bigindexer MCP tools (`architecture_summary`, boundary tooling) are available in the current tool context. Proceeding without.
+
+---
+
+### Current State vs. Historical Context
+
+#### Current State (structural snapshot, static)
+
+| Claim | Status | Evidence |
+|-------|--------|----------|
+| `tests/generic_inline_admin/urls.py` defines 1 URL pattern | **VERIFIED** | `urls.py:5-7` — single `path("generic_inline_admin/admin/", admin.site.urls)` |
+| Admin site is `admin.AdminSite(name="admin")` from local `admin.py` | **VERIFIED** | `admin.py:9` — `site = admin.AdminSite(name="admin")` |
+| Test classes reference this URLconf via `@override_settings(ROOT_URLCONF="generic_inline_admin.urls")` | **VERIFIED** | `tests.py:24` — decorator applied to `GenericAdminViewTest` |
+| URL resolution entry point is `BaseHandler.resolve_request()` | **VERIFIED** | `base.py:302-317` — calls `get_resolver()` then `resolver.resolve(request.path_info)` |
+| Resolver is cached globally via `@functools.cache` | **VERIFIED** | `resolvers.py:114-116` — `_get_cached_resolver` is `@functools.cache`-decorated |
+| Test runner suppresses non-ERROR Django logging | **VERIFIED** | `runtests.py:235-239` — sets `log_config["loggers"]["django"]["level"] = "ERROR"` |
+| `request.resolver_match` is set after resolution, contains view/namespace/route | **VERIFIED** | `base.py:316`; `resolvers.py:700-714` — `ResolverMatch` construction |
+| Existing HTTP-level logging via `log_response()` logs status codes to `django.request` | **VERIFIED** | `log.py:257-289` — logs 4xx as warning, 5xx as error |
+| `URLResolver.resolve()` iterates `url_patterns`, returns first match or `Resolver404` | **VERIFIED** | `resolvers.py:670-717` — try/except chain over patterns |
+| No pytest; only Django/unittest runner | **VERIFIED** | `runtests.py` is entry point; no `conftest.py` files exist in tests/ |
+
+#### Historical Context (how resolution flows through boundaries)
+
+| Claim | Status | Evidence |
+|-------|--------|----------|
+| URLconf module is loaded lazily on first access in `URLResolver.urlconf_module` | **VERIFIED** | `resolvers.py:719-724` — `@cached_property` calls `import_module(self.urlconf_name)` |
+| `urlpatterns` attribute is read from the module via `getattr` | **VERIFIED** | `resolvers.py:729` — `getattr(self.urlconf_module, "urlpatterns", self.urlconf_module)` |
+| `clear_url_caches()` exists but is rarely called in tests | **VERIFIED** | `base.py:114-117` — clears `get_callable.cache_clear()` and `_get_cached_resolver.cache_clear()` |
+| Thread-local URLconf override via `set_urlconf()` / `get_urlconf()` | **VERIFIED** | `base.py:148-166` — `_urlconfs = Local()` asgiref thread-local |
+| Test runner sets `settings.ROOT_URLCONF = "urls"` globally at collection time | **VERIFIED** | `runtests.py:208` |
+
+---
+
+### Safest Implementation Path (minimal cross-boundary impact)
+
+**Constraint**: "Do not modify anything" — this analysis proposes a blueprint only.
+
+#### Boundary Map
+
+```
+[urls.py] ──import──▶ [admin.py] ──AdminSite.urls──▶ [URLResolver]
+    │                                                      │
+    │  @override_settings(ROOT_URLCONF=...)                │ resolve()
+    ▼                                                      ▼
+[TestCase] ──client.get()──▶ [BaseHandler.resolve_request()]
+                                 │
+                                 ├── get_resolver()  ← @functools.cache (process-wide)
+                                 ├── resolver.resolve(path)
+                                 └── request.resolver_match = ResolverMatch
+```
+
+Key boundaries crossed during URL resolution:
+1. **Module import boundary** — `URLResolver.urlconf_module` imports the dotted path
+2. **Cache boundary** — `_get_cached_resolver` is process-wide `@functools.cache`
+3. **Thread-local boundary** — `set_urlconf()` / `get_urlconf()` via `asgiref.local.Local`
+4. **Test isolation boundary** — `@override_settings` patches `ROOT_URLCONF` per test class
+
+#### Recommended Path: Module-level Logging Hook (0 cross-boundary crossings)
+
+Leverage the fact that Python modules execute at import time. Add structured observability *inside the URLconf module itself*, with zero changes to framework code, middleware, or test runner:
+
+**Blueprint** (`tests/generic_inline_admin/urls.py`):
+
+```python
+import logging
+from django.urls import path
+from . import admin
+
+logger = logging.getLogger("django.request")  # reuse existing logger
+
+urlpatterns = [
+    path("generic_inline_admin/admin/", admin.site.urls),
+]
+
+# Structured diagnostics at import time — zero cross-boundary impact
+logger.log(
+    logging.DEBUG,
+    "URLconf loaded: %s — %d pattern(s): %s",
+    __name__,
+    len(urlpatterns),
+    [p.pattern.describe() if hasattr(p, 'pattern') else str(p) for p in urlpatterns],
+)
+```
+
+**Why this is safest**:
+- **Zero framework changes** — no middleware, no monkey-patching, no signal hooks
+- **Zero test infrastructure changes** — no new settings, no runner modifications
+- **Zero cross-boundary impact** — stays entirely within the URLconf module's own import boundary
+- **Reuses existing `django.request` logger** — consistent with `log.py:11` and `runtests.py:235-239` (though suppressed at ERROR level by default; enabling DEBUG logging would require only a test-runner config change)
+- **No caching interference** — does not touch `_get_cached_resolver` cache or thread-local state
+- **No test mutation** — `@override_settings` isolation is preserved
+
+#### Alternative: Resolution-time Wrapper (1 boundary crossing: URLPattern.func)
+
+If import-time diagnostics are insufficient and you need *per-request* observability without middleware:
+
+```python
+import logging
+from django.urls import path
+from functools import wraps
+from . import admin
+
+logger = logging.getLogger("django.request")
+
+original_urlpatterns = [
+    path("generic_inline_admin/admin/", admin.site.urls),
+]
+
+def _observe_resolve(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        logger.debug("Resolved: %s → %s.%s", request.path_info,
+                     view_func.__module__, view_func.__name__)
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+# Wrap each pattern's callback — crosses URLPattern.func boundary only
+urlpatterns = []
+for p in original_urlpatterns:
+    p.callback = _observe_resolve(p.callback)
+    urlpatterns.append(p)
+```
+
+**Trade-off**: Crosses one boundary (overwrites `URLPattern.callback`), but with no impact on caching, middleware, settings, or test isolation.
+
+---
+
+### Summary: Recommended Approach
+
+| Criteria | Import-time logging | Resolution-time wrapper | Middleware | Monkey-patch resolver |
+|---|---|---|---|---|
+| Cross-boundary count | **0** | 1 | 3+ (settings, middleware stack, request lifecycle) | 5+ (cache, import, thread-local, resolver chain, module) |
+| Framework changes | **0** | 0 | Requires adding to MIDDLEWARE | Requires patching `django/urls/` |
+| Impact on other tests | **None** | None | Global if not scoped | Process-wide cache poisoning risk |
+| Diagnostic value | Pattern registration | Per-request view resolution | Full lifecycle | Full resolver chain |
+
+**Safest path**: Import-time structured logging in `urls.py` itself using the existing `logging` infrastructure. Zero cross-boundary impact, zero modifications outside the single file, zero risk to test isolation.

@@ -1,0 +1,85 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m→ [0mRead .
+[0m→ [0mRead pydantic/v1/main.py
+[0m→ [0mRead opencode.mcp.json
+[0m• [0mMap v1/main.py boundaries[90m Explore Agent[0m
+[0m✓ [0mMap v1/main.py boundaries[90m Explore Agent[0m
+[0m→ [0mRead pydantic/v1/__init__.py
+[0m→ [0mRead pydantic/__init__.py[90m [limit=30][0m
+Now let me check the v1 `__init__.py` for the exact re-export and examine a few key dependent files:
+## Architectural Boundaries of `pydantic/v1/main.py` — Evidence Report
+
+**UNKNOWN**: bigindexer MCP tools are configured (`opencode.mcp.json:4-16`) but not available as callable tools in this context. Skipping MCP tool calls.
+
+---
+
+### VERIFIED: Direct Upstream Dependencies (10 v1 modules imported at runtime)
+
+| Boundary | File | Symbols Used |
+|---|---|---|
+| **class_validators** | `pydantic/v1/class_validators.py` | `ValidatorGroup`, `extract_root_validators`, `extract_validators`, `inherit_validators` |
+| **config** | `pydantic/v1/config.py` | `BaseConfig`, `Extra`, `inherit_config`, `prepare_config` |
+| **error_wrappers** | `pydantic/v1/error_wrappers.py` | `ErrorWrapper`, `ValidationError` |
+| **errors** | `pydantic/v1/errors.py` | `ConfigError`, `DictError`, `ExtraError`, `MissingError` |
+| **fields** | `pydantic/v1/fields.py` | `MAPPING_LIKE_SHAPES`, `Field`, `ModelField`, `ModelPrivateAttr`, `PrivateAttr`, `Undefined`, `is_finalvar_with_default_val` |
+| **json** | `pydantic/v1/json.py` | `custom_pydantic_encoder`, `pydantic_encoder` |
+| **parse** | `pydantic/v1/parse.py` | `Protocol`, `load_file`, `load_str_bytes` |
+| **schema** | `pydantic/v1/schema.py` | `default_ref_template`, `model_schema` |
+| **types** | `pydantic/v1/types.py` | `PyObject`, `StrBytes` |
+| **typing** | `pydantic/v1/typing.py` | `resolve_annotations`, `update_model_forward_refs`, `get_args`, `get_origin`, `is_classvar`, `is_namedtuple`, `is_union` |
+| **utils** | `pydantic/v1/utils.py` | `Representation`, `GetterDict`, `ValueItems`, `generate_model_signature`, `validate_field_name`, `DUNDER_ATTRIBUTES`, `ROOT_KEY`, `lenient_issubclass`, `sequence_like`, `smart_deepcopy`, `unique_list`, `is_valid_field`, `is_valid_private_name`, `ClassAttribute` |
+
+**Source**: `pydantic/v1/main.py:30-72`
+
+---
+
+### VERIFIED: Downstream Dependents (13 files import from this file)
+
+All within `pydantic/v1/` — no files outside that tree import `pydantic.v1.main`:
+
+| File | What It Imports | Usage |
+|---|---|---|
+| `pydantic/v1/__init__.py:11` | `*` (wildcard) | Re-exports `BaseModel`, `create_model`, `validate_model` via `__all__` |
+| `pydantic/v1/annotated_types.py:5` | `BaseModel`, `create_model` | Runtime |
+| `pydantic/v1/config.py:15` | `BaseModel` | TYPE_CHECKING only |
+| `pydantic/v1/dataclasses.py:55,59` | `create_model`, `validate_model`, `BaseModel` | Runtime + TYPE_CHECKING |
+| `pydantic/v1/decorator.py:7` | `BaseModel`, `create_model` | Runtime |
+| `pydantic/v1/env_settings.py:8` | `BaseModel` | Runtime |
+| `pydantic/v1/fields.py:1163` | `BaseModel` | TYPE_CHECKING only |
+| `pydantic/v1/generics.py:29` | `BaseModel`, `create_model` | Runtime |
+| `pydantic/v1/json.py:75` | `BaseModel` | TYPE_CHECKING only |
+| `pydantic/v1/schema.py:87,381,448,841,977` | `BaseModel` | TYPE_CHECKING only |
+| `pydantic/v1/tools.py:24` | `create_model` | TYPE_CHECKING only |
+| `pydantic/v1/types.py:127` | `BaseModel` | TYPE_CHECKING only |
+| `pydantic/v1/utils.py:51,302` | `BaseModel` | TYPE_CHECKING only |
+
+**Source**: Grep across whole repo, verified by exploration task.
+
+---
+
+### VERIFIED: External Boundaries (no isolation)
+
+| Boundary | Contact? | Evidence |
+|---|---|---|
+| **pydantic-core (Rust)** | **None** | Zero matches for `v1.main` in `pydantic-core/` |
+| **pydantic/__init__.py (v2)** | **None** | v2 `__init__.py` maps `BaseModel`/`create_model` to `pydantic.main` (v2), not v1 |
+| **Tests** | **None directly** | Zero test files import `pydantic.v1.main` |
+| **Public API surface** | **Via `pydantic/v1/__init__.py`** | `BaseModel`, `create_model`, `validate_model` are in v1's `__all__` |
+
+---
+
+### HYPOTHESIS: Impact Propagation
+
+Editing `v1/main.py` is **high-risk within `pydantic/v1/`**:
+- Changing `BaseModel` class or `ModelMetaclass` would affect all **13 sibling files** and all user code using `from pydantic.v1 import BaseModel`
+- Changing `validate_model` would affect `v1/dataclasses.py` and `v1/main.py` itself (used in `__init__`, `from_orm`, `validate`)
+- Changing `create_model` would affect 4 files that import it
+- Dependencies are **circular**: `v1/main.py` imports from 10 sibling modules, some of which import back from `v1/main.py` under TYPE_CHECKING — any edit must maintain this contract
+
+---
+
+### UNKNOWN: What specific test coverage exists
+
+No test file directly imports `pydantic.v1.main`. Tests likely reach it indirectly through `pydantic.v1` or via `BaseModel` usage, but the exact test surface is unverified.

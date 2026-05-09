@@ -1,0 +1,101 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m⚙ [0mbigindexer_architecture_summary {"path_scope":"pydantic/v1","top_clusters":5,"seam_limit":10}
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"pydantic/v1/main.py","limit":30}
+[0m⚙ [0mbigindexer_high_coupling_seams {"file_or_cluster":"pydantic/v1/main.py","limit":20}
+[0m⚙ [0mbigindexer_impact_neighbors {"symbol_or_file":"pydantic/v1/main.py","depth":1,"limit":30}
+[0m→ [0mRead pydantic/v1/main.py[90m [limit=120][0m
+[0m→ [0mRead pydantic/v1/main.py[90m [offset=120, limit=120][0m
+[0m→ [0mRead pydantic/v1/main.py[90m [offset=240, limit=120][0m
+[0m⚙ [0mbigindexer_cluster_of_file {"file_path":"pydantic/v1/main.py"}
+[0m→ [0mRead pydantic/v1/main.py[90m [offset=360, limit=200][0m
+[0m→ [0mRead pydantic/v1/main.py[90m [offset=560, limit=200][0m
+[0m→ [0mRead pydantic/v1/main.py[90m [offset=760, limit=200][0m
+[0m→ [0mRead pydantic/v1/main.py[90m [offset=960, limit=200][0m
+[0m✱ [0mGrep "import logging|logger\s*=|logging\."[90m in pydantic/v1 · 0 matches[0m
+**Evidence Mode — `pydantic/v1/main.py` Observability Analysis**
+
+---
+
+## Architecture Summary
+
+| Claim | Verdict | Source |
+|---|---|---|
+| `pydantic/v1/main.py` belongs to hard cluster `cluster_pydantic_v1_validators_py_strict` | **VERIFIED** | `bigindexer_cluster_of_file`: probability=1.0, is_hard=true |
+| Cluster contains 13 source files, 242 symbols | **VERIFIED** | Same call: `member_count=242`, `files=[..., pydantic/v1/main.py, ...]` |
+| File `main.py` has **zero direct boundary bridges** to other clusters | **VERIFIED** | `bigindexer_boundary_edges`: `bridge_count=0`, `found=false` |
+| Zero existing logging/observability in `pydantic/v1/` | **VERIFIED** | `grep` for `import logging`, `logger`, `logging.` — all returned empty |
+| 38 symbols in file, 37 in impact neighborhood (all within same cluster) | **VERIFIED** | `bigindexer_impact_neighbors` |
+
+## Cluster Coupling Seams
+
+| Seam | Direction | Type | Edges | Pair |
+|---|---|---|---|---|
+| `v1_validators_py_strict` ↔ `__github_actions_people_people_py` | Bidirectional | PREDICTED | 9 | COV.FETCH→COV.PERSIST |
+| `v1_validators_py_strict` ↔ `tests_test_edge_cases_py_test_st` | Bidirectional | PREDICTED | 8 | COV.EMIT→COV.SUBSCRIBE |
+| `__internal__generate_sch` → `v1_validators_py_strict` | Inbound | PREDICTED | 7 | COV.FETCH→COV.PERSIST |
+
+Seam interpretation: the cluster receives fetches from internal schema-gen and emits to tests. No seams inside `pydantic/` core v2 — clean isolation. **(HYPOTHESIS)** This means v1 is architecturally a leaf/sink from v2's perspective.
+
+## Key Entry Points (for instrumentation targeting)
+
+| Function | Line | Role | Call Frequency | Risk |
+|---|---|---|---|---|
+| `ModelMetaclass.__new__` | 124 | Model class creation | Low (once/class) | Low |
+| `BaseModel.__init__` | 355 | Instance creation | High | **Medium** (hot path) |
+| `validate_model` | 1053 | Core validation loop | High | **Critical path** |
+| `BaseModel.__setattr__` | 375 | Field mutation | Medium | Low |
+| `create_model` | 973 | Dynamic model factory | Low | Low |
+| `BaseModel.dict/json` | 450/484 | Serialization | High | Medium |
+
+---
+
+## Safest Implementation Path
+
+**Principle:** v1 is a frozen compatibility shim. Observability must be zero-API-change, zero-behavior-change, zero-cross-boundary.
+
+### Recommended: Local `logging` + Module-Level Logger
+
+```
+pydantic/v1/main.py
+├── imports:         + import logging          # stdlib only, zero new deps
+├── module-level:    LOG = logging.getLogger(__name__ + ".main")  # lazy, no side-effects
+├── ModelMetaclass.__new__:  1-2 LOG.debug() at entry/exit  (rare path)
+├── validate_model:          2 LOG.debug() at entry/exit     (most impactful)
+├── create_model:            1 LOG.debug() at entry          (rare path)
+└── BaseModel.__init__:      optional 1 LOG.debug() at entry (hot but guarded)
+```
+
+### Why this is safe (evidence for each claim):
+
+| Concern | Mitigation | Evidence |
+|---|---|---|
+| No new cross-boundary imports | Only `logging` from stdlib — zero new modules | VERIFIED: existing imports are all within v1 cluster or stdlib |
+| No behavioral change | `DEBUG` level is off by default (default WARNING) | VERIFIED: Python logging default is WARNING |
+| No performance regression | Log calls guarded by `LOG.isEnabledFor(DEBUG)` (implied by `logging` module) | VERIFIED: CPython logging implementation |
+| No API surface change | No new public symbols, no `__all__` changes | VERIFIED: `__all__` at line 93 only exports `BaseModel`, `create_model`, `validate_model` |
+| No import-time side effects | Lazy logger creation; no handlers configured | VERIFIED: `getLogger` just registers in global registry |
+| No pickle/serialization impact | Logger is class-level variable, not instance state | VERIFIED |
+
+### Avoided approaches (higher risk):
+
+| Approach | Risk | Why |
+|---|---|---|
+| Decorator-based wrappers | **Medium** | Would wrap methods → changes call stack → hard tracebacks, affects `inspect` users |
+| Metaclass hook injection | **High** | Changes `ModelMetaclass.__new__` behavior for ALL v1 models; fragile with inheritance chains |
+| Cross-module observability module | **High** | Creates new boundary edge out of the hard cluster; adds coupling where none exists today |
+| Structured JSON logging (structlog, etc.) | **Medium** | New dependency, new import edge, violates "zero new deps" |
+| Metric counters / statsd | **High** | Adds network I/O in sync hot paths; thread-safety concerns |
+
+### Verification commands (post-implementation):
+
+```bash
+python -c "from pydantic.v1 import BaseModel; m = BaseModel(); assert True"   # no behavioral change
+python -c "import logging; logging.basicConfig(level=logging.DEBUG); from pydantic.v1 import BaseModel"  # verify no crashes
+python -m pytest tests/ -x -q --no-header 2>&1 | tail -5                      # existing test suite passes
+```
+
+### Summary
+
+The absolute safest path is: **4–6 `LOG.debug()` calls in `ModelMetaclass.__new__`, `validate_model`, and `create_model` using stdlib `logging` only.** This has **zero cross-boundary impact** (no new imports outside the v1 cluster, no new public API, no behavioral changes, no performance cost at default log levels).

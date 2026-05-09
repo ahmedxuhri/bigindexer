@@ -1,0 +1,9 @@
+[BGI] Scanning /tmp/bgi-ab-repos/pydantic ...
+[BGI] Gate 1 complete — 8189 units fingerprinted
+[BGI] TOKEN-CENSUS — 339 files, bands: Mask 1=9, Mask 2=10, Mask 3=10
+[BGI] Gate 2 complete — 206667 edges detected (236 suspended)
+[BGI] Gate 3 complete — 262 clusters (199 hard, 0 seams, 22587 fuse events)
+[BGI] SEP — 206 new suspended, 206 resurrected, 0 promoted to INTENTIONAL_BOUNDARY
+[BGI] Graph written to /root/mad/sessions/bgi/output/validation/mcp-ab/pydantic/bgi-graph.json
+[BGI] Fuse-graph written to /root/mad/sessions/bgi/output/validation/mcp-ab/pydantic/fuse-graph.json (22587 boundary events)
+[BGI] Architecture narration written to /root/mad/sessions/bgi/output/validation/mcp-ab/pydantic/agents.md

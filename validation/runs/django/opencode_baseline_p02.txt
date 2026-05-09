@@ -1,0 +1,125 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m# [0mTodos
+[ ] Examine tests/generic_inline_admin/urls.py and its imports/usage
+[ ] Identify boundary components (models, views, templates, other tests, config)
+[ ] Compile evidence-based answer with VERIFIED/HYPOTHESIS/UNKNOWN markers
+[0m
+[0m→ [0mRead tests/generic_inline_admin/urls.py
+[0m✱ [0mGlob "tests/generic_inline_admin/**/*"[90m 5 matches[0m
+[0m✱ [0mGrep "generic_inline_admin\.urls"[90m 6 matches[0m
+[0m→ [0mRead tests/generic_inline_admin/admin.py
+[0m→ [0mRead tests/generic_inline_admin/models.py
+[0m→ [0mRead tests/generic_inline_admin/tests.py
+[0m→ [0mRead tests/generic_inline_admin/__init__.py
+[0m✱ [0mGrep "generic_inline_admin\.urls"[90m 6 matches[0m
+[0m✱ [0mGrep "URL_TEST_PREFIXES|urls_module|urlconf"[90m in tests · 113 matches[0m
+[0m✱ [0mGrep "urls"[90m in tests/generic_inline_admin · 9 matches[0m
+[0m✱ [0mGrep "generic_inline_admin"[90m in . · 30 matches[0m
+[0m→ [0mRead tests
+[0m
+[0m# [0mTodos
+[x] Examine tests/generic_inline_admin/urls.py and its imports/usage
+[ ] Identify boundary components (models, views, templates, other tests, config)
+[ ] Compile evidence-based answer with VERIFIED/HYPOTHESIS/UNKNOWN markers
+[0m
+[0m✱ [0mGrep "generic_inline_admin"[90m in . · 30 matches[0m
+[0m→ [0mRead tests/runtests.py[90m [limit=80][0m
+[0m→ [0mRead tests/runtests.py[90m [offset=80, limit=50][0m
+[0m✱ [0mGrep "def urls|@property.*\n.*urls"[90m in django/contrib/admin · 0 matches[0m
+[0m✱ [0mGrep "@property"[90m in django/contrib/admin/sites.py · 2 matches[0m
+[0m→ [0mRead django/contrib/admin/sites.py[90m [offset=197, limit=25][0m
+[0m→ [0mRead django/contrib/admin/sites.py[90m [offset=324, limit=50][0m
+[0m
+[0m# [0mTodos
+[x] Examine tests/generic_inline_admin/urls.py and its imports/usage
+[x] Identify boundary components (models, views, templates, other tests, config)
+[ ] Compile evidence-based answer with VERIFIED/HYPOTHESIS/UNKNOWN markers
+[0m
+[0m# [0mTodos
+[x] Examine tests/generic_inline_admin/urls.py and its imports/usage
+[x] Identify boundary components (models, views, templates, other tests, config)
+[x] Compile evidence-based answer with VERIFIED/HYPOTHESIS/UNKNOWN markers
+[0m
+**VERIFIED — No MCP tools available in this environment.**
+
+---
+
+**File: `tests/generic_inline_admin/urls.py`** (7 lines)
+
+```python
+from django.urls import path
+from . import admin
+
+urlpatterns = [
+    path("generic_inline_admin/admin/", admin.site.urls),
+]
+```
+
+`admin.site.urls` is `AdminSite.urls` (django/contrib/admin/sites.py:324-326) — returns `(get_urls(), "admin", self.name)` where `self.name = "admin"` (admin.py:6). URL names are dynamically generated from registered models via `AdminSite.get_urls()`.
+
+---
+
+## Architectural boundaries touched
+
+### 1. Direct consumers — test classes (VERIFIED)
+
+Six test classes in `tests/generic_inline_admin/tests.py` reference this URLconf via `@override_settings(ROOT_URLCONF="generic_inline_admin.urls")` at lines 24, 98, 257, 297, 409, 417. They use these URL names:
+
+| URL name | test.py refs | 
+|---|---|
+| `admin:generic_inline_admin_episode_add` | 43, 69 |
+| `admin:generic_inline_admin_episode_change` | 52, 92, 122, 142, 165, 188, 208, 228, 248 |
+| `admin:generic_inline_admin_contact_add` | 275, 278, 332 |
+| `admin:generic_inline_admin_contact_change` | 383 |
+| `admin:generic_inline_admin_contact_delete` | 292 |
+
+**VERIFIED:** Changing URL prefix, path structure, or import chain breaks all `reverse()` calls and all HTTP-level tests using `self.client.get()`.
+
+### 2. Admin site configuration (VERIFIED)
+
+- `tests/generic_inline_admin/admin.py` — `site = AdminSite(name="admin")` and registered models (`Episode`, `Contact`, `Category`, `EpisodePermanent`) with inlines (`MediaInline`, `PhoneNumberInline`, `MediaPermanentInline`). The `site.urls` property is consumed directly by `urls.py`.
+- `admin.site.urls` dynamically delegates to `AdminSite.get_urls()` (sites.py:324-326), generating all admin views for registered models.
+
+**VERIFIED:** Any change to the module import path (`from . import admin`) or the `site` variable name breaks the URL wiring. Changes to URL prefix `/generic_inline_admin/admin/` change all resolved URLs, breaking all  `reverse()` calls.
+
+### 3. Model layer (VERIFIED)
+
+`tests/generic_inline_admin/models.py` defines `Episode`, `Media`, `Category`, `PhoneNumber`, `Contact`, `EpisodePermanent`. These are the models whose admin views are served. Inline form POST data in tests uses hardcoded prefixes derived from the URL namespace + model names (e.g., `generic_inline_admin-media-content_type-object_id-TOTAL_FORMS`).
+
+**VERIFIED:** Changes to the URL namespace prefix (derived from `AdminSite.name` = "admin") propagate into form field prefixes in 10+ test POST data dictionaries.
+
+### 4. Django core framework (VERIFIED)
+
+- `django.contrib.admin` — `AdminSite`, admin views, permission checks, templates
+- `django.contrib.contenttypes.admin.GenericTabularInline` — inline formset generation (used in `tests.py:133, 155, 178, 197, 217, 237, 334, 386, 412, 423, 447, 476, 491, 512, 534, 538, 553, 556`)
+- `django.urls` — `path()`, URL resolution, `reverse()`
+- `django.test.utils.override_settings` — mechanism used to inject the URLconf across 6 test classes
+
+**VERIFIED:** These are relied upon but not modified — safe boundary.
+
+### 5. Test runner / INSTALLED_APPS (HYPOTHESIS)
+
+`tests/runtests.py` (lines 80-105) has `ALWAYS_INSTALLED_APPS` without `generic_inline_admin`. Tests import `.admin` and `.models` as sibling modules. The test is runnable via `./runtests.py generic_inline_admin`.
+
+**HYPOTHESIS:** The test package must remain importable as a Python module for the dotted URLconf string `"generic_inline_admin.urls"` to resolve. Any structural change breaking this dotted-path resolution would require changes to the test runner's module discovery.
+
+### 6. Other test modules (VERIFIED: NONE)
+
+No other test directory references `generic_inline_admin.urls`. The only consumer is `tests/generic_inline_admin/tests.py`.
+
+---
+
+## Summary
+
+| Boundary | Status | Evidence |
+|---|---|---|
+| `tests/generic_inline_admin/tests.py` (6 test classes) | **VERIFIED** | Lines 24, 98, 257, 297, 409, 417 use `@override_settings(ROOT_URLCONF="generic_inline_admin.urls")`; 28 `reverse()` / URL-dependent calls |
+| `tests/generic_inline_admin/admin.py` (AdminSite + registrations) | **VERIFIED** | Imported via `from . import admin`; `admin.site.urls` consumed inline |
+| `tests/generic_inline_admin/models.py` (6 models) | **VERIFIED** | Registered in `admin.py`; their admin URL names used in `reverse()` calls throughout tests |
+| `django.contrib.admin.sites.AdminSite.urls` | **VERIFIED** | Property at sites.py:324-326 dynamically generates URL patterns |
+| `django.urls` / `reverse()` mechanism | **VERIFIED** | Hardcoded URL names in tests.py will fail to resolve |
+| Test runner module discovery | **HYPOTHESIS** | Dotted string `"generic_inline_admin.urls"` must remain importable |
+| Any other test module | **VERIFIED: NONE** | grep shows zero external references to `generic_inline_admin.urls` |
+**Bottom line:** Editing `urls.py` breaks the URLconf import path, the URL prefix for all HTTP tests, and the `reverse()` name resolution — affecting all 6 test classes in `tests.py` but nothing outside this test package.

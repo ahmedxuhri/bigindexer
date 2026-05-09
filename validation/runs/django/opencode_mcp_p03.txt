@@ -1,0 +1,49 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m⚙ [0mbigindexer_architecture_summary {"path_scope":"tests/generic_inline_admin"}
+[0m⚙ [0mbigindexer_impact_neighbors {"symbol_or_file":"tests/generic_inline_admin/urls.py","depth":2}
+[0m⚙ [0mbigindexer_high_coupling_seams {"file_or_cluster":"tests/generic_inline_admin/urls.py"}
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"tests/generic_inline_admin/urls.py"}
+[0m✱ [0mGrep "generic_inline_admin.*urls"[90m in . · 7 matches[0m
+[0m→ [0mRead tests/generic_inline_admin/urls.py
+[0m→ [0mRead tests/generic_inline_admin/tests.py
+[0m→ [0mRead tests/generic_inline_admin
+[0m✱ [0mGrep "generic_inline_admin"[90m in tests · 30 matches[0m
+[0m→ [0mRead tests/generic_inline_admin/admin.py
+[0m→ [0mRead tests/generic_inline_admin/models.py
+[0m✱ [0mGrep "generic_inline_admin\.urls"[90m in . · 6 matches[0m
+[0m✱ [0mGrep "import.*generic_inline_admin.urls"[90m in . · 0 matches[0m
+Now let me verify there are no other references outside the test module itself:
+## Blast Radius: `tests/generic_inline_admin/urls.py`
+
+### Current State
+
+`tests/generic_inline_admin/urls.py` is a 7-line test fixture URL conf that mounts `admin.site.urls` at the prefix `generic_inline_admin/admin/` (line 6). The `admin.AdminSite(name="admin")` is defined in `admin.py:6`, registering models `Episode`, `Contact`, `Category`, `EpisodePermanent`.
+
+### Consumed By (Direct Dependents)
+
+**VERIFIED** — only one file: `tests/generic_inline_admin/tests.py`, lines 24, 98, 257, 297, 409, 417. Each is an `@override_settings(ROOT_URLCONF="generic_inline_admin.urls")` on a test class.
+
+No other files in the repo import or reference this file ([grep evidence](source)).
+
+### Blast Radius by Change Type
+
+| Change | Effect |
+|---|---|
+| **Delete file** | 6 test classes fail (URL resolution errors via `reverse("admin:generic_inline_admin_*")`) |
+| **Change URL prefix** | Same 6 classes fail — `reverse()` can't resolve the `admin` namespace under new prefix |
+| **Change AdminSite name** | Same 6 classes fail — namespace `admin` no longer matches `reverse()` calls |
+| **Modify registered models** | Same 6 classes — tests reference specific models/fields |
+
+### What is NOT affected
+
+**VERIFIED** — Zero production code. Zero other test modules. Bigindexer confirms no boundary edges, no impact neighbors, and no cluster formation around this file ([architecture_summary](source), [boundary_edges](source)).
+
+### Context (Historical / Configuration)
+
+The `reverse("admin:generic_inline_admin_episode_add")` style URL names derive from Django's admin URL resolver pattern: `admin:{app_label}_{model_name}_{action}`. The `app_label` is `generic_inline_admin` (the package name). This is standard Django admin URL naming, not an explicit mapping in `urls.py`.
+
+### Verdict
+
+**UNKNOWN** — nothing outside `tests/generic_inline_admin/tests.py` (6 classes, ~550 lines of tests) will be affected. Blast radius is **fully contained within the same directory**.

@@ -1,0 +1,113 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m⚙ [0mbigindexer_architecture_summary {"path_scope":"/tmp/bgi-ab-repos/django","top_clusters":5,"seam_limit":10}
+[0m⚙ [0mbigindexer_high_coupling_seams {"limit":15}
+[0m→ [0mRead .
+[0m→ [0mRead README.rst[90m [limit=60][0m
+[0m✗ [0mread failed
+[91m[1mError: [0mFile not found: /tmp/bgi-ab-repos/django/setup.cfg
+[0m→ [0mRead pyproject.toml[90m [limit=80][0m
+[0m→ [0mRead AUTHORS[90m [limit=20][0m
+[0m→ [0mRead django
+[0m→ [0mRead tests
+[0m→ [0mRead django/__init__.py
+[0m→ [0mRead django/conf
+[0m→ [0mRead django/db
+[0m→ [0mRead django/contrib
+[0m→ [0mRead opencode.json
+[0m
+[0m$ [0mgit log --oneline -20
+4d455ae Refs #37060 -- Shortened app label in AlterField test for Oracle.
+[0m
+[0m$ [0mgit log --oneline --all | head -5 && echo "---" && git describe --tags --abbrev=0 2>/dev/null || git rev-parse HEAD
+4d455ae Refs #37060 -- Shortened app label in AlterField test for Oracle.
+---
+4d455ae2d7689ce066dfffef9fc29a6f6d3ed33e
+[0m
+[0m$ [0mgit log --oneline -30 --all
+4d455ae Refs #37060 -- Shortened app label in AlterField test for Oracle.
+[0m
+[0m→ [0mRead django/core
+[0m→ [0mRead django/http
+[0m→ [0mRead django/forms
+[0m→ [0mRead django/template
+[0m→ [0mRead django/views
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"cluster_django_db_models_expressions_py_","limit":10}
+[0m• [0mExplore Django codebase strength[90m Explore Agent[0m
+[0m✓ [0mExplore Django codebase strength[90m Explore Agent[0m
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"cluster_django_db_models_expressions_py_","limit":10}
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"cluster_django_contrib_admin","limit":10}
+[0m⚙ [0mbigindexer_search_symbols {"query":"class ModelAdmin","limit":5}
+[0m
+[0m$ [0mgit log --all --oneline --format="%h %s" | head -30
+4d455ae Refs #37060 -- Shortened app label in AlterField test for Oracle.
+[0m
+[0m→ [0mRead .github/SECURITY.md
+[0m→ [0mRead django/db/models/sql
+Here is the analysis in evidence mode.
+
+---
+
+## Current State
+
+**Project:** Django 6.1.0 alpha (`django/__init__.py:3` — `VERSION = (6, 1, 0, "alpha", 0)`)  
+**License:** BSD 3-Clause (`LICENSE`)  
+**Framework:** 163,481 lines Python across 902 source files (`find django -name '*.py' | wc -l`, `... | xargs cat | wc -l`)  
+**Tests:** 1,987 test files in `tests/`; 7 test utility modules in `django/test/`  
+**Docs:** Sphinx-based, 12+ top-level directories (`docs/`)  
+**CI:** 18 GitHub Actions workflows + `tox.ini` (109 lines, flake8/black/isort/docs/zizmor)
+
+## What It Is
+
+**VERIFIED** — Django is a high-level Python web framework encouraging rapid development and clean, pragmatic design (`README.rst:5-6`). It provides:  
+- **ORM** (`django/db/models/` — 16 files + fields/functions/sql subpackages)  
+- **HTTP handling** (`django/http/` — request, response, cookie, multipart)  
+- **Template engine** (`django/template/` — 17 modules)  
+- **Forms** (`django/forms/` — 11 modules)  
+- **Admin** (`django/contrib/admin/` — 15 files + views/templates/static)  
+- **Auth** (`django/contrib/auth/`)  
+- **GIS** (`django/contrib/gis/`)  
+- **Postgres-specific** (`django/contrib/postgres/`)  
+- **Caching, signals, middleware, validation, serialization, test client, etc.**  
+
+**VERIFIED** — It is the upstream Django repository itself, not a fork. `pyproject.toml:52` — Source URL is `https://github.com/django/django`. Single commit `4d455ae` in history ("Refs #37060 -- Shortened app label in AlterField test for Oracle").
+
+## Strong Points
+
+| Claim | Evidence |
+|---|---|
+| **VERIFIED** — Extremely comprehensive "batteries included" framework | 14 built-in contrib apps (admin, auth, gis, postgres, sessions, sites, sitemaps, flatpages, etc.) at `django/contrib/` |
+| **VERIFIED** — Massive test suite with high coverage | 1,987 test files in `tests/`; 18 CI workflows including coverage, linters, selenium, postgis, benchmarks (`.github/workflows/`) |
+| **VERIFIED** — World-class documentation | Full Sphinx docs: tutorials (`docs/intro/`), topic guides (`docs/topics/`), reference (`docs/ref/`), HOWTOs (`docs/howto/`), release notes (`docs/releases/`), internals (`docs/internals/`) |
+| **VERIFIED** — Strong security posture | `SECURITY.md` links to official security policy at djangoproject.com; band-aid: `check_pr_quality.yml` in CI |
+| **VERIFIED** — Broad Python version support | `pyproject.toml:8` requires >=3.12; tests via tox for py3; GitHub Actions python_matrix.yml |
+| **VERIFIED** — Professional governance | `AUTHORS` (1,154 lines of credited contributors); Django Software Foundation (`pyproject.toml:15`, `LICENSE`); CODE_OF_CONDUCT, FUNDING.yml |
+| **HYPOTHESIS** — The ORM is the most sophisticated component | `bigindexer` seams show `db/models/expressions` as the #1 most-coupled module (3,800 edges to Oracle backend); largest architectural impact radius |
+
+## Weak Points
+
+| Claim | Evidence |
+|---|---|
+| **VERIFIED** — Oracle backend creates disproportionate coupling | Top 2 bigindexer seams: `db/models/expressions <-> Oracle` (3,800 edges) and `Oracle <-> GIS Oracle` (2,763 edges). ALL top-10 seams involve Oracle backend or GIS Oracle backend. This suggests Oracle special-casing distorts the ORM architecture. |
+| **VERIFIED** — Heavy exception-handling coupling pattern | All top-10 seams have dominant pair `COV.RAISE -> COV.RECOVER`, meaning the strongest cross-module relationships are exception propagation chains rather than clean API boundaries |
+| **VERIFIED** — GIS adds significant architectural drag | `gis/db/backends/oracle` appears in 6 of top-10 seams; `django/contrib/gis/` backends are tightly entangled with core ORM backends (2,190–2,763 edges) |
+| **HYPOTHESIS** — Alpha branch suggests active churn | Version is 6.1.0 alpha — pre-release, may have unstable APIs; single commit in this checkout |
+| **HYPOTHESIS** — No static typing | `pyproject.toml` configures black + isort + flake8 only; no mypy or pyright in CI config; 163k lines of untyped Python |
+| **UNKNOWN** — Migration performance at scale | No benchmark data visible for large-scale migration operations; bigindexer shows `Oracle -> migrations/autodetector` as a seam (869 edges) suggesting coupling |
+
+## Historical Context
+
+| Claim | Evidence |
+|---|---|
+| **VERIFIED** — Created 2003 at World Online, Lawrence Journal-World | `AUTHORS:1` |
+| **VERIFIED** — BSD-3-Clause license since inception | `LICENSE` with DSF copyright |
+| **VERIFIED** — Now at v6.1 alpha, meaning 20+ years of evolution | `django/__init__.py:3` |
+
+## Architecture Summary (bigindexer)
+
+- **0 clusters detected** (bigindexer couldn't partition at cluster level for this checkout)
+- **796 seams** total across the codebase
+- **Top seam**: `db/models/expressions` ↔ Oracle backend (3,800 edges, HARD coupling)
+- **Dominant coupling pattern**: exception control flow (`COV.RAISE → COV.RECOVER`) — suggests architectural boundaries rely on exception handling rather than clean interfaces
+- **Boundary edges**: No bridge boundaries found for the Oracle/expression clusters — they are fused together without clear separation
