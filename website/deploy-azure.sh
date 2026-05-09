@@ -86,7 +86,7 @@ echo "[4/5] Creating App Service plan: $APP_PLAN..."
 az appservice plan create \
   --name "$APP_PLAN" \
   --resource-group "$RESOURCE_GROUP" \
-  --sku B1 \
+  --sku F1 \
   --is-linux \
   --output none
 
