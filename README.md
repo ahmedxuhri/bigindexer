@@ -206,3 +206,7 @@ Roadmap details: `TASKPLAN.md`
 - `docs/QUERY_PLANNER.md` - query planner scoring
 - `masterplan.md` - MCP product and monetization execution plan
 - `docs/MCP_SETUP.md` - MCP server setup and usage
+- `docs/MCP_QUICKSTART_DEMO.md` - 5-minute demo walkthrough
+- `docs/MCP_EXAMPLE_TRANSCRIPTS.md` - real-world MCP tool invocation examples
+- `docs/MCP_REAL_TRANSCRIPT.md` - unedited transcript from FastAPI analysis
+- `scripts/mcp-demo.sh` - automated demo script for multiple CLIs and repositories
