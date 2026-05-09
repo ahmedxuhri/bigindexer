@@ -88,8 +88,8 @@ Next for MCP track:
 
 1. ~~Validate MCP with real client sessions (OpenCode/Gemini/Copilot)~~ - **COMPLETE (Step 1)**
 2. ~~Add demo script + example transcript for public launch~~ - **COMPLETE (Step 2)**
-3. Add thin website/waitlist flow on `bigindexer.com`.
-4. Use `validation/` workspace for managed A/B runs and public evidence collection.
+3. ~~Add thin website/waitlist flow on `bigindexer.com`~~ - **COMPLETE (Step 3)**
+4. ~~Use `validation/` workspace for managed A/B runs and public evidence collection~~ - **IN PROGRESS (Step 4)**
 
 Phase 8 Step 2 evidence (demo script and example transcripts) - COMPLETE:
 
@@ -123,6 +123,45 @@ Deliverables:
 - Real-world latency metrics and token costs
 - Cross-CLI validation (OpenCode 9.38s, Copilot 29s)
 - Prompt templates for reliable MCP tool invocation
+
+Phase 8 Step 3 evidence (website and waitlist deployment) - COMPLETE:
+
+- **Landing page** (`website/public/index.html`):
+  - Beautiful responsive design with gradient theme
+  - Feature cards: Real Architecture Analysis, MCP Integration, Architectural Boundaries
+  - Waitlist signup form with email validation
+  - Real-time position tracking
+  - Mobile-friendly UI
+
+- **Backend API** (`website/server.js`):
+  - Express.js server (Node.js 18)
+  - POST `/api/waitlist/join` - submit email
+  - GET `/api/waitlist/status` - public status
+  - GET `/api/admin/waitlist?key=...` - admin view
+  - GET `/health` - Azure health probe
+
+- **Deployment infrastructure**:
+  - Docker containerization (`website/Dockerfile`)
+  - One-command Azure deployment (`website/deploy-azure.sh`)
+  - Creates: Resource Group, Container Registry, App Service
+  - No conflicts with local ARM Oracle VPS machine
+  - Estimated cost: $15-20/month (B1 App Service + Basic Registry)
+
+- **Documentation**:
+  - `website/README.md` - Development and deployment guide
+  - `DEPLOYMENT_GUIDE.md` - Step-by-step Azure setup
+  - `.env.example` - Configuration template
+
+- **Features**:
+  - Real-time waitlist management
+  - Duplicate email prevention
+  - Admin API for email export
+  - Health check endpoint
+  - Ready for custom domain (bigindexer.com)
+  - CORS enabled
+  - Production-ready error handling
+
+Deployment path: Local (Docker build) → Azure Container Registry → Azure App Service → Public HTTPS endpoint
 
 Phase 8 Step 1 evidence (multi-client real-world validation) - COMPLETE:
 
