@@ -199,6 +199,7 @@ Roadmap details: `TASKPLAN.md`
 - `TASKPLAN.md` - active roadmap and execution status
 - `MEMORANDUM.md` - design contracts and invariants
 - `bgi2.md` - architecture convergence history
+- `problem.md` - historical benchmark baseline and root-cause archive (not current status)
 - `docs/LANGUAGE_SUPPORT.md` - language implementation details
 - `docs/CONTRIBUTING_LANGUAGES.md` - language contribution guide
 - `docs/INDEX_SCHEMA.md` - interactive index schema

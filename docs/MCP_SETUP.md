@@ -57,3 +57,14 @@ If your client supports environment variables, set them as needed for your works
 
 - Big Indexer MCP is static-analysis based; it does not use runtime traces.
 - `search_symbols` is stronger with `--index-db`; otherwise it falls back to graph scanning.
+
+## 7) High-trust prompting (recommended)
+
+Use `docs/MCP_PROMPT_PROTOCOL.md` to force evidence-backed responses.
+
+It gives:
+
+1. copy-paste system instruction for evidence mode
+2. user prompt template with strict constraints
+3. output format requiring `VERIFIED` / `HYPOTHESIS` / `UNKNOWN`
+4. anti-drift checklist to catch stale historical claims

@@ -1,4 +1,13 @@
-# BGI — Scale Problems: VS Code Benchmark Report
+# BGI — Historical Scale Problems: VS Code Benchmark Report
+
+> **Historical baseline document (2026-05-06).**
+> This file captures the original bottlenecks that motivated Spectral-Fuse redesign.
+> It is **not** the current status source of truth.
+>
+> For current state, use:
+> - `README.md` (current overview)
+> - `TASKPLAN.md` (active status and latest validated metrics)
+> - `masterplan.md` (current product/commercial direction)
 
 **Prepared by:** BGI Development Team  
 **Date:** 2026-05-06  

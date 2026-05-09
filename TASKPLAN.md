@@ -206,3 +206,4 @@ python3 -m pytest tests/test_gate3.py -q
 - Use `README.md` for onboarding and conceptual overview.
 - Use this file for active execution state and decision boundaries.
 - Keep benchmark claims explicitly tied to run mode (auto vs go-only comparable) to avoid false comparisons.
+- Treat `problem.md` as historical context; do not report it as current state without cross-checking this file and latest artifacts.
