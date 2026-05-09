@@ -15,6 +15,7 @@ Spectral passes reduce M by scope partitioning (3x–50x reduction in common cas
 from __future__ import annotations
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass
+import os
 import time
 from typing import TYPE_CHECKING, Any
 
@@ -103,7 +104,9 @@ _CLASS_SCOPED_PAIRS: set[tuple[COV, COV]] = {
 _GLOBAL_FANOUT_CAP = 100   # max partners emitted per (unit, token) combo
 _TOKEN_INDEX_CAP   = 500   # if a token has >N entries, only keep first N per file group
 _MASK3_TOKEN_INDEX_CAP = 300
-_PROCESS_POOL_MIN_FINGERPRINTS = 20000
+# For BGI_GATE2_EXECUTOR=auto, process pool is only used for smaller scans.
+# On very large scans, pickling worksets dominates and threads are faster overall.
+_AUTO_PROCESS_MAX_FINGERPRINTS = 20000
 _OUTWARD_TOKENS = {COV.DELEGATE, COV.FETCH, COV.EMIT, COV.PERSIST, COV.ROUTE}
 _LAST_MATCH_PROFILE: dict[str, Any] = {}
 
@@ -255,6 +258,22 @@ def _adaptive_probe_cap(band: str, partner_count: int, class_scoped: bool) -> in
     if partner_count >= 140:
         return 220
     return 260
+
+
+def _resolve_executor_mode(fingerprint_count: int) -> str:
+    """
+    Resolve executor mode for spectral passes.
+
+    Env override:
+      BGI_GATE2_EXECUTOR=thread|process|auto
+    Default is thread for better large-repo performance.
+    """
+    mode = os.environ.get("BGI_GATE2_EXECUTOR", "thread").strip().lower()
+    if mode in {"thread", "process"}:
+        return mode
+    if mode == "auto":
+        return "process" if 0 < fingerprint_count <= _AUTO_PROCESS_MAX_FINGERPRINTS else "thread"
+    return "thread"
 
 
 def _prepare_mask_worksets(
@@ -549,8 +568,8 @@ def match_fingerprints(
         mask3 = _build_mask_index(worksets["Mask 3"], "Mask 3", scope="file")  # file
         build_times["Mask 3"] = round((time.perf_counter() - build_start) * 1000.0, 3)
 
-        use_process_pool = len(fingerprints) >= _PROCESS_POOL_MIN_FINGERPRINTS
-        executor_cls = ProcessPoolExecutor if use_process_pool else ThreadPoolExecutor
+        executor_mode = _resolve_executor_mode(len(fingerprints))
+        executor_cls = ProcessPoolExecutor if executor_mode == "process" else ThreadPoolExecutor
 
         # Run 3 passes in parallel
         with executor_cls(max_workers=3) as executor:
@@ -577,7 +596,7 @@ def match_fingerprints(
 
         _set_last_match_profile({
             "mode": "spectral",
-            "executor": "process" if use_process_pool else "thread",
+            "executor": executor_mode,
             "fingerprints": len(fingerprints),
             "prepare_worksets_ms": prepare_ms,
             "build_index_ms": build_times,

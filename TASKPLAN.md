@@ -152,21 +152,31 @@ Option B currently targets **Gate 2 latency**, not full-pipeline `<60s` on kuber
   - Gate 3: `9.359s`
   - Total: `218.584s`
   - Quality: max cluster `1.113%`, fuse events `0`
+- Phase 7 controlled baseline (`kubernetes-phase7-gate2-baseline-summary.json`):
+  - 3-run Gate 2 median: `66.477s` (min `64.736s`, max `72.275s`)
+- Phase 7 tuning sweeps:
+  - Mask 3 probe-cap and fanout-cap sweeps regressed Gate 2 on this host; reverted.
+  - Executor sweep showed process-pool overhead dominates at this scale.
+- New Gate 2 runtime decision:
+  - Default spectral executor is now `thread` (override with `BGI_GATE2_EXECUTOR=process|auto`).
+  - 3-run Gate 2 median after change: `36.259s` (about **45.46%** better vs 66.477s baseline median).
+  - Quality held: max cluster `1.113%`, fuse events `0`, edge count stable.
 - Dominant Gate 2 hotspot remains Mask 3 partner matching.
 
 ### What has been learned
 
 - Adaptive Mask 3 caps provided major gains, but tuning is sensitive to host variance.
 - Gate 3 union-find micro-optimizations were tested and rolled back when they regressed runtime.
-- Gate 3 is currently stable; Gate 2 Mask 3 is still the main optimization frontier.
+- For very large scans, ProcessPool pickling/IPC overhead can outweigh parallel-pass gains.
+- Gate 3 is currently stable; Gate 2 still centers on Mask 3 partner matching efficiency.
 
 ---
 
 ## Next execution sequence (Option B)
 
-1. Run controlled median baselines (3-5 comparable runs) before any new tuning pass.
-2. Sweep Mask 3 fanout/probe limits one variable at a time.
-3. Keep only changes that improve median Gate 2 while preserving quality.
+1. Keep thread executor default for large comparable runs; use env override only for targeted A/B.
+2. Continue Mask 3 efficiency work only when it beats the `~36s` Gate 2 median on 3-run medians.
+3. Keep only changes that preserve quality guardrails (cluster cap + fuse stability).
 4. Roll back immediately on regression.
 
 ---
@@ -175,7 +185,7 @@ Option B currently targets **Gate 2 latency**, not full-pipeline `<60s` on kuber
 
 - Quality-first priority remains unchanged from convergence in `bgi2.md`.
 - Option A (interactive search) is complete and retained as an additive capability.
-- Option B remains active until Gate 2 target behavior is satisfactory under controlled medians.
+- Option B remains active; latest Gate 2 comparable median improved from `66.477s` to `36.259s` with quality intact by switching spectral default executor to threads.
 
 ---
 
@@ -195,6 +205,19 @@ python3 -m pytest tests/test_gate3.py -q
 
 - Latest comparable sample:
   - `output/validation/kubernetes-optionb-controlled-median-v21.json`
+- Phase 7 Gate 2 baselines:
+  - `output/validation/kubernetes-phase7-gate2-baseline-summary.json`
+  - `output/validation/kubernetes-phase7-gate2-baseline-r1.json`
+  - `output/validation/kubernetes-phase7-gate2-baseline-r2.json`
+  - `output/validation/kubernetes-phase7-gate2-baseline-r3.json`
+- Phase 7 tuning sweeps:
+  - `output/validation/kubernetes-phase7-mask3-probe-sweep.json`
+  - `output/validation/kubernetes-phase7-mask3-fanout-sweep.json`
+  - `output/validation/kubernetes-phase7-executor-sweep.json`
+  - `output/validation/kubernetes-phase7-gate2-thread-default-summary.json`
+  - `output/validation/kubernetes-phase7-gate2-thread-default-r1.json`
+  - `output/validation/kubernetes-phase7-gate2-thread-default-r2.json`
+  - `output/validation/kubernetes-phase7-gate2-thread-default-r3.json`
 - Prior Option B runs:
   - `output/validation/kubernetes-optionb-gate2-profile-go-comparable-v8.json`
   - `output/validation/kubernetes-optionb-gate2-profile-go-comparable-v10.json`

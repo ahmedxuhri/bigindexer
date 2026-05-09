@@ -10,6 +10,7 @@ from bgi.gate2.keylock import (
     match_fingerprints,
     _get_directory_path,
     _get_file_path,
+    _resolve_executor_mode,
 )
 
 
@@ -193,3 +194,21 @@ class TestSpectralWithoutCensus:
         # Provenance should NOT mention spectral
         assert not any("spectral" in e.provenance for e in edges)
         assert get_last_match_profile()["mode"] == "flat"
+
+
+class TestExecutorModeSelection:
+    def test_defaults_to_thread(self, monkeypatch):
+        monkeypatch.delenv("BGI_GATE2_EXECUTOR", raising=False)
+        assert _resolve_executor_mode(1000) == "thread"
+
+    def test_honors_process_override(self, monkeypatch):
+        monkeypatch.setenv("BGI_GATE2_EXECUTOR", "process")
+        assert _resolve_executor_mode(200000) == "process"
+
+    def test_auto_prefers_process_for_smaller_scans(self, monkeypatch):
+        monkeypatch.setenv("BGI_GATE2_EXECUTOR", "auto")
+        assert _resolve_executor_mode(5000) == "process"
+
+    def test_auto_uses_thread_for_large_scans(self, monkeypatch):
+        monkeypatch.setenv("BGI_GATE2_EXECUTOR", "auto")
+        assert _resolve_executor_mode(25000) == "thread"
