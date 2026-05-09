@@ -1,0 +1,11 @@
+repo_slug,repo_url,language,recommended_scope,priority,notes
+fastapi,https://github.com/fastapi/fastapi,python,full,high,starter repo for first full protocol run
+django,https://github.com/django/django,python,full,high,complex layered architecture
+pydantic,https://github.com/pydantic/pydantic,python,full,medium,good for validation and parsing boundaries
+vscode,https://github.com/microsoft/vscode,typescript,src/vs for first pass,high,large scale stress repo
+nextjs,https://github.com/vercel/next.js,typescript,full,high,mixed build/server architecture
+angular,https://github.com/angular/angular,typescript,packages/,medium,modular monorepo architecture
+kubernetes,https://github.com/kubernetes/kubernetes,go,pkg/ for first pass,high,large Go architecture stress
+prometheus,https://github.com/prometheus/prometheus,go,full,medium,clean Go service structure
+rust-analyzer,https://github.com/rust-lang/rust-analyzer,rust,crates/,medium,multi-crate Rust architecture
+tokio,https://github.com/tokio-rs/tokio,rust,full,medium,runtime/concurrency architecture

@@ -1,0 +1,1 @@
+run_id,timestamp_utc,repo_slug,repo_dir,cli,model,mcp_mode,prompt_id,latency_sec,output_file,time_file,evidence_coverage_pct,boundary_accuracy,actionability,hallucination_flags,rework_needed,executor,notes

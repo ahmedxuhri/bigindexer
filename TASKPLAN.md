@@ -89,6 +89,7 @@ Next for MCP track:
 1. Validate MCP with real client session (Claude/Cursor).
 2. Add demo script + example transcript for public launch.
 3. Add thin website/waitlist flow on `bigindexer.com`.
+4. Use `validation/` workspace for managed A/B runs and public evidence collection.
 
 ---
 

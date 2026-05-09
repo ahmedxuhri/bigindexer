@@ -1,5 +1,8 @@
 # Big Indexer MCP Validation Plan (A/B on 10 Public Repos)
 
+> Operational workspace now lives in `validation/`.
+> Use `validation/README.md` as the primary entry point.
+
 This file defines a reproducible validation protocol for **manual + publishable** evidence.
 
 Goal: prove whether MCP context materially improves engineering outcomes vs non-MCP usage.
