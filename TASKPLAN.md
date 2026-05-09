@@ -52,6 +52,20 @@ Deliverable: `README.md` now serves as onboarding doc for new readers instead of
 
 ---
 
+## Commercialization track (new)
+
+Business and launch execution now has a dedicated plan in `masterplan.md`.
+That plan covers:
+
+1. MCP server build and public launch.
+2. Big Indexer branding and domain rollout (`bigindexer.com`).
+3. Azure credits usage for hosted pilots.
+4. Monetization path from open source adoption to paid team features.
+
+Engineering execution in this file remains focused on core quality/performance.
+
+---
+
 ## Completed milestones
 
 ### Phase 1 (quality fixes) - COMPLETE

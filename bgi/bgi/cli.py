@@ -7,7 +7,7 @@ import sys
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="bgi",
-        description="Bio-Gate Indexing — language-agnostic code intelligence",
+        description="Big Indexer — language-agnostic code intelligence",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 

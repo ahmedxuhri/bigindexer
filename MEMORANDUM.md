@@ -3,7 +3,7 @@
 **Version:** 1.0  
 **Date:** 2026-05-05  
 **Status:** Ratified  
-**Scope:** All design decisions, vocabulary contracts, gate contracts, and invariants for the Bio-Gate Indexing system.
+**Scope:** All design decisions, vocabulary contracts, gate contracts, and invariants for the Big Indexer system.
 
 ---
 

@@ -1,7 +1,8 @@
-# BGI - Bio-Gate Indexing
+# BGI - Big Indexer
 
 BGI is a static architecture analysis tool for large codebases.
 It groups code units by **behavioral role** and emits explicit architectural boundaries.
+Project domain: `bigindexer.com`
 
 ## What problem this solves
 
@@ -199,3 +200,4 @@ Roadmap details: `TASKPLAN.md`
 - `docs/CONTRIBUTING_LANGUAGES.md` - language contribution guide
 - `docs/INDEX_SCHEMA.md` - interactive index schema
 - `docs/QUERY_PLANNER.md` - query planner scoring
+- `masterplan.md` - MCP product and monetization execution plan

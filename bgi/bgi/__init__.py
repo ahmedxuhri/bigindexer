@@ -1,1 +1,1 @@
-"""BGI — Bio-Gate Indexing"""
+"""BGI — Big Indexer"""

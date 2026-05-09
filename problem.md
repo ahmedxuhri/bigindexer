@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-BGI (Bio-Gate Indexing) is a language-agnostic hierarchical code intelligence pipeline. When run against VS Code — approximately 1 million lines of TypeScript across 9,792 source files — three critical scalability problems emerged:
+BGI (Big Indexer) is a language-agnostic hierarchical code intelligence pipeline. When run against VS Code — approximately 1 million lines of TypeScript across 9,792 source files — three critical scalability problems emerged:
 
 | Problem | Symptom | Impact |
 |---------|---------|--------|
