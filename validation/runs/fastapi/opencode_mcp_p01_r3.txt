@@ -1,0 +1,141 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m→ [0mRead .
+[0m→ [0mRead README.md[90m [limit=100][0m
+[0m✱ [0mGlob "**/*.py"[90m in . · 100 matches[0m
+[0m→ [0mRead pyproject.toml
+[0m→ [0mRead fastapi
+[0m→ [0mRead fastapi/__init__.py
+[0m→ [0mRead fastapi/applications.py
+[0m→ [0mRead fastapi/routing.py[90m [limit=100][0m
+[0m→ [0mRead fastapi/dependencies
+[0m→ [0mRead fastapi/dependencies/utils.py[90m [limit=80][0m
+[0m→ [0mRead fastapi/param_functions.py[90m [limit=50][0m
+[0m→ [0mRead fastapi/_compat
+[0m→ [0mRead fastapi/middleware
+[0m→ [0mRead fastapi/openapi
+[0m
+[0m$ [0mcd /tmp/bgi-ab-repos/fastapi && git log --oneline -20
+622b635 📝 Update release notes
+[0m
+[0m$ [0mcd /tmp/bgi-ab-repos/fastapi && wc -l fastapi/routing.py fastapi/applications.py fastapi/dependencies/utils.py fastapi/param_functions.py fastapi/params.py fastapi/openapi/utils.py fastapi/encoders.py fastapi/security/*.py fastapi/middleware/*.py fastapi/_compat/*.py fastapi/datastructures.py fastapi/responses.py fastapi/requests.py fastapi/exceptions.py fastapi/utils.py 2>/dev/null | sort -rn | head -20
+17895 total
+  4956 fastapi/routing.py
+  4691 fastapi/applications.py
+  2460 fastapi/param_functions.py
+  1057 fastapi/dependencies/utils.py
+   754 fastapi/params.py
+   693 fastapi/security/oauth2.py
+   606 fastapi/openapi/utils.py
+   493 fastapi/_compat/v2.py
+   417 fastapi/security/http.py
+   364 fastapi/encoders.py
+   320 fastapi/security/api_key.py
+   256 fastapi/exceptions.py
+   214 fastapi/_compat/shared.py
+   186 fastapi/datastructures.py
+   136 fastapi/utils.py
+    98 fastapi/responses.py
+    94 fastapi/security/open_id_connect_url.py
+    40 fastapi/_compat/__init__.py
+    18 fastapi/middleware/asyncexitstack.py
+[0m
+[0m$ [0mcd /tmp/bgi-ab-repos/fastapi && git log --oneline --all --graph | head -40
+* 622b635 📝 Update release notes
+[0m
+[0m$ [0mcd /tmp/bgi-ab-repos/fastapi && ls tests/*.py | wc -l && find tests -name "*.py" | wc -l
+206
+581
+[0m
+[0m$ [0mcd /tmp/bgi-ab-repos/fastapi && git log --format='%an' | sort | uniq -c | sort -rn | head -10
+1 github-actions[bot]
+[0m
+[0m$ [0mcd /tmp/bgi-ab-repos/fastapi && git log --format='%s' | head -30
+📝 Update release notes
+[0m
+[0m$ [0mcd /tmp/bgi-ab-repos/fastapi && git rev-list --count HEAD
+1
+[0m
+[0m→ [0mRead fastapi/dependencies/utils.py[90m [offset=81, limit=200][0m
+[0m→ [0mRead fastapi/routing.py[90m [offset=101, limit=200][0m
+[0m→ [0mRead fastapi/params.py[90m [limit=80][0m
+[0m
+[0m$ [0mcd /tmp/bgi-ab-repos/fastapi && ls coverage/ 2>/dev/null || echo "No coverage dir"
+No coverage dir
+[0m
+[0m⚙ [0mbigindexer_architecture_summary {"path_scope":"/tmp/bgi-ab-repos/fastapi","top_clusters":5}
+[0m→ [0mRead fastapi/routing.py[90m [offset=301, limit=200][0m
+[0m→ [0mRead fastapi/_compat/v2.py[90m [limit=60][0m
+Based on my thorough exploration of the codebase, here is my evidence-mode analysis:
+
+---
+
+## What is this project?
+
+**VERIFIED** — This is **FastAPI v0.136.1**, a modern Python web framework for building HTTP APIs using standard Python type hints. It is created by Sebastián Ramírez (tiangolo), MIT-licensed, requires Python ≥3.10, and is built directly on top of **Starlette** (ASGI routing/middleware) and **Pydantic v2** (data validation). Source: `fastapi/__init__.py:3`, `pyproject.toml:6-50`, `fastapi/applications.py:41`.
+
+---
+
+## Strong Points
+
+### 1. Type-hint-driven automatic OpenAPI generation
+**VERIFIED** — The framework derives request/response schemas, validation, and OpenAPI 3.1.0 docs purely from Python type annotations. Source: `fastapi/applications.py:1068-1099`, `fastapi/openapi/utils.py`.
+
+### 2. First-class dependency injection with yield support
+**VERIFIED** — `solve_dependencies` in `fastapi/dependencies/utils.py` handles nested dependencies, caching, `yield`-based cleanup (AsyncExitStack), and overriding for testing (via `dependency_overrides`). Source: `fastapi/applications.py:965-981`, `fastapi/dependencies/utils.py:457-464`.
+
+### 3. Comprehensive test suite
+**VERIFIED** — 581 Python test files under `tests/`. Strict pytest config (`--strict-markers`, warnings-as-errors, 20s timeout). Source: `pyproject.toml:224-236`, glob result showing test count.
+
+### 4. Thoroughly typed with py.typed marker
+**VERIFIED** — `fastapi/py.typed` file is present, making FastAPI a PEP 561 package. mypy runs in strict mode (`pyproject.toml:204-206`).
+
+### 5. Modern protocol support (SSE, WebSocket, streaming)
+**VERIFIED** — Built-in support for Server-Sent Events (`fastapi/sse.py`), WebSocket routing with dependency injection (`fastapi/applications.py:1278-1291`), and streaming responses (JSONL, `StreamingResponse` integration in `fastapi/routing.py:496-540`).
+
+### 6. Security utilities
+**VERIFIED** — `fastapi/security/` module includes OAuth2 password/authorization-code/OpenID flows (`oauth2.py`), HTTP Basic/Digest/Bearer (`http.py`), and API key auth (`api_key.py`).
+
+### 7. Strict Content-Type checking against CSRF
+**VERIFIED** — `strict_content_type=True` by default rejects requests without `Content-Type` header to prevent CSRF attacks. Source: `fastapi/applications.py:839-861`.
+
+### 8. Separate input/output schemas for SDK generation
+**VERIFIED** — `separate_input_output_schemas=True` generates distinct request vs. response OpenAPI schemas for better client generation. Source: `fastapi/applications.py:779-812`.
+
+---
+
+## Weak Points
+
+### 1. Monolithic file sizes (maintenance risk)
+**VERIFIED**
+| File | Lines |
+|---|---|
+| `fastapi/routing.py` | **4,956** |
+| `fastapi/applications.py` | **4,691** |
+| `fastapi/param_functions.py` | **2,460** |
+| `fastapi/dependencies/utils.py` | **1,057** |
+
+These files bundle multiple concerns — e.g., routing.py contains request parsing, response serialization, SSE streaming, endpoint context extraction, and lifespan management in a single module. Source: line counts from `wc -l`.
+
+### 2. Vendored Starlette internals
+**VERIFIED** — `fastapi/routing.py` copies and modifies Starlette internal functions (`request_response`, `websocket_session`, `_AsyncLiftContextManager`, `_wrap_gen_lifespan_context`) rather than extending public APIs. Comments explicitly state "Copy of starlette.routing.request_response modified to include the dependencies' AsyncExitStack" (line 95-97) and "Vendored from starlette.routing to avoid importing private symbols" (line 168). This creates a maintenance coupling to Starlette internals.
+
+### 3. Uses private Pydantic internals
+**VERIFIED** — `fastapi/_compat/v2.py` imports from `pydantic._internal._typing_extra` and `pydantic._internal._schema_generation_shared` (lines 26-28). Also imports from `pydantic_core.core_schema` internals. These are non-public APIs subject to breaking changes.
+
+### 4. Overly broad single function for request handling
+**VERIFIED** — `get_request_handler` in `routing.py:351-540+` does: body parsing (JSON/form), JSON decode error handling, dependency solving, response serialization (with inline `_serialize_data` and `_serialize_sse_item` closures), and SSE streaming setup. Multiple responsibilities in one function with deeply nested closures.
+
+### 5. `_DefaultLifespan` class maintains backward compat with removed Starlette API
+**VERIFIED** — `fastapi/routing.py:226-247` explicitly documents: "This is a copy of the Starlette _DefaultLifespan class that was removed in Starlette. FastAPI keeps it to maintain backward compatibility." This is dead-weight compatibility code for a deprecated feature (`on_startup`/`on_shutdown`).
+
+### 6. High intermixing of test files (suggesting integration-heavy testing)
+**HYPOTHESIS** — Architecture coupling analysis shows the top 10 coupling seams are all between test clusters (COV.FETCH->COV.PERSIST patterns between test files), suggesting tests rely on shared infrastructure rather than being isolated unit tests.
+
+### 7. No coverage data available / cannot verify actual test coverage
+**UNKNOWN** — Coverage directory was not present. While the test configuration includes `coverage[toml]`, actual coverage metrics cannot be verified from the cloned state.
+
+---
+
+**Summary**: FastAPI is a mature, well-designed framework with excellent developer experience via type-hint-driven API definition. Its main weaknesses are large file sizes (monolithic routing.py at ~5K lines), vendored/vulnerable-to-upstream-change code from Starlette, and reliance on private Pydantic APIs.

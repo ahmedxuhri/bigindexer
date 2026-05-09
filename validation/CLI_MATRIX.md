@@ -7,8 +7,8 @@ This matrix defines how each CLI is used and how model identity is recorded.
 - Binary: `opencode`
 - Model flag: `-m provider/model`
 - Prompt mode: `opencode run "<prompt>"`
-- MCP capability: yes (`opencode mcp ...`)
-- Recommended for quantitative A/B timing: **yes**
+- MCP capability: configured via `opencode mcp ...`, but `opencode run` can complete without invoking MCP tools
+- Recommended for quantitative A/B timing: **baseline yes, MCP only if invocation is proven**
 
 Command template:
 
@@ -17,6 +17,11 @@ Command template:
   opencode run --dir <repo_dir> -m <provider/model> "<prompt>" \
   > <output_file>
 ```
+
+Validity gate for MCP-mode runs:
+
+1. Output must show MCP tool usage evidence (tool trace or MCP-only architectural fields tied to `fuse-graph.json`/`bgi-graph.json`).
+2. If MCP is enabled but no MCP evidence appears, mark the run `invalid_no_mcp_invocation` in `runs.csv` notes and do not use it for latency claims.
 
 ## 2) Gemini CLI
 

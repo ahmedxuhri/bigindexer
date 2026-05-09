@@ -43,9 +43,20 @@ validation/
 3. Run the same prompt pack in:
    - baseline mode (MCP OFF)
    - MCP mode (MCP ON)
-4. Save outputs into `validation/runs/<repo_slug>/`.
-5. Record metadata in `validation/runs.csv`.
-6. Score with rubric in `validation/scoring.md`.
+4. Verify MCP invocation evidence in MCP mode output (tool trace or MCP-only architectural data).
+5. Save outputs into `validation/runs/<repo_slug>/`.
+6. Record metadata in `validation/runs.csv`.
+7. Score with rubric in `validation/scoring.md`.
+
+## Run validity gates
+
+Before comparing baseline vs MCP latency/quality, confirm:
+
+1. MCP mode output actually used MCP tools.
+2. Both runs used the same model.
+3. Prompt text is identical except MCP mode.
+
+If gate 1 fails, mark notes as `invalid_no_mcp_invocation` and rerun.
 
 ## Naming convention
 

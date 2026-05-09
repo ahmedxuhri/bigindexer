@@ -1,0 +1,181 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m⚙ [0minvalid Invalid Tool
+[0m⚙ [0mbigindexer_architecture_summary Unknown
+```json
+{
+  "scope": "repository",
+  "cluster_count": 333,
+  "unit_count": 2511,
+  "top_clusters": [
+    {
+      "id": "cluster_fastapi_datastructures_py_Upload",
+      "size": 134,
+      "probability": 1.0,
+      "is_hard": true,
+      "is_cross_file": true,
+      "dominant_tokens": ["COV.INTAKE", "COV.OUTPUT", "COV.SCOPE", "COV.CONDITIONAL", "COV.MUTATE"],
+      "files": [
+        "docs_src/response_cookies/tutorial001_py310.py",
+        "docs_src/response_model/tutorial003_02_py310.py",
+        "docs_src/response_model/tutorial003_03_py310.py",
+        "docs_src/response_model/tutorial003_04_py310.py",
+        "fastapi/applications.py",
+        "fastapi/datastructures.py",
+        "fastapi/encoders.py",
+        "fastapi/exception_handlers.py",
+        "fastapi/exceptions.py",
+        "fastapi/middleware/asyncexitstack.py",
+        "fastapi/openapi/docs.py",
+        "fastapi/openapi/models.py",
+        "fastapi/openapi/utils.py",
+        "fastapi/param_functions.py",
+        "fastapi/params.py",
+        "fastapi/responses.py",
+        "fastapi/routing.py",
+        "fastapi/security/open_id_connect_url.py",
+        "fastapi/sse.py",
+        "fastapi/utils.py"
+      ],
+      "member_count": 134
+    },
+    {
+      "id": "cluster_fastapi_dependencies_utils_py_ge",
+      "size": 133,
+      "probability": 1.0,
+      "is_hard": true,
+      "is_cross_file": true,
+      "dominant_tokens": ["COV.OUTPUT", "COV.INTAKE", "COV.SCOPE", "COV.ASYNC", "COV.CONDITIONAL"],
+      "files": [
+        "fastapi/background.py",
+        "fastapi/concurrency.py",
+        "fastapi/dependencies/models.py",
+        "fastapi/dependencies/utils.py",
+        "fastapi/security/http.py",
+        "fastapi/security/oauth2.py",
+        "fastapi/security/utils.py",
+        "tests/test_dependencies_utils.py",
+        "tests/test_dependency_wrapped.py",
+        "tests/test_multipart_installation.py",
+        "tests/test_security_http_base.py",
+        "tests/test_security_http_base_description.py",
+        "tests/test_security_http_base_optional.py"
+      ],
+      "member_count": 133
+    },
+    {
+      "id": "cluster_tests_test_path_py_test_nonexist",
+      "size": 75,
+      "probability": 0.9,
+      "is_hard": true,
+      "is_cross_file": false,
+      "dominant_tokens": ["COV.SCOPE", "COV.TEST", "COV.FETCH", "COV.GUARD"],
+      "files": ["tests/test_path.py"],
+      "member_count": 75
+    },
+    {
+      "id": "cluster_tests_test_response_model_as_ret",
+      "size": 74,
+      "probability": 0.9,
+      "is_hard": true,
+      "is_cross_file": false,
+      "dominant_tokens": ["COV.SCOPE", "COV.TEST", "COV.FETCH", "COV.GUARD", "COV.OUTPUT"],
+      "files": ["tests/test_response_model_as_return_annotation.py"],
+      "member_count": 74
+    },
+    {
+      "id": "cluster_tests_test_dependency_contextman",
+      "size": 49,
+      "probability": 1.0,
+      "is_hard": true,
+      "is_cross_file": false,
+      "dominant_tokens": ["COV.GUARD", "COV.SCOPE", "COV.INTAKE", "COV.TEST", "COV.FETCH"],
+      "files": ["tests/test_dependency_contextmanager.py"],
+      "member_count": 49
+    }
+  ],
+  "top_seams": [
+    {
+      "source_cluster": "cluster_tests_test_tutorial_test_query_p",
+      "target_cluster": "cluster_tests_test_default_response_clas",
+      "edge_count": 89,
+      "max_confidence": 0.75,
+      "dominant_type": "PREDICTED",
+      "dominant_pair": "COV.FETCH->COV.PERSIST"
+    },
+    {
+      "source_cluster": "cluster_tests_test_path_py_test_nonexist",
+      "target_cluster": "cluster_tests_test_default_response_clas",
+      "edge_count": 75,
+      "max_confidence": 0.75,
+      "dominant_type": "PREDICTED",
+      "dominant_pair": "COV.FETCH->COV.PERSIST"
+    },
+    {
+      "source_cluster": "cluster_tests_test_tutorial_test_securit",
+      "target_cluster": "cluster_tests_test_default_response_clas",
+      "edge_count": 50,
+      "max_confidence": 0.75,
+      "dominant_type": "PREDICTED",
+      "dominant_pair": "COV.FETCH->COV.PERSIST"
+    },
+    {
+      "source_cluster": "cluster_tests_test_request_params_test_h",
+      "target_cluster": "cluster_tests_test_default_response_clas",
+      "edge_count": 48,
+      "max_confidence": 0.75,
+      "dominant_type": "PREDICTED",
+      "dominant_pair": "COV.FETCH->COV.PERSIST"
+    },
+    {
+      "source_cluster": "cluster_tests_test_request_params_test_q",
+      "target_cluster": "cluster_tests_test_default_response_clas",
+      "edge_count": 48,
+      "max_confidence": 0.75,
+      "dominant_type": "PREDICTED",
+      "dominant_pair": "COV.FETCH->COV.PERSIST"
+    },
+    {
+      "source_cluster": "cluster_tests_test_tutorial_test_path_pa",
+      "target_cluster": "cluster_tests_test_default_response_clas",
+      "edge_count": 41,
+      "max_confidence": 0.75,
+      "dominant_type": "PREDICTED",
+      "dominant_pair": "COV.FETCH->COV.PERSIST"
+    },
+    {
+      "source_cluster": "cluster_tests_test_response_model_as_ret",
+      "target_cluster": "cluster_tests_test_default_response_clas",
+      "edge_count": 38,
+      "max_confidence": 0.75,
+      "dominant_type": "PREDICTED",
+      "dominant_pair": "COV.FETCH->COV.PERSIST"
+    },
+    {
+      "source_cluster": "cluster_fastapi_datastructures_py_Upload",
+      "target_cluster": "cluster_fastapi_applications_py_FastAPI_",
+      "edge_count": 37,
+      "max_confidence": 0.85,
+      "dominant_type": "HARD",
+      "dominant_pair": "COV.GUARD->COV.INTAKE"
+    },
+    {
+      "source_cluster": "cluster_tests_test_tutorial_test_depende",
+      "target_cluster": "cluster_tests_test_default_response_clas",
+      "edge_count": 35,
+      "max_confidence": 0.75,
+      "dominant_type": "PREDICTED",
+      "dominant_pair": "COV.FETCH->COV.PERSIST"
+    },
+    {
+      "source_cluster": "cluster_tests_test_query_py_test_query_q",
+      "target_cluster": "cluster_tests_test_default_response_clas",
+      "edge_count": 29,
+      "max_confidence": 0.75,
+      "dominant_type": "PREDICTED",
+      "dominant_pair": "COV.FETCH->COV.PERSIST"
+    }
+  ]
+}
+```

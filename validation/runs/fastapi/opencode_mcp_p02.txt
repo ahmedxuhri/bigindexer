@@ -1,0 +1,65 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m⚙ [0mbigindexer_architecture_summary {"path_scope":"fastapi/routing.py"}
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"fastapi/routing.py","limit":30}
+[0m⚙ [0mbigindexer_impact_neighbors {"symbol_or_file":"fastapi/routing.py","depth":2,"limit":40}
+[0m⚙ [0mbigindexer_high_coupling_seams {"file_or_cluster":"fastapi/routing.py","limit":20}
+[0m→ [0mRead fastapi/routing.py[90m [limit=80][0m
+[0m⚙ [0mbigindexer_cluster_of_file {"file_path":"fastapi/routing.py"}
+Now let me verify the direct imports/edges from `fastapi/routing.py` to give concrete evidence:
+[0m→ [0mRead fastapi/routing.py[90m [offset=80, limit=30][0m
+## Evidence Mode: Architectural Boundaries of `fastapi/routing.py`
+
+---
+
+### Cluster Identity
+
+**VERIFIED** — MCP `cluster_of_file` returns single hard cluster `cluster_fastapi_datastructures_py_Upload` (prob=1.0, 134 members). `routing.py` is tightly bound to 19 other files including `applications.py`, `datastructures.py`, `encoders.py`, `exceptions.py`, `dependencies/utils.py`, `sse.py`, `param_functions.py`, `utils.py`, and `openapi/utils.py`.
+
+---
+
+### Direct Import Boundaries (Source: `routing.py` lines 1-92)
+
+| Boundary | Direction | Evidence |
+|---|---|---|
+| `fastapi.dependencies.utils` | imported by routing | L43-52: `solve_dependencies`, `get_dependant`, `get_body_field`, etc. |
+| `fastapi.exceptions` | imported by routing | L54-60: `RequestValidationError`, `ResponseValidationError`, `FastAPIError` |
+| `fastapi.sse` | imported by routing | L61-67: `EventSourceResponse`, `ServerSentEvent`, `format_sse_event` |
+| `fastapi.utils` | imported by routing | L69-74: `create_model_field`, `generate_unique_id` |
+| `fastapi.encoders` | imported by routing | L53: `jsonable_encoder` |
+| `fastapi.datastructures` | imported by routing | L41: `Default`, `DefaultPlaceholder` |
+| `fastapi.params` | imported by routing | L35 |
+| `fastapi.types` | imported by routing | L68: `DecoratedCallable`, `IncEx` |
+| `fastapi._compat` | imported by routing | L36-40: `ModelField`, `Undefined`, `lenient_issubclass` |
+| `starlette.routing` | imported by routing (re-exported) | L75, L83-89: extends `BaseRoute`, `Match`; re-exports `Mount` |
+| `starlette.requests` / `.responses` / `.websockets` | imported by routing | L81-82, L91 |
+
+---
+
+### First-Order Boundary Seams (Source: MCP `boundary_edges`, `high_coupling_seams`)
+
+1. **VERIFIED** — `cluster_fastapi_datastructures_py_Upload` → `cluster_fastapi_applications_py_FastAPI_` — **37 HARD edges** (confidence 0.85). Coupling pattern: `COV.GUARD → COV.INTAKE`. Every bridge is triggered by `FastAPI.__init__` dispatching to methods like `add_api_route`, `include_router`, `get/post/put/delete/...`, `websocket_route`, `middleware`, `exception_handler`, `__call__`, `build_middleware_stack`. This is the **strongest boundary**: editing routing directly propagates to `applications.py`.
+
+2. **VERIFIED** — `cluster_fastapi_datastructures_py_Upload` → `cluster_tests_test_default_response_clas` — **9 PREDICTED edges** (confidence 0.75). Pattern: `COV.FETCH → COV.PERSIST`.
+
+3. **VERIFIED** — `cluster_fastapi_datastructures_py_Upload` → `cluster_docs_src_websockets__tutorial003` — **5 PREDICTED edges** (confidence 0.75). Pattern: `COV.EMIT → COV.SUBSCRIBE`.
+
+4. **VERIFIED** — `cluster_tests_test_tutorial_test_testing` → `cluster_fastapi_datastructures_py_Upload` — **4 PREDICTED edges** (confidence 0.75) — incoming from tests.
+
+---
+
+### Blast Radius (Source: MCP `impact_neighbors`, depth=2)
+
+**VERIFIED** — 53 seed symbols → **1786 impacted units**. Top affected clusters:
+- `cluster_tests_test_default_response_clas` (95 units)
+- `cluster_tests_test_tutorial_test_query_p` (89 units)
+- `cluster_tests_test_path_py_test_nonexist` (75 units)
+- `cluster_fastapi_datastructures_py_Upload` (53 units — self)
+- Plus 6 more test clusters (38-50 units each)
+
+---
+
+### Summary
+
+Editing `fastapi/routing.py` touches **one hard architectural seam**: the 37-edge bridge to `applications.py` (the `FastAPI` class). Changes propagate to ~1786 units across the codebase, concentrated in the core framework cluster and its test suites. The primary risk is breaking the `FastAPI.__init__` → routing method dispatch contract (every HTTP verb method, `include_router`, `add_api_route`, `websocket_route`). Secondary risk is altering dependency resolution behavior consumed by `dependencies/utils.py`.

@@ -1,0 +1,74 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m✱ [0mGrep "solve_dependencies"[90m in . · 7 matches[0m
+[0m→ [0mRead fastapi/dependencies/utils.py
+[0m
+[0m$ [0mwhich bigindexer 2>/dev/null; echo "EXIT:$?"; pip show bigindexer-mcp 2>/dev/null; echo "EXIT:$?"
+EXIT:1
+EXIT:1
+[0m
+[0m→ [0mRead fastapi/routing.py[90m [offset=440, limit=50][0m
+[0m→ [0mRead fastapi/routing.py[90m [offset=740, limit=50][0m
+[0m✱ [0mGrep "SolvedDependency|solve_dependencies"[90m in . · 8 matches[0m
+[0m✱ [0mGrep "from fastapi\.dependencies\.utils import"[90m in . · 4 matches[0m
+[0m→ [0mRead fastapi/routing.py[90m [offset=43, limit=15][0m
+[0m→ [0mRead fastapi/openapi/utils.py[90m [offset=1, limit=30][0m
+[0m✱ [0mGrep "from fastapi\.dependencies import|from fastapi\.dependencies\.utils import"[90m in tests · 2 matches[0m
+[0m✱ [0mGrep "solve_dependencies|SolvedDependency"[90m in tests · 0 matches[0m
+[0m✱ [0mGrep "solve_dependencies"[90m in fastapi · 5 matches[0m
+[0m✱ [0mGrep "SolvedDependency"[90m in . · 3 matches[0m
+[0m→ [0mRead fastapi/dependencies
+[0m→ [0mRead fastapi/dependencies/__init__.py
+[0m✱ [0mGrep "solve_dependencies|SolvedDependency"[90m in tests · 0 matches[0m
+[0m✱ [0mGrep "solve_dependencies"[90m in docs · 0 matches[0m
+[0m→ [0mRead fastapi/routing.py[90m [offset=400, limit=20][0m
+[0m→ [0mRead fastapi/routing.py[90m [offset=700, limit=30][0m
+[0m→ [0mRead fastapi/routing.py[90m [offset=580, limit=30][0m
+[0m→ [0mRead fastapi/routing.py[90m [offset=360, limit=25][0m
+[0m→ [0mRead fastapi/routing.py[90m [offset=640, limit=30][0m
+[0m→ [0mRead fastapi/routing.py[90m [offset=330, limit=15][0m
+[0m✱ [0mGrep "class\s+APIRoute|class\s+APIWebSocketRoute"[90m in fastapi/routing.py · 3 matches[0m
+[0m→ [0mRead fastapi/routing.py[90m [offset=811, limit=80][0m
+[0m→ [0mRead fastapi/routing.py[90m [offset=891, limit=80][0m
+[0m→ [0mRead fastapi/routing.py[90m [offset=971, limit=40][0m
+**Bigindexer MCP tools not available** — `which bigindexer` and `pip show bigindexer-mcp` both returned exit code 1, so I cannot call `architecture_summary` or boundary tools.
+
+---
+
+## Blast Radius: Changing `solve_dependencies` in `fastapi/dependencies/utils.py`
+
+### Sources
+
+- **`fastapi/dependencies/utils.py:598-735`** — definition
+- **`fastapi/dependencies/utils.py:649`** — recursive self-call
+- **`fastapi/routing.py:457-464`** — HTTP handler call site
+- **`fastapi/routing.py:751-757`** — WebSocket handler call site
+- **`fastapi/routing.py:979-996`** — `APIRoute.get_route_handler` wires it
+- **`fastapi/dependencies/__init__.py`** — empty; not re-exported
+- **`tests/`** — zero direct test imports of `solve_dependencies` or `SolvedDependency`
+
+### Claims
+
+| # | Claim | Verdict | Source |
+|---|-------|---------|--------|
+| 1 | `solve_dependencies` is private/no public API | **VERIFIED** | Not in `dependencies/__init__.py`, not in docs |
+| 2 | Called from exactly 3 sites in the repo | **VERIFIED** | `routing.py:457`, `routing.py:751`, `utils.py:649` (recursive) |
+| 3 | Called for **every** HTTP request | **VERIFIED** | `routing.py:382-727` — the `app` closure used by every `APIRoute` |
+| 4 | Called for **every** WebSocket connection | **VERIFIED** | `routing.py:751` inside the WS handler |
+| 5 | Recursive — affects arbitrarily nested deps | **VERIFIED** | `utils.py:628-659` iterates `dependant.dependencies` → line 649 |
+| 6 | No direct unit tests | **VERIFIED** | `grep -r` for both names in `tests/` returns 0 hits |
+| 7 | `SolvedDependency` return type used only internally | **VERIFIED** | `class SolvedDependency` at `utils.py:590`; consumed at `routing.py:465-718` and `routing.py:758-764` |
+| 8 | Downstream consumers: `.errors`, `.values`, `.background_tasks`, `.response`, `.dependency_cache` | **VERIFIED** | `routing.py:465` (errors), `routing.py:469+` (`**solved_result.values`), line 650 (background_tasks), line 718 (response.headers) |
+| 9 | No known 3rd-party callers | **UNKNOWN** | Cannot scan PyPI; unlikely given no public export |
+| 10 | Changing signature breaks all callers | **VERIFIED** | All 3 call sites pass same keyword args; the HTTP and WS callers omit `body`, `background_tasks`, `response` (use `None`) |
+
+### Blast Radius Summary
+
+- **SCOPE**: 100% of HTTP requests + 100% of WebSocket connections to any FastAPI app.
+- **DEPTH**: Recursive — affects all sub-dependencies transitively.
+- **TEST COVERAGE**: Zero direct unit tests. Caught only by integration/E2E tests.
+- **SURFACE AREA**: 2 call sites in `routing.py` + 1 recursive call in `utils.py`.
+- **MONKEY-PATCH**: The code even has a TODO comment (`utils.py:607-609`) noting people may be monkey-patching, though unsupported.
+
+Changing `solve_dependencies` is **extreme risk**: any behavioral regression breaks the entire framework's request-handling pipeline for both HTTP and WebSocket, with no direct test safety net.

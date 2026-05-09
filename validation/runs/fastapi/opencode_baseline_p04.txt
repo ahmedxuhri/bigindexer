@@ -1,0 +1,122 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m→ [0mRead .
+[0m✱ [0mGrep "middleware"[90m in fastapi · 38 matches[0m
+[0m✱ [0mGrep "BaseHTTPMiddleware|ASGIApp|__call__"[90m in fastapi · 32 matches[0m
+[0m✱ [0mGrep "response.*header|Header\b"[90m in fastapi · 27 matches[0m
+[0m✱ [0mGlob "fastapi/middleware/**/*.py"[90m in . · 7 matches[0m
+[0m→ [0mRead fastapi/applications.py[90m [offset=1010, limit=70][0m
+[0m→ [0mRead fastapi/applications.py[90m [offset=4620, limit=50][0m
+[0m→ [0mRead fastapi/middleware/asyncexitstack.py
+[0m→ [0mRead fastapi/routing.py[90m [offset=600, limit=140][0m
+[0m→ [0mRead fastapi/applications.py[90m [offset=3770, limit=40][0m
+[0m→ [0mRead fastapi/routing.py[90m [offset=380, limit=80][0m
+[0m✱ [0mGrep "process_time|X-Process|timing|Server-Timing"[90m in . · 7 matches[0m
+[0m→ [0mRead fastapi/applications.py[90m [offset=1145, limit=25][0m
+[0m→ [0mRead docs_src/middleware/tutorial001_py310.py
+[0m→ [0mRead tests/test_tutorial/test_middleware/test_tutorial001.py
+[0m→ [0mRead fastapi/routing.py[90m [offset=1, limit=30][0m
+[0m✱ [0mGrep "class.*Router|class.*APIRoute|class.*APIWebSocketRoute"[90m in fastapi · 4 matches[0m
+[0m→ [0mRead opencode.mcp.json
+[0m
+[0m$ [0mpython3 -m bgi.cli mcp --graph /root/mad/sessions/bgi/output/validation/mcp-ab/fastapi/bgi-graph.json --fuse-graph /root/mad/sessions/bgi/output/validation/mcp-ab/fastapi/fuse-graph.json --help 2>/dev/null || echo "no mcp subcommand"
+usage: bgi mcp [-h] [--graph GRAPH] [--fuse-graph FUSE_GRAPH]
+               [--index-db INDEX_DB]
+
+options:
+  -h, --help            show this help message and exit
+  --graph GRAPH         Path to bgi-graph.json (default: bgi-graph.json)
+  --fuse-graph FUSE_GRAPH
+                        Path to fuse-graph.json (default: sibling of --graph)
+  --index-db INDEX_DB   Path to Big Indexer index DB (optional, enables ranked
+                        symbol search)
+[0m
+[0m$ [0mpython3 -m bgi.cli mcp --graph /root/mad/sessions/bgi/output/validation/mcp-ab/fastapi/bgi-graph.json --fuse-graph /root/mad/sessions/bgi/output/validation/mcp-ab/fastapi/fuse-graph.json -- tools 2>/dev/null || python3 -m bgi.cli mcp --graph /root/mad/sessions/bgi/output/validation/mcp-ab/fastapi/bgi-graph.json --fuse-graph /root/mad/sessions/bgi/output/validation/mcp-ab/fastapi/fuse-graph.json list-tools 2>/dev/null || echo "attempt direct json-rpc"
+attempt direct json-rpc
+[0m
+[0m$ [0mecho '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | python3 -m bgi.cli mcp --graph /root/mad/sessions/bgi/output/validation/mcp-ab/fastapi/bgi-graph.json --fuse-graph /root/mad/sessions/bgi/output/validation/mcp-ab/fastapi/fuse-graph.json 2>&1 | head -50
+[05/09/26 14:46:39] WARNING  Failed to validate request: Received session.py:383
+                             request before initialization was                  
+                             complete                                           
+{"jsonrpc":"2.0","id":1,"error":{"code":-32602,"message":"Invalid request parameters","data":""}}
+[0m
+[0m$ [0mprintf '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"opencode","version":"1.0"}}}\n{"jsonrpc":"2.0","id":2,"method":"tools/list"}\n' | python3 -m bgi.cli mcp --graph /root/mad/sessions/bgi/output/validation/mcp-ab/fastapi/bgi-graph.json --fuse-graph /root/mad/sessions/bgi/output/validation/mcp-ab/fastapi/fuse-graph.json 2>&1
+[05/09/26 14:46:46] INFO     Processing request of type            server.py:727
+                             ListToolsRequest                                   
+{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","capabilities":{"experimental":{},"prompts":{"listChanged":false},"resources":{"subscribe":false,"listChanged":false},"tools":{"listChanged":false}},"serverInfo":{"name":"Big Indexer MCP","version":"1.27.1"}}}
+{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"cluster_of_file","description":"Get architectural cluster data for a file path.","inputSchema":{"properties":{"file_path":{"title":"File Path","type":"string"}},"required":["file_path"],"title":"cluster_of_fileArguments","type":"object"}},{"name":"boundary_edges","description":"Get fuse boundary edges touching a file or cluster.","inputSchema":{"properties":{"file_or_cluster":{"title":"File Or Cluster","type":"string"},"limit":{"default":20,"title":"Limit","type":"integer"}},"required":["file_or_cluster"],"title":"boundary_edgesArguments","type":"object"}},{"name":"high_coupling_seams","description":"Get strongest cross-cluster seams for a file/cluster or whole repo.","inputSchema":{"properties":{"file_or_cluster":{"default":"","title":"File Or Cluster","type":"string"},"limit":{"default":20,"title":"Limit","type":"integer"}},"title":"high_coupling_seamsArguments","type":"object"}},{"name":"impact_neighbors","description":"Get likely architectural blast radius from symbol/file.","inputSchema":{"properties":{"symbol_or_file":{"title":"Symbol Or File","type":"string"},"depth":{"default":2,"title":"Depth","type":"integer"},"limit":{"default":50,"title":"Limit","type":"integer"}},"required":["symbol_or_file"],"title":"impact_neighborsArguments","type":"object"}},{"name":"search_symbols","description":"Search symbols via index DB if available, else graph fallback.","inputSchema":{"properties":{"query":{"title":"Query","type":"string"},"limit":{"default":10,"title":"Limit","type":"integer"},"context_unit_id":{"default":"","title":"Context Unit Id","type":"string"}},"required":["query"],"title":"search_symbolsArguments","type":"object"}},{"name":"architecture_summary","description":"Get compact architecture summary for context injection.","inputSchema":{"properties":{"path_scope":{"default":"","title":"Path Scope","type":"string"},"top_clusters":{"default":5,"title":"Top Clusters","type":"integer"},"seam_limit":{"default":10,"title":"Seam Limit","type":"integer"}},"title":"architecture_summaryArguments","type":"object"}},{"name":"reload_artifacts","description":"Reload graph and fuse artifacts from disk.","inputSchema":{"properties":{},"title":"reload_artifactsArguments","type":"object"}}]}}
+[0m
+[0m$ [0mprintf '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"opencode","version":"1.0"}}}\n{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"architecture_summary","arguments":{"path_scope":"fastapi","top_clusters":5,"seam_limit":10}}}\n' | python3 -m bgi.cli mcp --graph /root/mad/sessions/bgi/output/validation/mcp-ab/fastapi/bgi-graph.json --fuse-graph /root/mad/sessions/bgi/output/validation/mcp-ab/fastapi/fuse-graph.json 2>&1
+[05/09/26 14:46:53] INFO     Processing request of type            server.py:727
+                             CallToolRequest                                    
+{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","capabilities":{"experimental":{},"prompts":{"listChanged":false},"resources":{"subscribe":false,"listChanged":false},"tools":{"listChanged":false}},"serverInfo":{"name":"Big Indexer MCP","version":"1.27.1"}}}
+{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"{\n  \"scope\": \"fastapi\",\n  \"cluster_count\": 0,\n  \"unit_count\": 0,\n  \"top_clusters\": [],\n  \"top_seams\": [\n    {\n      \"source_cluster\": \"cluster_tests_test_tutorial_test_query_p\",\n      \"target_cluster\": \"cluster_tests_test_default_response_clas\",\n      \"edge_count\": 89,\n      \"max_confidence\": 0.75,\n      \"dominant_type\": \"PREDICTED\",\n      \"dominant_pair\": \"COV.FETCH->COV.PERSIST\"\n    },\n    {\n      \"source_cluster\": \"cluster_tests_test_path_py_test_nonexist\",\n      \"target_cluster\": \"cluster_tests_test_default_response_clas\",\n      \"edge_count\": 75,\n      \"max_confidence\": 0.75,\n      \"dominant_type\": \"PREDICTED\",\n      \"dominant_pair\": \"COV.FETCH->COV.PERSIST\"\n    },\n    {\n      \"source_cluster\": \"cluster_tests_test_tutorial_test_securit\",\n      \"target_cluster\": \"cluster_tests_test_default_response_clas\",\n      \"edge_count\": 50,\n      \"max_confidence\": 0.75,\n      \"dominant_type\": \"PREDICTED\",\n      \"dominant_pair\": \"COV.FETCH->COV.PERSIST\"\n    },\n    {\n      \"source_cluster\": \"cluster_tests_test_request_params_test_h\",\n      \"target_cluster\": \"cluster_tests_test_default_response_clas\",\n      \"edge_count\": 48,\n      \"max_confidence\": 0.75,\n      \"dominant_type\": \"PREDICTED\",\n      \"dominant_pair\": \"COV.FETCH->COV.PERSIST\"\n    },\n    {\n      \"source_cluster\": \"cluster_tests_test_request_params_test_q\",\n      \"target_cluster\": \"cluster_tests_test_default_response_clas\",\n      \"edge_count\": 48,\n      \"max_confidence\": 0.75,\n      \"dominant_type\": \"PREDICTED\",\n      \"dominant_pair\": \"COV.FETCH->COV.PERSIST\"\n    },\n    {\n      \"source_cluster\": \"cluster_tests_test_tutorial_test_path_pa\",\n      \"target_cluster\": \"cluster_tests_test_default_response_clas\",\n      \"edge_count\": 41,\n      \"max_confidence\": 0.75,\n      \"dominant_type\": \"PREDICTED\",\n      \"dominant_pair\": \"COV.FETCH->COV.PERSIST\"\n    },\n    {\n      \"source_cluster\": \"cluster_tests_test_response_model_as_ret\",\n      \"target_cluster\": \"cluster_tests_test_default_response_clas\",\n      \"edge_count\": 38,\n      \"max_confidence\": 0.75,\n      \"dominant_type\": \"PREDICTED\",\n      \"dominant_pair\": \"COV.FETCH->COV.PERSIST\"\n    },\n    {\n      \"source_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"target_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"edge_count\": 37,\n      \"max_confidence\": 0.85,\n      \"dominant_type\": \"HARD\",\n      \"dominant_pair\": \"COV.GUARD->COV.INTAKE\"\n    },\n    {\n      \"source_cluster\": \"cluster_tests_test_tutorial_test_depende\",\n      \"target_cluster\": \"cluster_tests_test_default_response_clas\",\n      \"edge_count\": 35,\n      \"max_confidence\": 0.75,\n      \"dominant_type\": \"PREDICTED\",\n      \"dominant_pair\": \"COV.FETCH->COV.PERSIST\"\n    },\n    {\n      \"source_cluster\": \"cluster_tests_test_query_py_test_query_q\",\n      \"target_cluster\": \"cluster_tests_test_default_response_clas\",\n      \"edge_count\": 29,\n      \"max_confidence\": 0.75,\n      \"dominant_type\": \"PREDICTED\",\n      \"dominant_pair\": \"COV.FETCH->COV.PERSIST\"\n    }\n  ]\n}"}],"isError":false}}
+[0m
+[0m$ [0mprintf '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"opencode","version":"1.0"}}}\n{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"boundary_edges","arguments":{"file_or_cluster":"fastapi/applications.py","limit":20}}}\n' | python3 -m bgi.cli mcp --graph /root/mad/sessions/bgi/output/validation/mcp-ab/fastapi/bgi-graph.json --fuse-graph /root/mad/sessions/bgi/output/validation/mcp-ab/fastapi/fuse-graph.json 2>&1
+[05/09/26 14:46:58] INFO     Processing request of type            server.py:727
+                             CallToolRequest                                    
+{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","capabilities":{"experimental":{},"prompts":{"listChanged":false},"resources":{"subscribe":false,"listChanged":false},"tools":{"listChanged":false}},"serverInfo":{"name":"Big Indexer MCP","version":"1.27.1"}}}
+{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"{\n  \"found\": true,\n  \"query\": \"fastapi/applications.py\",\n  \"cluster_ids\": [\n    \"cluster_fastapi_applications_py_FastAPI_\",\n    \"cluster_fastapi_datastructures_py_Upload\"\n  ],\n  \"bridge_count\": 33,\n  \"bridges\": [\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::build_middleware_stack\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::openapi\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::setup\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::api_route\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::websocket\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::get\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::put\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::post\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::delete\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::options\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::head\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::patch\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::trace\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::websocket_route\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::middleware\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::exception_handler\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::__call__\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::add_api_route\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::api_route\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    },\n    {\n      \"from_cluster\": \"cluster_fastapi_datastructures_py_Upload\",\n      \"to_cluster\": \"cluster_fastapi_applications_py_FastAPI_\",\n      \"trigger_source\": \"fastapi/applications.py::FastAPI::__init__\",\n      \"trigger_target\": \"fastapi/applications.py::FastAPI::add_api_websocket_route\",\n      \"confidence\": 0.85,\n      \"refused_at_size\": 156\n    }\n  ]\n}"}],"isError":false}}
+[0m
+[0m$ [0mprintf '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"opencode","version":"1.0"}}}\n{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"boundary_edges","arguments":{"file_or_cluster":"fastapi/middleware","limit":10}}}\n' | python3 -m bgi.cli mcp --graph /root/mad/sessions/bgi/output/validation/mcp-ab/fastapi/bgi-graph.json --fuse-graph /root/mad/sessions/bgi/output/validation/mcp-ab/fastapi/fuse-graph.json 2>&1
+[05/09/26 14:47:04] INFO     Processing request of type            server.py:727
+                             CallToolRequest                                    
+{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","capabilities":{"experimental":{},"prompts":{"listChanged":false},"resources":{"subscribe":false,"listChanged":false},"tools":{"listChanged":false}},"serverInfo":{"name":"Big Indexer MCP","version":"1.27.1"}}}
+{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"{\n  \"found\": false,\n  \"query\": \"fastapi/middleware\",\n  \"bridges\": []\n}"}],"isError":false}}
+[0m
+## Evidence Mode
+
+### Current State
+
+**VERIFIED** — FastAPI already documents and tests `X-Process-Time` via `@app.middleware("http")`:
+- `docs_src/middleware/tutorial001_py310.py:8-13` (`tests/test_tutorial/test_middleware/test_tutorial001.py:12` validates it)
+- `applications.py:4628-4636` — the docstring for `FastAPI.middleware()` shows the identical pattern
+- `applications.py:4641` — `@app.middleware("http")` delegates to `self.add_middleware(BaseHTTPMiddleware, dispatch=func)`, inserting into `self.user_middleware`
+
+**VERIFIED** — Middleware stack order (`applications.py:1018-1066`):
+```
+ServerErrorMiddleware → [user middlewares] → ExceptionMiddleware → AsyncExitStackMiddleware → Router
+```
+
+**VERIFIED** — `StreamingResponse` content is not consumed when the middleware returns (`routing.py:600-718`), so `BaseHTTPMiddleware` timing wraps serialization + first-byte, NOT full stream transfer.
+
+**VERIFIED** — `async_exit_stack = request.scope.get("fastapi_middleware_astack")` at `routing.py:384` — this is the only scope key the middleware boundary touches.
+
+### Historical Context
+
+**VERIFIED** — `AsyncExitStackMiddleware` (`middleware/asyncexitstack.py`) used to close dependencies with yield (pre-0.117.1). Dependencies now have their own stack; this middleware persists only for file cleanup + contextvar preservation.
+
+### Boundary Analysis (MCP Tools)
+
+**VERIFIED** — `architecture_summary`: cluster count is 0 (granularity below threshold); top seams are `PREDICTED` test→test at 0.75 confidence.
+
+**VERIFIED** — `boundary_edges(fastapi/applications.py)`: 33 bridges from `cluster_fastapi_datastructures_py_Upload` → `cluster_fastapi_applications_py_FastAPI_`, all triggered via `FastAPI.__init__`, max confidence 0.85. `build_middleware_stack` is listed as a boundary target.
+
+---
+
+## Safest Implementation Path
+
+**Zero codebase modification. User-space only. Use `@app.middleware("http")`.**
+
+```python
+import time
+from fastapi import FastAPI, Request
+
+app = FastAPI()
+
+@app.middleware("http")
+async def add_timing_header(request: Request, call_next):
+    start = time.perf_counter()
+    response = await call_next(request)
+    response.headers["X-Process-Time"] = f"{time.perf_counter() - start:.6f}"
+    return response
+```
+
+**Why safest (VERIFIED):**
+- **Zero cross-boundary impact** — no changes to `build_middleware_stack`, routing, or any internal module. User-space code only.
+- **Already tested** — `test_middleware/test_tutorial001.py` validates the exact pattern.
+- **Existing pattern** — same code as `applications.py:4628-4636` docstring and `docs_src/middleware/tutorial001_py310.py`.
+- **Responds to all routes uniformly** — sits inside ExceptionMiddleware, so even routes that raise HTTPExceptions are timed.
+
+**One caveat (VERIFIED):** For `StreamingResponse` routes, `X-Process-Time` measures time-to-first-byte + serialization, not total transfer. The response object is created but the stream hasn't been consumed when timing ends. If you need full stream timing, wrap `send` in a raw ASGI middleware (moderate boundary impact — must be added via `self.user_middleware`).

@@ -1,0 +1,144 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m→ [0mRead .
+[0m→ [0mRead README.md[90m [limit=80][0m
+[0m✱ [0mGlob "**/*.py"[90m in fastapi · 48 matches[0m
+I'll explore the project structure and key files to build an evidence-backed assessment.
+[0m→ [0mRead fastapi/__init__.py[90m [limit=40][0m
+[0m→ [0mRead pyproject.toml
+[0m→ [0mRead fastapi/applications.py[90m [limit=80][0m
+[0m→ [0mRead fastapi/routing.py[90m [limit=60][0m
+[0m✱ [0mGlob "tests/*.py"[90m in . · 100 matches[0m
+[0m→ [0mRead .github
+[0m
+[0m$ [0mgit log --oneline -20
+622b635 📝 Update release notes
+[0m
+[0m→ [0mRead CONTRIBUTING.md[90m [limit=50][0m
+[0m→ [0mRead SECURITY.md
+[0m
+[0m$ [0mls tests/*.py | wc -l
+206
+[0m
+[0m→ [0mRead fastapi/dependencies/utils.py[90m [limit=50][0m
+[0m→ [0mRead fastapi/openapi/utils.py[90m [limit=30][0m
+[0m→ [0mRead .github/workflows
+[0m→ [0mRead .github/workflows/test.yml[90m [limit=80][0m
+[0m→ [0mRead .github/workflows/pre-commit.yml
+[0m
+[0m$ [0mgit log --oneline --branches --count 2>/dev/null; echo "---"; git rev-list --count HEAD 2>/dev/null
+622b635 📝 Update release notes
+---
+1
+[0m
+[0m$ [0mgit tag --sort=-v:refname | head -20
+(no output)
+[0m
+[0m$ [0mgit tag -l '0.*' '1.*' 2>/dev/null | tail -5; echo "---"; git describe --tags 2>/dev/null || echo "no tags"; echo "---"; git remote -v 2>/dev/null | head -2
+---
+no tags
+---
+origin	https://github.com/fastapi/fastapi (fetch)
+origin	https://github.com/fastapi/fastapi (push)
+[0m
+[0m→ [0mRead fastapi/sse.py[90m [limit=30][0m
+[0m
+[0m$ [0mwc -l fastapi/*.py fastapi/**/*.py
+25 fastapi/__init__.py
+     3 fastapi/__main__.py
+  4691 fastapi/applications.py
+    61 fastapi/background.py
+    13 fastapi/cli.py
+    41 fastapi/concurrency.py
+   186 fastapi/datastructures.py
+   364 fastapi/encoders.py
+    34 fastapi/exception_handlers.py
+   256 fastapi/exceptions.py
+     3 fastapi/logger.py
+  2460 fastapi/param_functions.py
+   754 fastapi/params.py
+     2 fastapi/requests.py
+    98 fastapi/responses.py
+  4956 fastapi/routing.py
+   222 fastapi/sse.py
+     1 fastapi/staticfiles.py
+     1 fastapi/templating.py
+     1 fastapi/testclient.py
+    12 fastapi/types.py
+   136 fastapi/utils.py
+     3 fastapi/websockets.py
+    40 fastapi/_compat/__init__.py
+   214 fastapi/_compat/shared.py
+   493 fastapi/_compat/v2.py
+     0 fastapi/dependencies/__init__.py
+   193 fastapi/dependencies/models.py
+  1057 fastapi/dependencies/utils.py
+     1 fastapi/middleware/__init__.py
+    18 fastapi/middleware/asyncexitstack.py
+     1 fastapi/middleware/cors.py
+     1 fastapi/middleware/gzip.py
+     3 fastapi/middleware/httpsredirect.py
+     3 fastapi/middleware/trustedhost.py
+     3 fastapi/middleware/wsgi.py
+     0 fastapi/openapi/__init__.py
+     3 fastapi/openapi/constants.py
+   389 fastapi/openapi/docs.py
+   435 fastapi/openapi/models.py
+   606 fastapi/openapi/utils.py
+    15 fastapi/security/__init__.py
+   320 fastapi/security/api_key.py
+     6 fastapi/security/base.py
+   417 fastapi/security/http.py
+   693 fastapi/security/oauth2.py
+    94 fastapi/security/open_id_connect_url.py
+     7 fastapi/security/utils.py
+ 19335 total
+[0m
+[0m→ [0mRead .github/workflows/test.yml[90m [offset=80][0m
+[0m
+[0m$ [0mls tests/test_*.py | wc -l; echo "---"; wc -l tests/test_*.py | tail -1
+202
+---
+  35542 total
+[0m
+[0m→ [0mRead fastapi-slim
+Here is the evidence-backed assessment.
+
+---
+
+## What This Project Is
+
+**FastAPI v0.136.1** — a modern Python web framework for building HTTP APIs, authored by Sebastián Ramírez (`pyproject.toml:13-14`). It is built on top of **Starlette** (ASGI layer) and **Pydantic v2** (data validation), and automatically generates **OpenAPI** specs with interactive Swagger/ReDoc docs (`openapi/utils.py`, `openapi/docs.py`). Licensed MIT, requires Python >=3.10 (`pyproject.toml:10,12`). GitHub: `github.com/fastapi/fastapi`.
+
+---
+
+## Strong Points
+
+**1. Near-100% test coverage enforced in CI** — VERIFIED (`test.yml:226`: `coverage report --fail-under=100`). 206 test files (~35,500 lines across `tests/`). Matrix tests across Python 3.10-3.14 (including free-threaded 3.14t), Windows/macOS/Ubuntu, both PyPI and git-master Starlette (`test.yml:55-94`).
+
+**2. Type-hint–driven design leveraging modern Python** — VERIFIED. Uses `Annotated` throughout (`applications.py`, `routing.py`, `param_functions.py`), Pydantic v2, `typing-extensions`, supports Python 3.10–3.14 classifiers (`pyproject.toml:36-41`).
+
+**3. Rich built-in feature set** — VERIFIED. Dependency injection (`dependencies/utils.py`), OAuth2/API key/HTTP auth (`security/`), SSE (`sse.py`), WebSockets (`websockets.py`), background tasks (`background.py`), file uploads (`datastructures.py`), CORS/gzip/HTTPS redirect middleware (`middleware/`), auto OpenAPI/Swagger/ReDoc. All in ~19,300 lines of framework code.
+
+**4. Minimal core dependencies** — VERIFIED (`pyproject.toml:44-50`). Only starlette, pydantic, typing-extensions, typing-inspection, annotated-doc. Everything else (Uvicorn, Jinja2, httpx, etc.) is optional. No ORM or template coupling.
+
+**5. Sophisticated CI/CD pipeline** — VERIFIED (19 workflows in `.github/workflows/`). Includes pre-commit auto-formatting, coverage visualization (Smokeshow), benchmarks (CodSpeed), automated publishing, dependency management (Dependabot), i18n translation management.
+
+**6. Strong typing discipline** — VERIFIED (`pyproject.toml:204-206`). Mypy configured with `strict = true` and `pydantic.mypy` plugin.
+
+---
+
+## Weak Points
+
+**1. Self-classified as "Beta" despite widespread production use** — VERIFIED (`pyproject.toml:28`: `Development Status :: 4 - Beta`). The project at v0.136.1 still has not reached a 1.0 release.
+
+**2. Performance/developer-speed claims are self-reported, not independently verified** — VERIFIED (`README.md:34-43`). Claims of "on par with NodeJS and Go", "200% to 300% faster to develop", "40% fewer bugs" are footnoted as "estimation based on tests conducted by an internal development team."
+
+**3. Routing and application modules are monolithic** — VERIFIED. `routing.py` is 4,956 lines, `applications.py` is 4,691 lines, `param_functions.py` is 2,460 lines. These combine multiple concerns in single files.
+
+**4. Tight coupling to Starlette internals** — VERIFIED (`applications.py:41`: `class FastAPI(Starlette)`). Directly extends Starlette's app class and imports heavily from `starlette.*`. Starlette API changes can directly impact FastAPI. CI tests against Starlette git main (`test.yml:128`) to catch breakage proactively.
+
+**5. Duplicated extra dependency groups** — VERIFIED (`pyproject.toml:59-95`). `standard` and `standard-no-fastapi-cloud-cli` are identical except for one CLI dependency name. Maintenance burden.
+
+**6. Single-maintainer bus factor on security** — VERIFIED (`pyproject.toml:13-14`, `SECURITY.md:17`). Sole author/copyright holder. Security reports go to `security@tiangolo.com` (personal domain). However, the community and CI processes are mature.
