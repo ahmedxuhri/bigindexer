@@ -1,0 +1,25 @@
+{
+  "repo": "/tmp/bgi-ab-repos/kubernetes",
+  "scan_mode": "go-only-scan_directory",
+  "run_index": 2,
+  "executor": "thread",
+  "run": {
+    "gate1_time_sec": 87.627,
+    "census_time_sec": 0.435,
+    "gate2_time_sec": 34.976,
+    "gate3_time_sec": 8.526,
+    "total_time_sec": 131.564,
+    "elapsed_wall_sec": 131.564,
+    "units": 162947,
+    "files": 14375,
+    "edges": 2320187,
+    "suspended": 5994,
+    "clusters": 14388,
+    "hard_clusters": 8108,
+    "max_cluster_pct": 1.113,
+    "fuse_events": 0,
+    "mask3_partner_checks": 6518482,
+    "mask3_probe_cap_hits": 2861,
+    "mask3_match_ms": 27790.187
+  }
+}

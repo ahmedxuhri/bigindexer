@@ -66,7 +66,7 @@ Engineering execution in this file remains focused on core quality/performance.
 
 ---
 
-### MCP implementation kickoff (2026-05-09) - IN PROGRESS
+## Active phase: Phase 8 MCP implementation kickoff (2026-05-09) - IN PROGRESS
 
 Completed in this kickoff:
 
@@ -86,10 +86,20 @@ Completed in this kickoff:
 
 Next for MCP track:
 
-1. Validate MCP with real client session (Claude/Cursor).
+1. Validate MCP with real client sessions (OpenCode/Gemini/Copilot).
 2. Add demo script + example transcript for public launch.
 3. Add thin website/waitlist flow on `bigindexer.com`.
 4. Use `validation/` workspace for managed A/B runs and public evidence collection.
+
+Phase 8 Step 1 kickoff evidence (real client):
+
+- OpenCode debug session against `fastapi` verified MCP server wiring and tool call:
+  - MCP client created with 7 tools
+  - `CallToolRequest` observed for `bigindexer_architecture_summary`
+  - Artifacts:
+    - `validation/runs/fastapi/opencode_mcp_phase8_debug.txt`
+    - `validation/runs/fastapi/opencode_mcp_phase8_debug.time`
+    - `validation/runs.csv` row: `fastapi-p01-mcp-phase8-kickoff-r1`
 
 ---
 
@@ -120,11 +130,25 @@ Outcome: mega-cluster behavior resolved; quality constraints now structural.
 
 Outcome: interactive lookup/prefix/caller flows available as separate read-path capability.
 
+### Phase 7 Option B (Gate 2 optimization) - COMPLETE
+
+- Controlled baseline (go-only comparable): 3-run Gate 2 median `66.477s`
+- Final stability pass (go-only comparable): 5-run Gate 2 median `37.244s`
+  (min `34.980s`, max `53.948s`, stdev `7.844s`)
+- Improvement: `43.97%` vs Phase 7 controlled baseline median
+- Quality guards held across all stability runs:
+  - max cluster `1.113%`
+  - fuse events `0`
+  - edge count stable
+- Runtime decision locked:
+  - spectral executor default = `thread`
+  - env override = `BGI_GATE2_EXECUTOR=thread|process|auto`
+
 ---
 
-## Active phase
+## Phase 7 closeout record
 
-### Phase 7 Option B (performance optimization) - IN PROGRESS
+### Phase 7 Option B (performance optimization) - COMPLETE
 
 ### Objective
 
@@ -161,6 +185,10 @@ Option B currently targets **Gate 2 latency**, not full-pipeline `<60s` on kuber
   - Default spectral executor is now `thread` (override with `BGI_GATE2_EXECUTOR=process|auto`).
   - 3-run Gate 2 median after change: `36.259s` (about **45.46%** better vs 66.477s baseline median).
   - Quality held: max cluster `1.113%`, fuse events `0`, edge count stable.
+- 5-run stability confirmation (`kubernetes-phase7-gate2-stability-5run-summary.json`):
+  - Gate 2 median `37.244s` (about **43.97%** better vs 66.477s baseline median).
+  - Gate 2 range: `34.980s` to `53.948s` (shared-host variance observed in one run).
+  - Quality held on all runs: max cluster `1.113%`, fuse events `0`, edge count stable.
 - Dominant Gate 2 hotspot remains Mask 3 partner matching.
 
 ### What has been learned
@@ -175,7 +203,7 @@ Option B currently targets **Gate 2 latency**, not full-pipeline `<60s` on kuber
 ## Next execution sequence (Option B)
 
 1. Keep thread executor default for large comparable runs; use env override only for targeted A/B.
-2. Continue Mask 3 efficiency work only when it beats the `~36s` Gate 2 median on 3-run medians.
+2. Continue Mask 3 efficiency work only when it beats the `~37s` Gate 2 median on 3-run medians.
 3. Keep only changes that preserve quality guardrails (cluster cap + fuse stability).
 4. Roll back immediately on regression.
 
@@ -185,7 +213,7 @@ Option B currently targets **Gate 2 latency**, not full-pipeline `<60s` on kuber
 
 - Quality-first priority remains unchanged from convergence in `bgi2.md`.
 - Option A (interactive search) is complete and retained as an additive capability.
-- Option B remains active; latest Gate 2 comparable median improved from `66.477s` to `36.259s` with quality intact by switching spectral default executor to threads.
+- Option B is complete for this iteration; latest 5-run comparable median is `37.244s` with quality intact and thread-default executor locked.
 
 ---
 
@@ -206,22 +234,32 @@ python3 -m pytest tests/test_gate3.py -q
 - Latest comparable sample:
   - `output/validation/kubernetes-optionb-controlled-median-v21.json`
 - Phase 7 Gate 2 baselines:
-  - `output/validation/kubernetes-phase7-gate2-baseline-summary.json`
-  - `output/validation/kubernetes-phase7-gate2-baseline-r1.json`
-  - `output/validation/kubernetes-phase7-gate2-baseline-r2.json`
-  - `output/validation/kubernetes-phase7-gate2-baseline-r3.json`
+  - `validation/runs/kubernetes/kubernetes-phase7-gate2-baseline-summary.json`
+  - `validation/runs/kubernetes/kubernetes-phase7-gate2-baseline-r1.json`
+  - `validation/runs/kubernetes/kubernetes-phase7-gate2-baseline-r2.json`
+  - `validation/runs/kubernetes/kubernetes-phase7-gate2-baseline-r3.json`
 - Phase 7 tuning sweeps:
-  - `output/validation/kubernetes-phase7-mask3-probe-sweep.json`
-  - `output/validation/kubernetes-phase7-mask3-fanout-sweep.json`
-  - `output/validation/kubernetes-phase7-executor-sweep.json`
-  - `output/validation/kubernetes-phase7-gate2-thread-default-summary.json`
-  - `output/validation/kubernetes-phase7-gate2-thread-default-r1.json`
-  - `output/validation/kubernetes-phase7-gate2-thread-default-r2.json`
-  - `output/validation/kubernetes-phase7-gate2-thread-default-r3.json`
+  - `validation/runs/kubernetes/kubernetes-phase7-mask3-probe-sweep.json`
+  - `validation/runs/kubernetes/kubernetes-phase7-mask3-fanout-sweep.json`
+  - `validation/runs/kubernetes/kubernetes-phase7-executor-sweep.json`
+  - `validation/runs/kubernetes/kubernetes-phase7-gate2-thread-default-summary.json`
+  - `validation/runs/kubernetes/kubernetes-phase7-gate2-thread-default-r1.json`
+  - `validation/runs/kubernetes/kubernetes-phase7-gate2-thread-default-r2.json`
+  - `validation/runs/kubernetes/kubernetes-phase7-gate2-thread-default-r3.json`
+  - `validation/runs/kubernetes/kubernetes-phase7-gate2-stability-r1.json`
+  - `validation/runs/kubernetes/kubernetes-phase7-gate2-stability-r2.json`
+  - `validation/runs/kubernetes/kubernetes-phase7-gate2-stability-r3.json`
+  - `validation/runs/kubernetes/kubernetes-phase7-gate2-stability-r4.json`
+  - `validation/runs/kubernetes/kubernetes-phase7-gate2-stability-r5.json`
+  - `validation/runs/kubernetes/kubernetes-phase7-gate2-stability-5run-summary.json`
 - Prior Option B runs:
   - `output/validation/kubernetes-optionb-gate2-profile-go-comparable-v8.json`
   - `output/validation/kubernetes-optionb-gate2-profile-go-comparable-v10.json`
   - `output/validation/kubernetes-optionb-controlled-v20.json`
+- Phase 8 MCP kickoff artifacts:
+  - `validation/runs/fastapi/opencode_mcp_phase8_debug.txt`
+  - `validation/runs/fastapi/opencode_mcp_phase8_debug.time`
+  - `validation/runs.csv` (row: `fastapi-p01-mcp-phase8-kickoff-r1`)
 
 ---
 

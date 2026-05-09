@@ -1,0 +1,51 @@
+{
+  "repo": "/tmp/bgi-ab-repos/kubernetes",
+  "sweep": "mask3-probe-cap",
+  "results": [
+    {
+      "config": "baseline",
+      "gate1_time_sec": 95.326,
+      "gate2_time_sec": 61.254,
+      "gate3_time_sec": 9.136,
+      "total_time_sec": 166.143,
+      "edges": 2320187,
+      "suspended": 5994,
+      "clusters": 14388,
+      "max_cluster_pct": 1.113,
+      "fuse_events": 0,
+      "mask3_partner_checks": 6518482,
+      "mask3_probe_cap_hits": 2861,
+      "mask3_match_ms": 30094.058
+    },
+    {
+      "config": "probe-mild",
+      "gate1_time_sec": 97.348,
+      "gate2_time_sec": 67.85,
+      "gate3_time_sec": 9.75,
+      "total_time_sec": 175.388,
+      "edges": 2309640,
+      "suspended": 5994,
+      "clusters": 14388,
+      "max_cluster_pct": 1.113,
+      "fuse_events": 0,
+      "mask3_partner_checks": 6470886,
+      "mask3_probe_cap_hits": 7426,
+      "mask3_match_ms": 31281.776
+    },
+    {
+      "config": "probe-aggressive",
+      "gate1_time_sec": 95.991,
+      "gate2_time_sec": 68.591,
+      "gate3_time_sec": 9.172,
+      "total_time_sec": 174.195,
+      "edges": 2223101,
+      "suspended": 5994,
+      "clusters": 14388,
+      "max_cluster_pct": 1.113,
+      "fuse_events": 0,
+      "mask3_partner_checks": 6276383,
+      "mask3_probe_cap_hits": 10179,
+      "mask3_match_ms": 32163.87
+    }
+  ]
+}

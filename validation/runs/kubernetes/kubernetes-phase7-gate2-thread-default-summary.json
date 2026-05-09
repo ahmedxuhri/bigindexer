@@ -1,0 +1,18 @@
+{
+  "repo": "/tmp/bgi-ab-repos/kubernetes",
+  "scan_mode": "go-only-scan_directory",
+  "baseline_gate2_median_sec": 66.477,
+  "run_mode": "thread-default",
+  "runs": 3,
+  "gate2_median_sec": 36.259,
+  "gate2_mean_sec": 36.073,
+  "gate2_min_sec": 34.976,
+  "gate2_max_sec": 36.985,
+  "improvement_sec_vs_baseline_median": 30.218,
+  "improvement_pct_vs_baseline_median": 45.46,
+  "quality": {
+    "max_cluster_pct_max": 1.113,
+    "fuse_events_max": 0,
+    "edges_stable": true
+  }
+}
