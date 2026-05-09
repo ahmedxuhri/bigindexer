@@ -413,8 +413,8 @@ def run_drs(
             continue
         if edge.source_id not in fp_by_id or edge.target_id not in fp_by_id:
             continue
-        src_file = _file_of(edge.source_id)
-        tgt_file = _file_of(edge.target_id)
+        src_file = unit_files[edge.source_id]
+        tgt_file = unit_files[edge.target_id]
         if src_file == tgt_file:
             merged, ra, rb, refused_size = uf.union_with_meta(edge.source_id, edge.target_id)
             if not merged:

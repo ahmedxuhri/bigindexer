@@ -1,195 +1,201 @@
-# BGI — Bio-Gate Indexing
+# BGI - Bio-Gate Indexing
 
-**BGI is architecture cartography for codebases.**  
-It fingerprints behavioral intent (COV tokens), builds behavioral edges, and clusters units into architectural components with explicit boundary signals.
+BGI is a static architecture analysis tool for large codebases.
+It groups code units by **behavioral role** and emits explicit architectural boundaries.
 
----
+## What problem this solves
 
-## Why BGI Exists
+Most architecture graphs fail at scale in two ways:
 
-BGI was redesigned around one core insight from `bgi2.md`:
+- too many noisy edges
+- giant clusters that collapse unrelated components together
 
-> The original failure mode was not “bugs” — it was missing **scale constraints**.
+BGI is built to keep both under control, so the output remains usable on large repos.
 
-At scale, unconstrained matching and unconstrained clustering create edge explosions and mega-clusters.  
-BGI’s answer is the **Spectral-Fuse Architecture**: constrain both edge generation and cluster growth so quality stays stable as repos grow.
+## What you can do with it (practical outcomes)
 
----
-
-## Spectral-Fuse Architecture (Adopted)
-
-This is the project’s current direction and implemented baseline:
-
-1. **TOKEN-CENSUS**: classify COV token frequency per repo (adaptive bands).
-2. **SPECTRAL-MASKS (Gate 2)**: scoped matching by token band:
-   - rare tokens → global scope
-   - medium tokens → directory scope
-   - common tokens (`INTAKE`, `OUTPUT`, `GUARD`) → file scope
-3. **FUSE-MAP (Gate 3)**: hard cluster-size ceiling; refused merges become **FuseEdges**.
-4. **MASK-4-GATE-3**: import/export proximity as clustering signal (not behavioral edge signal).
-5. **WATER-CLOCK + `.scm`**: single-pass tree-sitter query fingerprinting + multiprocessing + incremental mode.
-
-### Core Philosophy
-
-- **Quality-first over raw speed** (accurate clusters > fast noisy output)
-- Architectural boundaries are first-class outputs (`fuse-graph.json`)
-- Scale constraints are design primitives, not afterthoughts
+1. Find probable component boundaries for refactoring and ownership.
+2. Spot high-coupling seams between subsystems.
+3. Generate machine-readable architecture artifacts (`bgi-graph.json`, `fuse-graph.json`) for automation and review.
 
 ---
 
-## Pipeline
+## 5-minute example
+
+Run BGI on the included fixture repo:
+
+```bash
+python3 - <<'PY'
+from pipeline import run_scan
+run_scan("tests/fixtures", language="python", output="/tmp/bgi-example.json")
+PY
+```
+
+Observed result on this repository:
+
+- units: `12`
+- edges: `14`
+- clusters: `2`
+- max cluster in sample: `6` units
+
+One produced edge looks like:
+
+```json
+{
+  "source": "auth_module.py::AuthService::__init__",
+  "target": "auth_module.py::AuthService::__del__",
+  "key": "COV.INIT",
+  "lock": "COV.TEARDOWN",
+  "type": "HARD"
+}
+```
+
+Why this matters: instead of raw syntax references only, you get behavioral relationships plus cluster structure that can drive architecture decisions.
+
+---
+
+## Plain-English glossary
+
+| BGI term | Plain meaning |
+|---|---|
+| **COV token** | A behavior label for a unit (for example: `FETCH`, `PERSIST`, `AUTHENTICATE`) |
+| **Key-Lock edge** | A behavioral connection between two units with complementary roles |
+| **DRS cluster** | A group of units likely belonging to one architectural component |
+| **Fuse edge / fuse event** | A refused merge because cluster growth hit the cap; treated as boundary signal |
+| **Spectral masks** | Scope rules that limit where matching is allowed (global, directory, file) |
+
+---
+
+## Architecture in one view
 
 ```text
 Source files
-   ↓
-Gate 1: COV fingerprinting
-  - single-pass .scm query extraction
-  - multiprocessing + incremental cache support
-   ↓
-Gate 2: Key-Lock edge generation
-  - spectral masks by frequency/scope
-   ↓
-Gate 3: DRS clustering
-  - fuse-capped merges + boundary graph
-  - import-proximity signal for structural cohesion
-   ↓
-Outputs
-  - bgi-graph.json
-  - routes.json (optional)
-  - graph.graphml (optional)
-  - fuse-graph.json
-  - HTML viz (optional)
+   ->
+Gate 1: fingerprint unit behavior (COV tokens)
+   ->
+Gate 2: create behavioral edges with scoped matching
+   ->
+Gate 3: cluster with hard size cap + boundary emission
+   ->
+Artifacts: bgi-graph.json, fuse-graph.json, optional routes/graphml/html
 ```
 
----
+Core approach:
 
-## Current Project Status
-
-- **Phase 5 complete**: Water-Clock + `.scm` + multiprocessing + incremental auto + language registry
-- **Phase 6 Option A complete**:
-  - index schema
-  - index builder
-  - query planner
-  - FastAPI query API
-  - VS Code prototype
-- **Tests**: `789 passed`
-- **Large-repo validation**: `kubernetes/kubernetes` (3.6M LOC), max cluster `1.113%`
+1. **TOKEN-CENSUS** - classify token frequency per repo.
+2. **SPECTRAL-MASKS** - restrict match scope by token frequency.
+3. **FUSE-MAP** - cap cluster growth and record refused merges.
+4. **MASK-4-GATE-3** - use import proximity as clustering signal.
+5. **WATER-CLOCK + `.scm`** - single-pass query extraction path in Gate 1.
 
 ---
 
-## Quickstart
+## Why BGI is different from common alternatives
+
+| Capability | LSP / SCIP index | Call-graph + generic community detection | BGI |
+|---|---|---|---|
+| Fast symbol lookup | Strong | Medium | Available (Phase 6 index) |
+| Behavioral token model | No | Usually no | **Yes** |
+| Hard-bounded clustering | No | Usually no | **Yes** |
+| First-class boundary artifact | No | Usually no | **Yes (`fuse-graph.json`)** |
+| Scope-constrained edge generation | Limited | Rare | **Yes (spectral masks)** |
+
+---
+
+## Evidence (current, verifiable)
+
+### Large-repo scale evidence
+
+Comparable kubernetes sample (`go` comparable mode, 162,917 units):
+
+- Gate 1: `141.964s`
+- Gate 2: `67.261s` (historical comparable baseline: `138.869s`)
+- Gate 3: `9.359s`
+- Total: `218.584s`
+- Max cluster: `1.113%`
+- Fuse events: `0`
+
+Artifact: `output/validation/kubernetes-optionb-controlled-median-v21.json`
+
+### Quality guard evidence (beyond raw speed)
+
+- Gate 2 scope safety tests block invalid cross-scope merges (see `tests/test_gate2.py`).
+- Gate 3 tests verify no legacy namespace over-merge without import evidence (see `tests/test_gate3.py`).
+- Current full suite status: `python3 -m pytest tests/ -x -q` (project baseline target remains passing).
+
+### Still missing (explicitly)
+
+- Labeled precision/recall benchmark on external corpus.
+- Head-to-head quantitative benchmark vs external tools on the same labeled dataset.
+
+---
+
+## Language support tiers (explicit)
+
+BGI does not treat all languages equally; support is tiered:
+
+1. **Query-backed (`.scm`)**: `python`, `typescript`
+2. **Tree-sitter scanner + rule path**: `javascript`, `java`, `go`, `rust`, `ruby`, `csharp`, `php`, `kotlin`, `c`, `scala`, `lua`, `elixir`
+3. **Generic regex fallback by extension**: `swift`, `r`, `dart`, `bash`, `nim`, `zig`, `haskell`, `ocaml`, `fsharp`, `clojure`, `erlang`, `matlab`, `vb`, `crystal`, `cobol`, `groovy`
+
+Use this as a reliability signal: query-backed and dedicated scanner tiers are stronger than generic fallback.
+
+---
+
+## Limitations and non-goals
+
+1. BGI is **static analysis**; it does not ingest runtime traces.
+2. Cross-file semantic resolution is heuristic and language-dependent.
+3. Cluster-size health is measured; full external precision/recall is not yet published.
+4. Shared-host benchmarking introduces variance; decisions should use controlled medians.
+
+---
+
+## Install
 
 ```bash
 pip install -e .
-
-# Scan a repo (auto language detection)
-bgi scan /path/to/repo --lang auto --out bgi-graph.json
-
-# Add optional outputs
-bgi scan /path/to/repo --lang auto \
-  --routes routes.json \
-  --graphml graph.graphml \
-  --fuse-graph fuse-graph.json \
-  --html
-
-# Incremental scan
-bgi scan /path/to/repo --lang auto --incremental --cache .bgi-cache.json
-
-# Diff two trees
-bgi diff /path/before /path/after --lang auto --out diff.json
-
-# Curate unresolved behavior patterns
-bgi curate --graph bgi-graph.json --unresolved bgi-unresolved.jsonl
 ```
 
----
-
-## CLI Commands
-
-- `bgi scan` — full Gate 1→3 pipeline
-- `bgi diff` — architecture diff between two roots
-- `bgi curate` — propose COV token extensions from unresolved patterns
-
-Common scan flags:
-
-- `--lang auto`
-- `--parallel --max-workers N`
-- `--max-cluster-pct 0.03`
-- `--fuse-graph fuse-graph.json`
-- `--incremental --cache .bgi-cache.json`
-
----
-
-## Interactive Search Stack (Phase 6)
-
-BGI now includes an interactive index/query layer:
-
-- `bgi.indexer.schema` — SQLite schema management
-- `bgi.indexer.builder` — load Gate artifacts into index
-- `bgi.indexer.planner` — ranked scope narrowing
-- `bgi.indexer.api` — FastAPI endpoints:
-  - `GET /api/symbols/{name}`
-  - `GET /api/search?q=...`
-  - `GET /api/callers/{symbol}`
-  - `GET /api/callees/{symbol}`
-  - `GET /api/stats`
-  - `GET /api/health`
-- `ide/vscode` — VS Code prototype (lookup symbol / prefix / callers)
-
-App factory:
-
-```python
-from bgi.indexer.api import create_search_app
-
-app = create_search_app("index.db")
-```
-
----
-
-## Benchmarks / Calibration Notes
-
-Historical stress signals (from architecture cycle):
-
-- FastAPI (4,509 units): largest cluster ~35%
-- VS Code (75,131 units): 7.4M edges, largest cluster ~58%
-
-These findings drove Spectral-Fuse adoption and quality-first prioritization.
-
-Latest large validation:
-
-- Kubernetes LOC: `3,627,208`
-- Units: `162,954`
-- Gate timings: Gate 1 `67.513s`, Gate 2 `138.869s`, Gate 3 `12.797s`
-- Total: `219.179s`
-- Max cluster: `1.113%`
-
----
-
-## Supported Languages
-
-Python, TypeScript, JavaScript, Java, Go, Rust, Ruby, C#, PHP, Kotlin, C, Scala, Lua, Elixir, Swift, R, Dart, Bash, Nim, Zig, Haskell, OCaml, F#, Clojure, Erlang, MATLAB, VB, Crystal, COBOL, Groovy, plus generic fallback mode.
-
----
-
-## Documentation
-
-- `MEMORANDUM.md` — design contracts and invariants
-- `TASKPLAN.md` — implementation phases and status
-- `bgi2.md` — convergence log for Spectral-Fuse architecture
-- `docs/LANGUAGE_SUPPORT.md` — `.scm` language support guide
-- `docs/CONTRIBUTING_LANGUAGES.md` — adding new languages
-- `docs/INDEX_SCHEMA.md` — index schema design
-- `docs/QUERY_PLANNER.md` — planner heuristics and scoring
-
----
-
-## Development
+## Quickstart commands
 
 ```bash
-# test suite
-python3 -m pytest tests/ -x -q
+# scan
+bgi scan /path/to/repo --lang auto --out bgi-graph.json
 
-# build VS Code prototype
-npm --prefix ide/vscode install
-npm --prefix ide/vscode run build
+# optional outputs
+bgi scan /path/to/repo --lang auto \
+  --fuse-graph fuse-graph.json \
+  --routes routes.json \
+  --graphml graph.graphml \
+  --html
+
+# incremental
+bgi scan /path/to/repo --lang auto --incremental --cache .bgi-cache.json
+
+# diff
+bgi diff /path/before /path/after --lang auto --out diff.json
 ```
+
+---
+
+## Current project status
+
+- Phase 1 quality architecture: complete
+- Phase 5 Water-Clock: complete
+- Phase 6 interactive index/search: complete
+- Phase 7 Option B (Gate 2 performance tuning): in progress
+
+Roadmap details: `TASKPLAN.md`
+
+---
+
+## Documentation map
+
+- `TASKPLAN.md` - active roadmap and execution status
+- `MEMORANDUM.md` - design contracts and invariants
+- `bgi2.md` - architecture convergence history
+- `docs/LANGUAGE_SUPPORT.md` - language implementation details
+- `docs/CONTRIBUTING_LANGUAGES.md` - language contribution guide
+- `docs/INDEX_SCHEMA.md` - interactive index schema
+- `docs/QUERY_PLANNER.md` - query planner scoring
