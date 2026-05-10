@@ -1,4 +1,8 @@
-"""MCP server entrypoint for Big Indexer architecture context."""
+"""MCP server entrypoint for Big Indexer architecture context.
+
+Copyright (c) 2026 Ahmed F A Abuzuhri
+SPDX-License-Identifier: Apache-2.0
+"""
 
 from __future__ import annotations
 

@@ -1,4 +1,8 @@
-"""BGI CLI — entry point."""
+"""BGI CLI — entry point.
+
+Copyright (c) 2026 Ahmed F A Abuzuhri
+SPDX-License-Identifier: Apache-2.0
+"""
 from __future__ import annotations
 import argparse
 import sys

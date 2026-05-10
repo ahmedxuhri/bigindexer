@@ -1,4 +1,8 @@
-"""Architecture context service for MCP tools."""
+"""Architecture context service for MCP tools.
+
+Copyright (c) 2026 Ahmed F A Abuzuhri
+SPDX-License-Identifier: Apache-2.0
+"""
 
 from __future__ import annotations
 

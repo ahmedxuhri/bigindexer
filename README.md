@@ -1,5 +1,7 @@
 # BGI - Big Indexer
 
+> Copyright (c) 2026 Ahmed F A Abuzuhri — Licensed under Apache-2.0.
+
 BGI is a static architecture analysis tool for large codebases.
 It groups code units by **behavioral role** and emits explicit architectural boundaries.
 Project domain: `bigindexer.com`
@@ -210,3 +212,9 @@ Roadmap details: `TASKPLAN.md`
 - `docs/MCP_EXAMPLE_TRANSCRIPTS.md` - real-world MCP tool invocation examples
 - `docs/MCP_REAL_TRANSCRIPT.md` - unedited transcript from FastAPI analysis
 - `scripts/mcp-demo.sh` - automated demo script for multiple CLIs and repositories
+
+## License and Copyright
+
+- License: Apache License 2.0 (`LICENSE`)
+- Copyright holder: Ahmed F A Abuzuhri
+- Contributor terms: `CLA.md` (enforced by CLA Assistant on pull requests)
