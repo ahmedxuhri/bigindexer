@@ -1,0 +1,144 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m⚙ [0mbigindexer_architecture_summary {"path_scope":"/tmp/bgi-ab-repos/prometheus","top_clusters":6,"seam_limit":8}
+[0m⚙ [0mbigindexer_guided_arch_context {"prompt":"main architectural boundaries and coupling points in the prometheus codebase","max_items":12}
+[0m→ [0mRead .
+[0m⚙ [0mbigindexer_high_coupling_seams {"limit":20}
+[0m⚙ [0mbigindexer_boundary_edges {"limit":20}
+[0m→ [0mRead storage
+[0m→ [0mRead scrape
+[0m→ [0mRead tsdb
+[0m→ [0mRead promql
+[0m→ [0mRead notifier
+[0m→ [0mRead rules
+[0m→ [0mRead web
+[0m→ [0mRead discovery
+[0m→ [0mRead storage/interface.go
+[0m→ [0mRead storage/interface_append.go
+[0m→ [0mRead scrape/scrape.go[90m [limit=80][0m
+[0m→ [0mRead cmd/prometheus/main.go[90m [limit=100][0m
+[0m→ [0mRead storage/fanout.go[90m [limit=100][0m
+[0m→ [0mRead promql/engine.go[90m [limit=80][0m
+[0m→ [0mRead scrape/manager.go[90m [limit=80][0m
+[0m→ [0mRead rules/manager.go[90m [limit=80][0m
+[0m✱ [0mGrep "type Storage interface"[90m 1 match[0m
+[0m✱ [0mGrep "func main\(\)"[90m in cmd/prometheus · 1 match[0m
+[0m→ [0mRead storage/remote
+[0m✱ [0mGrep "storage\.Appendable|storage\.Storage|storage\.Queryable"[90m in cmd/prometheus · 3 matches[0m
+[0m→ [0mRead cmd/prometheus/main.go[90m [offset=355, limit=200][0m
+[0m→ [0mRead cmd/prometheus/main.go[90m [offset=1755, limit=200][0m
+[0m→ [0mRead web/web.go[90m [limit=80][0m
+[0m✱ [0mGrep "scrapeManager|ruleManager|notifierManager|remoteStorage|fanout|queryEngine|externalLabels"[90m in cmd/prometheus · 39 matches[0m
+[0m→ [0mRead cmd/prometheus/main.go[90m [offset=555, limit=200][0m
+[0m→ [0mRead cmd/prometheus/main.go[90m [offset=875, limit=200][0m
+Now I have all the evidence needed. Here is the architectural analysis:
+
+---
+
+## Main Architectural Boundaries
+
+### 1. The `storage.Storage` Interface — Central Abstraction Hub
+**VERIFIED** at `storage/interface.go:82-97`
+```go
+type Storage interface {
+    SampleAndChunkQueryable
+    Appendable
+    AppendableV2
+    StartTime() (int64, error)
+    Close() error
+}
+```
+Every major subsystem depends on this interface (or its sub-interfaces `Appendable`, `Queryable`) rather than concrete TSDB types. This is the primary decoupling mechanism.
+
+---
+
+### 2. `fanout` Storage — Primary Integration Seam
+**VERIFIED** at `storage/fanout.go:29-51`
+- Wraps a `primary` (TSDB) + `secondaries` (remote storage).
+- **Key semantic**: secondary errors degrade to warnings (`fanout.go:98`). This is the seam where remote storage is treated as best-effort.
+- Used as the central `Appendable`/`Queryable` passed to most consumers.
+
+### 3. `readyStorage` — Late-Binding/Startup Seam
+**VERIFIED** at `cmd/prometheus/main.go:1761-1790`
+- Wraps `storage.Storage` behind a `sync.RWMutex`; storage is `nil` until `Set()` is called.
+- Before `Set()`, `Appender()` returns `notReadyAppender` which returns `tsdb.ErrNotReady` for all operations (`main.go:1868-1908`).
+- **This is the critical startup ordering seam**: all consumers receive this wrapper at construction time but the underlying TSDB DB is not opened yet.
+
+---
+
+### 4. `fanoutStorage` Wiring — The Central Dependency Graph
+**VERIFIED** at `cmd/prometheus/main.go:892-1002`
+```
+localStorage (readyStorage) ─┐
+remoteStorage (remote.Storage) ─┤
+                               │
+                    fanoutStorage ───┬──→ scrape.NewManager(nil, fanoutStorage)
+                         │          ├──→ rules.NewManager(Appendable: fanoutStorage, Queryable: localStorage)
+                         │          ├──→ promql.Engine (thru Queryable)
+                         │          └──→ web.Handler (thru cfg.web.Storage)
+```
+**Key observation**: `rules.Manager` takes TWO different storage references — `Appendable: fanoutStorage` (to write results) and `Queryable: localStorage` (to read from). This dual-path is intentional.
+
+---
+
+## Strongest Coupling Points
+
+### A. Scrape → Storage (write-only fan-out)
+**VERIFIED** at `scrape/manager.go:55-56` and `scrape/scrape.go:56`
+```
+scrape.NewManager(..., storage.Appendable, storage.AppendableV2, ...)
+```
+Scrape takes only an `Appendable` interface — it has no read dependency. This is a clean, narrow coupling. The scrape manager never sees TSDB directly; it talks only through interfaces.
+
+### B. PromQL Engine → Storage (read-only)
+**VERIFIED** at `promql/engine.go:49`
+```
+import "github.com/prometheus/prometheus/storage"
+```
+The engine takes `storage.Queryable` — read-only. It has no write path. Clean separation.
+
+### C. Rules Manager → Everything (widest internal fan-out)
+**VERIFIED** at `rules/manager.go:34-41` and `cmd/prometheus/main.go:982-1002`
+```
+rules.Manager imports: notifier, promql, promql/parser, storage
+rules.ManagerOptions: Appendable, Queryable, QueryFunc, NotifyFunc
+```
+**This is the single strongest coupling point in the system.** Rules wire together:
+- `fanoutStorage` (for appending rule results)
+- `localStorage` (for querying, separate from fanout!)
+- `promql.Engine` (via `EngineQueryFunc`)
+- `notifier.Manager` (via `SendAlerts`)
+
+### D. Web Handler — Widest Upstream Import Footprint
+**VERIFIED** at `web/web.go:54-67`
+```
+imports: config, notifier, promql, promql/parser, rules, scrape, storage, template, web/api/v1
+```
+The web layer touches every module. It's the integration hub for the HTTP API layer but contains minimal business logic.
+
+### E. Remote Storage — Externally-Facing Seam
+**VERIFIED** at `storage/remote/storage.go` and `cmd/prometheus/main.go:895`
+```
+remoteStorage = remote.NewStorage(logger, ..., localStorage.StartTime, ...)
+fanoutStorage = storage.NewFanout(logger, localStorage, remoteStorage)
+```
+- Remote storage implements `storage.Storage` itself.
+- It reads `localStorage.StartTime` as a function reference — a subtle callback coupling.
+- Connected as a secondary in fanout, making it best-effort for reads.
+- For writes, it has its own `QueueManager` pattern (`storage/remote/queue_manager.go`).
+
+---
+
+## Integration Seams Summary
+
+| Seam | Type | Location | Direction |
+|------|------|----------|-----------|
+| `fanoutStorage` fan-out | Mediation | `main.go:896` | fanoutStorage → {localStorage, remoteStorage} |
+| Scrape → Appendable | Interface | `scrape/manager.go:55` | scrape → fanoutStorage (write) |
+| PromQL → Queryable | Interface | `promql/engine.go` (construction) | engine → fanoutStorage (read) |
+| Rules → {Appendable, Queryable, Engine, Notifier} | Injection | `main.go:982-1002` | rules → {fanoutStorage, localStorage, engine, notifier} |
+| Web → all modules | Import coupling | `web/web.go:54-67` | web → every subsystem |
+| Remote → local StartTime | Callback | `main.go:895` | remoteStorage ← localStorage.StartTime |
+| readyStorage late-bind | Lazy proxy | `main.go:1761` | startup ordering guard |
+| Agent vs Server mode | Conditional init | `main.go:959-1003` | rules/engine created only in server mode |

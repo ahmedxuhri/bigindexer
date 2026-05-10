@@ -1,0 +1,77 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m✱ [0mGrep "fanout\.Querier"[90m in . · 0 matches[0m
+[0m✱ [0mGrep "type Querier struct"[90m in storage/fanout.go · 0 matches[0m
+[0m→ [0mRead storage/fanout.go
+[0m✱ [0mGrep "\.Querier\("[90m in storage · 8 matches[0m
+[0m✱ [0mGrep "\.Querier\("[90m in . · 151 matches[0m
+[0m✱ [0mGrep "type Querier interface"[90m in storage · 1 match[0m
+[0m✱ [0mGrep "NewMergeQuerier"[90m in . · 22 matches[0m
+[0m✱ [0mGrep "type Storage interface"[90m in storage · 1 match[0m
+[0m→ [0mRead storage/interface.go[90m [offset=100, limit=80][0m
+[0m✱ [0mGrep "func \(.*\) Querier\(.*mint.*maxt.*int64\)"[90m in . · 8 matches[0m
+[0m→ [0mRead storage/interface.go[90m [offset=82, limit=18][0m
+[0m→ [0mRead storage/merge.go[90m [limit=60][0m
+[0m✱ [0mGrep "type SampleAndChunkQueryable interface"[90m in storage · 1 match[0m
+[0m✱ [0mGrep "NoopQuerier|noopQuerier"[90m in storage · 16 matches[0m
+[0m→ [0mRead storage/interface.go[90m [offset=70, limit=15][0m
+[0m
+[0m# [0mTodos
+[x] Analyze blast radius of changing fanout.Querier in storage/fanout.go
+[0m
+## Blast Radius: Changing `fanout.Querier` in `storage/fanout.go:74-99`
+
+### Current State
+
+The method `(*fanout).Querier(mint, maxt int64) (Querier, error)` is defined at `storage/fanout.go:74`. It:
+1. Calls `f.primary.Querier(mint, maxt)` for the primary storage
+2. Calls `.Querier(mint, maxt)` on each secondary storage
+3. Wraps results in `NewMergeQuerier([]Querier{primary}, secondaries, ChainedSeriesMerge)` (`storage/fanout.go:98`)
+
+The `*fanout` type is **unexported**. External code interacts with it via the `Storage` interface (`storage/interface.go:82`).
+
+### VERIFIED: Interface contract dependencies
+
+`*fanout.Querier` fulfills `Queryable.Querier(mint, maxt int64) (Querier, error)` (`storage/interface.go:108-110`). `Queryable` is composed into `SampleAndChunkQueryable` (`:75`), which is embedded in `Storage` (`:83`). If you change the **signature**, `*fanout` breaks the `Storage` contract.
+
+### VERIFIED: Other implementations of the same interface
+
+These types also implement `Querier(mint, maxt int64) (Querier, error)` — any signature change must update all:
+
+| Type | File |
+|------|------|
+| `*DB` | `tsdb/db.go:2315` |
+| `*DBReadOnly` | `tsdb/db.go:705` |
+| remote `*Storage` | `storage/remote/storage.go:159` |
+| `*sampleAndChunkQueryableClient` | `storage/remote/read.go:52` |
+| `*readyStorage` | `cmd/prometheus/main.go:1823` |
+| `QueryableFunc` | `storage/interface.go:383` |
+| `*MockQueryable` | `storage/interface.go:118` |
+
+### VERIFIED: If the *internal logic* changes (not signature)
+
+The returned `Querier` object is consumed by any code that calls `Storage.Querier()` (or `Queryable.Querier()`). Key call sites:
+
+| Caller | File | What it uses from the returned Querier |
+|--------|------|--------------------------------------|
+| API v1 queries | `web/api/v1/api.go:783,871,986` | `.Select()`, `.LabelValues()`, `.LabelNames()`, `.Close()` |
+| Federation endpoint | `web/federate.go:80` | `.Select()`, `.Close()` |
+| Remote read handler | `storage/remote/read_handler.go:136` | `.Select()`, `.Close()` |
+| Remote storage itself | `storage/remote/storage.go:166` | `.Select()`, `.Close()` |
+| Fanout tests | `storage/fanout_test.go:80,185,268` | All `Querier` methods |
+
+### VERIFIED: Downstream return-type dependencies
+
+`fanout.Querier` delegates to `NewMergeQuerier` (`storage/merge.go:46`), which can return:
+- `noopQuerier{}` (zero primaries + zero secondaries)
+- A single passthrough querier (one primary, no secondaries)
+- `*mergeQuerier` (multiple queriers)
+
+All of these implement the `Querier` interface (`storage/interface.go:123`), which requires `LabelQuerier` (`LabelValues`, `LabelNames`, `Close`, `Select`) plus `Select` directly. If the method now returns something that doesn't satisfy `Querier`, every caller above breaks.
+
+### Summary
+
+- **Signature change**: Breeds 8 co-implementors + interface definition + all callers (~150+ `.Querier(` call sites across the repo).
+- **Return type change**: Breaks every caller of `Storage.Querier()` / `Queryable.Querier()` (API, federation, remote read).
+- **Internal logic change** (same signature + same return type): Affects only how primary vs secondary errors are handled and how queriers are merged. The test at `storage/fanout_test.go` would need updating.

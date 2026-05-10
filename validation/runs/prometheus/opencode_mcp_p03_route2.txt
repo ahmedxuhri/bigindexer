@@ -1,0 +1,128 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m⚙ [0mbigindexer_impact_neighbors {"symbol_or_file":"fanout.Querier","depth":3,"limit":40}
+[0m✱ [0mGrep "fanout\.Querier"[90m 0 matches[0m
+[0m✱ [0mGrep "type Querier struct"[90m in storage · 0 matches[0m
+[0m→ [0mRead storage/fanout.go
+[0m✱ [0mGrep "Querier"[90m in storage · 375 matches[0m
+[0m✱ [0mGrep "NewFanout\("[90m 8 matches[0m
+[0m✱ [0mGrep "\.Querier\("[90m in storage · 8 matches[0m
+[0m✱ [0mGrep "type Querier interface"[90m in storage · 1 match[0m
+[0m→ [0mRead storage/interface.go[90m [offset=100, limit=80][0m
+[0m✱ [0mGrep "\.Querier\("[90m in rules · 5 matches[0m
+[0m✱ [0mGrep "\.Querier\("[90m in web · 5 matches[0m
+[0m✱ [0mGrep "\.Querier\("[90m in scrape · 14 matches[0m
+[0m✱ [0mGrep "\.Querier\("[90m in tsdb · 111 matches[0m
+[0m→ [0mRead cmd/prometheus/main.go[90m [offset=880, limit=50][0m
+[0m✱ [0mGrep "fanoutStorage"[90m in cmd/prometheus · 7 matches[0m
+[0m✱ [0mGrep "\.Querier\("[90m in tsdb · 111 matches[0m
+[0m→ [0mRead storage/interface.go[90m [limit=50][0m
+[0m→ [0mRead cmd/prometheus/main.go[90m [offset=930, limit=100][0m
+[0m→ [0mRead storage/interface.go[90m [offset=51, limit=50][0m
+[0m→ [0mRead web/api/v1/api.go[90m [offset=775, limit=30][0m
+[0m✱ [0mGrep "func EngineQueryFunc"[90m 1 match[0m
+[0m→ [0mRead web/federate.go[90m [limit=40, offset=70][0m
+[0m→ [0mRead web/api/v1/api.go[90m [limit=30, offset=860][0m
+[0m→ [0mRead web/api/v1/api.go[90m [limit=30, offset=975][0m
+[0m→ [0mRead rules/manager.go[90m [offset=45, limit=30][0m
+[0m→ [0mRead rules/group.go[90m [offset=740, limit=30][0m
+[0m✱ [0mGrep "type QueryFunc"[90m in rules · 1 match[0m
+[0m→ [0mRead storage/merge.go[90m [limit=50][0m
+[0m→ [0mRead storage/interface.go[90m [offset=123, limit=100][0m
+Let me also check how the Querier interface is implemented across the codebase to understand the full type contract.
+[0m✱ [0mGrep "\.Storage\b"[90m in web · 6 matches[0m
+[0m✱ [0mGrep "localStorage.*Querier"[90m in web · 1 match[0m
+[0m✱ [0mGrep "Queryable.*=.*web|Queryable.*Storage"[90m in web/api/v1 · 3 matches[0m
+[0m→ [0mRead web/web.go[90m [offset=200, limit=100][0m
+[0m✱ [0mGrep "apiV1.*=|api_v1\.New\(|Queryable:.*storage|Queryable:.*Storage"[90m in web · 7 matches[0m
+[0m→ [0mRead web/web.go[90m [offset=350, limit=50][0m
+[0m✱ [0mGrep "func NewAPI\("[90m in web/api/v1 · 1 match[0m
+[0m→ [0mRead web/api/v1/api.go[90m [offset=268, limit=60][0m
+Now I have a complete picture. Here is the blast radius analysis.
+
+---
+
+## Blast Radius: Changing `fanout.Querier()` in `storage/fanout.go`
+
+**VERIFIED — Scope: the `fanout.Querier()` method at `storage/fanout.go:74`** (there is no separate `fanout.Querier` type; this is the `func (f *fanout) Querier(mint, maxt int64) (Querier, error)` method on the unexported `fanout` struct).
+
+---
+
+### Current State
+
+The method:
+- Calls `f.primary.Querier(mint, maxt)` (line 75) — **VERIFIED**
+- Iterates `f.secondaries[]`, calling `.Querier()` on each (line 82) — **VERIFIED**
+- Wraps results via `NewMergeQuerier([]Querier{primary}, secondaries, ChainedSeriesMerge)` (line 98) — **VERIFIED**
+- Returns a `storage.Querier` interface — **VERIFIED** (interface at `storage/interface.go:123`)
+
+---
+
+### Direct Impact (inner workings)
+
+Changing the method's logic, signature, or return type affects:
+
+| Component | File:Line | How | Evidence |
+|-----------|-----------|-----|----------|
+| `NewMergeQuerier` | `storage/merge.go:46` | Called directly on line 98; the concrete return type wraps this | **VERIFIED** |
+| `NewMergeChunkQuerier` | `storage/merge.go:91` | Not directly involved in `Querier()`, but parallel pattern in `ChunkQuerier()` at line 101 | **VERIFIED** |
+| `secondaryQuerier` | `storage/secondary.go:39` | Wraps secondary queriers' errors as warnings; if error handling semantics change, this is the secondary wrapper | **VERIFIED** |
+| `genericQuerier` adapter | `storage/generic.go:32` | Underlying abstraction used by merge querier | **VERIFIED** |
+| `noopQuerier` | `storage/merge.go` (line 52) | Filters noop queriers; checked in secondary loop (fanout.go:94) | **VERIFIED** |
+
+### Direct Callers of `fanout.Querier()` (through `Storage`/`Queryable` interface)
+
+`fanoutStorage` is created at `cmd/prometheus/main.go:896` and passed as `storage.Storage`:
+
+| Consumer | File:Line | Usage | Evidence |
+|----------|-----------|-------|----------|
+| PromQL API v1 | `web/api/v1/api.go:783,871,986` | `api.Queryable.Querier(...)` — API handler receives fanout via `NewAPI(h.queryEngine, h.storage, ...)` at `web/web.go:391`, where `h.storage` is `cfg.web.Storage = fanoutStorage` (main.go:1013) | **VERIFIED** |
+| Rules restore loop | `rules/group.go:750` | `g.opts.Queryable.Querier(...)` — However, rule manager's `Queryable` is `localStorage` NOT `fanoutStorage` (main.go:985) | **VERIFIED — NOT affected** |
+| Rule eval (via PromQL) | `rules/manager.go:50-52` | `EngineQueryFunc(queryEngine, fanoutStorage)` — the fanout is passed as `storage.Queryable` to PromQL engine for rule evaluation | **VERIFIED** |
+| Federate endpoint | `web/federate.go:80` | `h.localStorage.Querier(...)` — uses separate `localStorage` not `fanoutStorage` (main.go:1012) | **VERIFIED — NOT affected** |
+
+### Upstream Dependencies (what `fanout.Querier()` depends on)
+
+If you change **what the method calls internally**:
+
+| Dependency | File | Impact | Evidence |
+|------------|------|--------|----------|
+| `Storage` interface (`.Querier()` method) | `storage/interface.go:82` | `fanout` calls `.Querier()` on primary + secondaries, which are `Storage` | **VERIFIED** |
+| `Querier` interface (return type) | `storage/interface.go:123` | Contract for what must be satisfied | **VERIFIED** |
+| `ChainedSeriesMerge` | `storage/merge.go` | Passed as merge function to `NewMergeQuerier` | **VERIFIED** |
+
+### Test Files
+
+| Test | File:Line | Evidence |
+|------|-----------|----------|
+| Fanout tests | `storage/fanout_test.go:77,182,265` | Directly call `fanoutStorage.Querier(0, 8000)` | **VERIFIED** |
+| Merge querier tests | `storage/merge.go` (test companion) | May be affected if merge logic changes | **HYPOTHESIS** |
+
+### Historical Context
+
+The fanout storage was introduced as the top-level storage router for Prometheus, replacing direct use of local storage for queries. It merges results from the local TSDB (primary) and remote storage (secondaries/best-effort). The `Querier()` method is the critical read path for PromQL, federation, and alert restore.
+
+---
+
+### Summary Impact Table
+
+```
+fanout.Querier() change
+  ├── Immediate
+  │   ├── NewMergeQuerier() call          (storage/merge.go:46)
+  │   ├── secondaryQuerier wrapper         (storage/secondary.go:39)
+  │   └── genericQuerier adapter           (storage/generic.go:32)
+  ├── Read consumers (through interface)
+  │   ├── PromQL API (label names/values/series)
+  │   │   └── web/api/v1/api.go:783, 871, 986
+  │   ├── Rule evaluation (via PromQL engine)
+  │   │   └── rules/manager.go:50-52
+  │   └── Alert restore loop (NOT direct fanout, but via localStorage)
+  │       └── rules/group.go:750 [NOT AFFECTED]
+  ├── Write path (NOT affected by Querier change)
+  │   ├── Append path via fanoutAppender / fanoutAppenderV2
+  │   └── scrape.Manager (receives fanout as Appendable only)
+  └── Tests
+      └── storage/fanout_test.go
+```

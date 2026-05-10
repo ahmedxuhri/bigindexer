@@ -148,13 +148,13 @@
       <div class="stats-grid">
         <div class="stat-box">
           <div class="label">Evidence Coverage</div>
-          <div class="baseline">76.4%</div>
-          <div class="mcp">83.2%</div>
-          <div class="delta">+6.8 pp</div>
+          <div class="baseline">78.7%</div>
+          <div class="mcp">84.9%</div>
+          <div class="delta">+6.2 pp</div>
         </div>
         <div class="stat-box">
           <div class="label">Boundary Accuracy</div>
-          <div class="baseline">0.94</div>
+          <div class="baseline">0.95</div>
           <div class="mcp">1.00</div>
           <div class="delta">Perfect score</div>
         </div>
@@ -167,8 +167,8 @@
         <div class="stat-box">
           <div class="label">Median Latency</div>
           <div class="baseline">133.8s</div>
-          <div class="mcp">63.0s</div>
-          <div class="delta">53% faster</div>
+          <div class="mcp">66.2s</div>
+          <div class="delta">51% faster</div>
         </div>
       </div>
     </div>
@@ -223,12 +223,12 @@
           <tr>
             <td>prometheus/prometheus</td>
             <td><span class="tag-base">Baseline</span></td>
-            <td>4</td><td class="win">87.3s</td><td>85.0%</td><td>1.00</td><td>4.0/5</td><td>0</td>
+            <td>6</td><td class="win">89.9s</td><td>90.0%</td><td>1.00</td><td>4.0/5</td><td>0</td>
           </tr>
           <tr>
             <td>prometheus/prometheus</td>
             <td><span class="tag-mcp">MCP</span></td>
-            <td>4</td><td>112.7s</td><td>85.0%</td><td>1.00</td><td>4.0/5</td><td>0</td>
+            <td>6</td><td>119.9s</td><td>90.0%</td><td>1.00</td><td>4.0/5</td><td>0</td>
           </tr>
           <tr>
             <td>vercel/next.js</td>
@@ -285,9 +285,10 @@
       </div>
 
       <h3>prometheus (Go) — cross-language reality check</h3>
-      <p>Prometheus expanded this validation beyond Python. Evidence coverage was <strong>85.0%</strong> in both modes,
-         and boundary accuracy stayed perfect (1.0). In this batch MCP did <strong>not</strong> improve coverage and was slower
-         on median latency (112.7s vs 87.3s), which is important to report publicly.
+      <p>Prometheus expanded this validation beyond Python. After post-routing retest rows were added, evidence coverage is
+         <strong>90.0%</strong> in both modes and boundary accuracy remains perfect (1.0). MCP is still slower on median latency
+         (119.9s vs 89.9s), which remains important to report publicly.
+         In the post-routing first pass, MCP invocation was confirmed on p02/p03 while p01/p04 remained invalid/unscored.
          This indicates MCP gains are strongest when baseline models are architecturally blind (as in pydantic-core),
          and less dramatic when baseline exploration is already strong.</p>
 
@@ -298,7 +299,7 @@
          invalid/unscored, which is why Next.js currently shows 3 scored prompt pairs.</p>
 
       <h3>Hallucination rate: 0 in both modes</h3>
-      <p>No factually incorrect module or file claims were observed in any of the 36 scored runs.
+      <p>No factually incorrect module or file claims were observed in any of the 40 scored runs.
          MCP context grounds the model rather than introducing new errors.</p>
     </div>
 
@@ -315,7 +316,7 @@
          If you score any run differently, open an issue with your reasoning.</p>
 
       <h3>Sample size is still limited</h3>
-      <p>36 scored runs across 5 repos (Python + Go + TypeScript) is stronger than the initial batch, but still not conclusive.
+      <p>40 scored runs across 5 repos (Python + Go + TypeScript) is stronger than the initial batch, but still not conclusive.
          The pydantic-core finding is strong enough to stand on its own, but the aggregate story still needs more language diversity (especially large Java/C# monorepos and independent replications).</p>
 
       <h3>Actionability was flat</h3>

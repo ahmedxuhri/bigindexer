@@ -1,0 +1,47 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m• [0mExplore HTTP API architecture[90m Explore Agent[0m
+[0m✓ [0mExplore HTTP API architecture[90m Explore Agent[0m
+## Evidence Mode Analysis
+
+### Current State (VERIFIED)
+
+**Claim 1: Two storage references exist in the API handler — `api.Queryable` for queries and `api.db` for admin/stats operations.**
+
+**VERIFIED.** Source: `web/api/v1/api.go:267-371` (NewAPI constructor). The `Queryable` parameter is stored as `api.Queryable` (line ~280) and the `db` parameter (type `TSDBAdminStats`) is stored as `api.db` (line ~350). The `TSDBAdminStats` interface at `api.go:209-216` includes `Stats(statsByLabelName string, limit int) (*tsdb.Stats, error)`.
+
+**Claim 2: Cardinality stats already exist at the TSDB layer via `Head.Stats()`.**
+
+**VERIFIED.** Source: `tsdb/head.go:1539-1554`. `Head.Stats()` returns `*Stats` containing `NumSeries`, `MinTime`, `MaxTime`, and `IndexPostingStats` (of type `*index.PostingsStats`). The actual computation is in `PostingsCardinalityStats` at `tsdb/head.go:1118-1140`, which has a TTL-based cache.
+
+**Claim 3: An existing endpoint (`GET /api/v1/status/tsdb`) already serves cardinality data via `api.db.Stats()`.**
+
+**VERIFIED.** Source: `web/api/v1/api.go:1915-1958` (`serveTSDBStatus` handler). It calls `api.db.Stats(labels.MetricName, limit)` and returns the full `PostingsStats` mapped to `TSDBStatus`.
+
+**Claim 4: The route registration pattern uses `route.Router.Get/Post` with `wrap` or `wrapAgent`.**
+
+**VERIFIED.** Source: `web/api/v1/api.go:393-485` (Register method). Routes are registered like `r.Get("/labels", wrapAgent(api.labelNames))`. `wrap` converts an `apiFunc` into `http.HandlerFunc` with CORS, readiness, compression, error handling, and OpenAPI wrapping.
+
+---
+
+### Key Findings for New Endpoint
+
+**VERIFIED:** The safest approach is to add a new handler method on `*API` (e.g., `labelCardinality`) that calls `api.db.Stats(labelName, limit)`, then register it via `wrap` in the `Register()` method. This is identical to how `serveTSDBStatus` works — it already exposes the exact `tsdb.Stats` type.
+
+**HYPOTHESIS:** A dedicated `/api/v1/labels/cardinality` endpoint would be more discoverable than the current `/api/v1/status/tsdb` endpoint. However, since `api.db.Stats()` already returns label-level cardinality stats:
+
+- **Option A (trivial, reuse existing):** A new handler at `api.go` that calls `api.db.Stats(...)` and returns a filtered or reformatted view of `PostingsStats`. Register with `wrapAgent` (not `wrap` — agent mode doesn't support `db.Stats` per `readyStorage.Stats` at `main.go:1979-1991` which returns `agent.ErrUnsupported`).
+
+- **Option B (separate storage concern):** Add a new method to `TSDBAdminStats` interface if a different stats signature is needed, then wire through `readyStorage` in `main.go`.
+
+**UNKNOWN:** Whether there's an existing test pattern for this specific handler type. The test file at `web/api/v1/api_test.go` should be examined for `serveTSDBStatus` test patterns to replicate.
+
+---
+
+### Safest Path (Summary)
+
+1. **Add handler to `web/api/v1/api.go`** — create a new method following `serveTSDBStatus`'s pattern, calling `api.db.Stats(...)`
+2. **Register in `Register()`** — use `r.Get("/labels/cardinality", wrapAgent(...))` around line 443
+3. **Add OpenAPI path** to `openapi_paths.go` and `openapi.go` (optional but consistent)
+4. **No changes needed to `tsdb/`, `storage/`, or `cmd/prometheus/main.go`** — the full stack already exists

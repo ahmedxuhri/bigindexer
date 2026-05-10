@@ -1,0 +1,162 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m• [0mExplore Prometheus architecture[90m Explore Agent[0m
+I'll analyze the codebase architecture systematically to answer this. Let me start by understanding the project structure, existing HTTP API patterns, and relevant subsystems.
+[0m✓ [0mExplore Prometheus architecture[90m Explore Agent[0m
+[0m→ [0mRead web/api/v1/api.go[90m [offset=195, limit=80][0m
+[0m→ [0mRead web/api/v1/api.go[90m [offset=390, limit=100][0m
+[0m→ [0mRead web/api/v1/api.go[90m [offset=1830, limit=140][0m
+[0m→ [0mRead tsdb/head.go[90m [offset=1535, limit=25][0m
+[0m→ [0mRead tsdb/head.go[90m [offset=1110, limit=40][0m
+[0m→ [0mRead tsdb/index/postings.go[90m [offset=185, limit=60][0m
+Now let me verify the key findings by reading the actual source files.
+[0m✱ [0mGrep "func \(db \*DB\) Stats"[90m in tsdb · 0 matches[0m
+[0m→ [0mRead cmd/prometheus/main.go[90m [offset=1970, limit=30][0m
+[0m→ [0mRead web/api/v1/openapi.go[90m [offset=250, limit=80][0m
+[0m✱ [0mGrep "func \(b \*OpenAPIBuilder\)"[90m in web/api/v1 · 11 matches[0m
+[0m✱ [0mGrep "func \(b \*OpenAPIBuilder\) statusTSDBPath"[90m in web/api/v1 · 0 matches[0m
+[0m✱ [0mGrep "func \(b \*OpenAPIBuilder\)"[90m in web/api/v1 · 0 matches[0m
+[0m✱ [0mGlob "web/api/v1/openapi*.go"[90m in . · 8 matches[0m
+[0m
+[0m$ [0mgrep -n 'func (b \*OpenAPIBuilder) statusTSDBPath\|func (b \*OpenAPIBuilder) statusWALReplayPath' /tmp/bgi-ab-repos/prometheus/web/api/v1/openapi_paths.go
+(no output)
+[0m
+[0m$ [0mgrep -c 'func (b \*OpenAPIBuilder)' /tmp/bgi-ab-repos/prometheus/web/api/v1/openapi_paths.go
+0
+[0m
+[0m$ [0mgrep -rn 'func (b \*OpenAPIBuilder)' /tmp/bgi-ab-repos/prometheus/web/api/v1/ | head -30
+/tmp/bgi-ab-repos/prometheus/web/api/v1/openapi_schemas.go:27:func (b *OpenAPIBuilder) buildComponents() *v3.Components {
+/tmp/bgi-ab-repos/prometheus/web/api/v1/openapi_schemas.go:174:func (b *OpenAPIBuilder) refResponseBodySchema(dataSchemaRef, description string) *base.SchemaProxy {
+/tmp/bgi-ab-repos/prometheus/web/api/v1/openapi.go:74:func (b *OpenAPIBuilder) rebuild() {
+/tmp/bgi-ab-repos/prometheus/web/api/v1/openapi.go:99:func (b *OpenAPIBuilder) ServeOpenAPI(w http.ResponseWriter, r *http.Request) {
+/tmp/bgi-ab-repos/prometheus/web/api/v1/openapi.go:128:func (b *OpenAPIBuilder) shouldIncludePath(path string) bool {
+/tmp/bgi-ab-repos/prometheus/web/api/v1/openapi.go:141:func (b *OpenAPIBuilder) shouldIncludePathForVersion(path, version string) bool {
+/tmp/bgi-ab-repos/prometheus/web/api/v1/openapi.go:157:func (b *OpenAPIBuilder) buildDocument(version string) *v3.Document {
+/tmp/bgi-ab-repos/prometheus/web/api/v1/openapi.go:169:func (b *OpenAPIBuilder) buildInfo() *base.Info {
+/tmp/bgi-ab-repos/prometheus/web/api/v1/openapi.go:186:func (b *OpenAPIBuilder) buildServers() []*v3.Server {
+/tmp/bgi-ab-repos/prometheus/web/api/v1/openapi.go:248:func (b *OpenAPIBuilder) buildPaths(version string) *v3.Paths {
+/tmp/bgi-ab-repos/prometheus/web/api/v1/openapi.go:262:func (b *OpenAPIBuilder) getAllPathDefinitions() *orderedmap.Map[string, *v3.PathItem] {
+[0m
+[0m→ [0mRead web/api/v1/openapi_paths.go[90m [limit=30][0m
+[0m
+[0m$ [0mgrep -n '^func ' /tmp/bgi-ab-repos/prometheus/web/api/v1/openapi_paths.go | head -30
+28:func (*OpenAPIBuilder) queryPath() *v3.PathItem {
+55:func (*OpenAPIBuilder) queryRangePath() *v3.PathItem {
+84:func (*OpenAPIBuilder) queryExemplarsPath() *v3.PathItem {
+108:func (*OpenAPIBuilder) formatQueryPath() *v3.PathItem {
+130:func (*OpenAPIBuilder) parseQueryPath() *v3.PathItem {
+152:func (*OpenAPIBuilder) labelsPath() *v3.PathItem {
+180:func (*OpenAPIBuilder) labelValuesPath() *v3.PathItem {
+202:func (*OpenAPIBuilder) seriesPath() *v3.PathItem {
+230:func (*OpenAPIBuilder) metadataPath() *v3.PathItem {
+247:func (*OpenAPIBuilder) scrapePoolsPath() *v3.PathItem {
+258:func (*OpenAPIBuilder) targetsPath() *v3.PathItem {
+274:func (*OpenAPIBuilder) targetsMetadataPath() *v3.PathItem {
+291:func (*OpenAPIBuilder) targetsRelabelStepsPath() *v3.PathItem {
+307:func (*OpenAPIBuilder) rulesPath() *v3.PathItem {
+341:func (*OpenAPIBuilder) alertsPath() *v3.PathItem {
+352:func (*OpenAPIBuilder) alertmanagersPath() *v3.PathItem {
+363:func (*OpenAPIBuilder) statusConfigPath() *v3.PathItem {
+374:func (*OpenAPIBuilder) statusRuntimeInfoPath() *v3.PathItem {
+385:func (*OpenAPIBuilder) statusBuildInfoPath() *v3.PathItem {
+396:func (*OpenAPIBuilder) statusFlagsPath() *v3.PathItem {
+407:func (*OpenAPIBuilder) statusTSDBPath() *v3.PathItem {
+422:func (*OpenAPIBuilder) statusTSDBBlocksPath() *v3.PathItem {
+433:func (*OpenAPIBuilder) statusWALReplayPath() *v3.PathItem {
+444:func (*OpenAPIBuilder) statusSelfMetricsPath() *v3.PathItem {
+460:func (*OpenAPIBuilder) adminDeleteSeriesPath() *v3.PathItem {
+489:func (*OpenAPIBuilder) adminCleanTombstonesPath() *v3.PathItem {
+508:func (*OpenAPIBuilder) adminSnapshotPath() *v3.PathItem {
+532:func (*OpenAPIBuilder) remoteReadPath() *v3.PathItem {
+544:func (*OpenAPIBuilder) remoteWritePath() *v3.PathItem {
+556:func (*OpenAPIBuilder) otlpWritePath() *v3.PathItem {
+[0m
+[0m→ [0mRead web/api/v1/openapi_paths.go[90m [offset=407, limit=40][0m
+[0m→ [0mRead web/api/v1/openapi_paths.go[90m [offset=568, limit=70][0m
+[0m
+[0m$ [0mgrep -n 'OpenAPIBuilder' /tmp/bgi-ab-repos/prometheus/web/api/v1/api.go | head -10
+262:	openAPIBuilder  *OpenAPIBuilder
+338:		openAPIBuilder:      NewOpenAPIBuilder(openAPIOptions, logger),
+[0m
+[0m$ [0mgrep -n 'responsesWithErrorExamples\|openAPIBuilder' /tmp/bgi-ab-repos/prometheus/web/api/v1/api.go | head -10
+262:	openAPIBuilder  *OpenAPIBuilder
+338:		openAPIBuilder:      NewOpenAPIBuilder(openAPIOptions, logger),
+413:			Handler: api.openAPIBuilder.WrapHandler(hf),
+484:	r.Get("/openapi.yaml", api.ready(api.openAPIBuilder.ServeOpenAPI))
+[0m
+[0m→ [0mRead web/api/v1/openapi.go[90m [offset=1, limit=75][0m
+[0m→ [0mRead web/api/v1/api.go[90m [offset=300, limit=50][0m
+[0m
+[0m$ [0mgrep -n 'func responsesWithErrorExamples\|func statusTSDBResponseExamples' /tmp/bgi-ab-repos/prometheus/web/api/v1/openapi_helpers.go /tmp/bgi-ab-repos/prometheus/web/api/v1/openapi_examples.go 2>/dev/null
+/tmp/bgi-ab-repos/prometheus/web/api/v1/openapi_helpers.go:287:func responsesWithErrorExamples(okSchemaRef string, successExamples, errorExamples *orderedmap.Map[string, *base.Example], successDescription, errorDescription string) *v3.Responses {
+/tmp/bgi-ab-repos/prometheus/web/api/v1/openapi_examples.go:771:func statusTSDBResponseExamples() *orderedmap.Map[string, *base.Example] {
+[0m
+[0m→ [0mRead web/web.go[90m [offset=740, limit=25][0m
+Now I have the complete picture. Here is the evidence-based analysis:
+
+---
+
+## Evidence Mode Analysis: Adding a Label Cardinality HTTP Endpoint
+
+### Current State Architecture
+
+**VERIFIED** – Route registration: `web/api/v1/api.go:393-485`
+- All v1 API routes are registered in `API.Register()` on a `route.Router` sub-router mounted at `/api/v1/` (`web/web.go:752-757`)
+- Handlers use the `apiFunc` signature: `func(r *http.Request) apiFuncResult` (`api.go:206`)
+- Two wrapper helpers exist: `wrap()` (CORS+compression+OpenAPI wrapping+error handling) and `wrapAgent()` (same but blocks in agent mode) (`api.go:394-424`)
+
+**VERIFIED** – TSDB access via interface: `web/api/v1/api.go:208-216`
+```go
+type TSDBAdminStats interface {
+    CleanTombstones() error
+    Delete(ctx context.Context, mint, maxt int64, ms ...*labels.Matcher) error
+    Snapshot(dir string, withHead bool) error
+    Stats(statsByLabelName string, limit int) (*tsdb.Stats, error)
+    WALReplayStatus() (tsdb.WALReplayStatus, error)
+    BlockMetas() ([]tsdb.BlockMeta, error)
+}
+```
+This is the sole interface used for stats queries. The concrete implementation is `readyStorage.Stats()` in `cmd/prometheus/main.go:1979-1991`, which delegates to `db.Head().Stats()`.
+
+**VERIFIED** – Existing cardinality endpoint already at `GET /api/v1/status/tsdb`: `api.go:460, 1915-1958`
+- Handler: `serveTSDBStatus`
+- Calls `api.db.Stats(labels.MetricName, limit)` returning `*tsdb.Stats`
+- Returns 4 cardinality categories: `SeriesCountByMetricName`, `LabelValueCountByLabelName`, `MemoryInBytesByLabelName`, `SeriesCountByLabelValuePair`
+- The `tsdb.Stats` struct: `tsdb/head.go:1539-1543` → contains `NumSeries`, `MinTime`, `MaxTime`, `IndexPostingStats *index.PostingsStats`
+- The `index.PostingsStats` struct: `tsdb/index/postings.go:187-194` → has 4 slices of `Stat{Name string, Count uint64}`
+
+**VERIFIED** – OpenAPI spec registration is optional but expected: `openapi.go:262-321`, `openapi_paths.go:407-420`
+- Each path has a corresponding `func (*OpenAPIBuilder) xxxPath() *v3.PathItem` in `openapi_paths.go`
+- Registered in `getAllPathDefinitions()` at `openapi.go:262`
+
+**VERIFIED** – Postings cardinality stats have a 30-second cache: `tsdb/head.go:1117-1140`
+- `PostingsCardinalityStats()` uses mutex + cache key + 30-second TTL (`cardinalityCacheExpirationTime`)
+- This is **expensive** — the Stats method walks all postings
+
+---
+
+### Safest Approach to Add the New Endpoint
+
+Given the architecture, the safest path with minimum blast radius is:
+
+1. **HANDLER** — Add a method on `API` following the `serveTSDBStatus` pattern in `api.go`. If the endpoint queries per-label cardinality, call `api.db.Stats(labelName, limit)` and extract only the relevant category from the returned `*tsdb.Stats`. If you need a different query shape, **extend the `TSDBAdminStats` interface** (`api.go:208`) and implement it in `readyStorage` (`main.go:1979`) and the agent stub.
+
+2. **ROUTE** — Add `r.Get("/status/tsdb/label_cardinality", wrapAgent(api.newHandler))` inside `Register()` at `api.go:393-485`, following the same conventions (use `wrapAgent` since cardinality stats are head-dependent, unavailable in agent mode).
+
+3. **OPENAPI** — Add `func (*OpenAPIBuilder) statusTSDBLabelCardinalityPath()` in `openapi_paths.go` and register it in `getAllPathDefinitions()` at `openapi.go:262-321`.
+
+4. **STRUCTURE** — Use the existing `TSDBStat` type (`api.go:1836-1840`) and `TSDBStatsFromIndexStats()` converter (`api.go:1860-1868`) for response consistency. Add new response structs in the existing cluster at `api.go:1836-1858` if needed.
+
+**Key constraints:**
+- **Cardinality stats are expensive** — the existing 30-second cache in `Head.PostingsCardinalityStats()` (`tsdb/head.go:1128`) already mitigates this; your new handler will benefit from it if it calls through `api.db.Stats()`. Do NOT bypass this cache path.
+- **Admin endpoints** (`api.go:474-481`) require `api.enableAdmin` check; cardinality/status endpoints do not. If your endpoint is read-only stats, follow the `serveTSDBStatus` pattern (no admin check).
+- **Agent mode** — unless the endpoint works in agent mode, use `wrapAgent` (which returns 503 with "unavailable with Prometheus Agent").
+
+---
+
+### Historical Context
+
+**HYPOTHESIS** — The current "kitchen sink" `serveTSDBStatus` endpoint (returns 4 cardinality categories + head stats at once) was likely created early and never split because:
+- The underlying `MemPostings.Stats()` computes all categories in a single pass (`tsdb/index/postings.go:198-240`), so splitting would not save computation.
+- Adding a new endpoint that queries a subset would still pay the full O(postings) cost but would re-query the cache key on every call. If your endpoint uses different `statsByLabelName` or `limit` values, it gets a separate cache entry (cache key = `statsByLabelName + ";" + limit`, `head.go:1119`).

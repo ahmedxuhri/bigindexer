@@ -80,10 +80,10 @@ app.get('/api/validation/summary', (req, res) => {
     repos: ['tiangolo/fastapi', 'django/django', 'pydantic/pydantic-core', 'prometheus/prometheus', 'vercel/next.js'],
     cli: 'opencode 1.14.41',
     model: 'deepseek-v4-flash',
-    total_scored_runs: 36,
+    total_scored_runs: 40,
     global: {
-      baseline: { evidence_coverage_pct: 76.4, boundary_accuracy: 0.94, actionability: 4.0, hallucinations: 0, median_latency_s: 133.8 },
-      mcp:      { evidence_coverage_pct: 83.2, boundary_accuracy: 1.0,  actionability: 4.0, hallucinations: 0, median_latency_s: 63.0 }
+      baseline: { evidence_coverage_pct: 78.7, boundary_accuracy: 0.95, actionability: 4.0, hallucinations: 0, median_latency_s: 133.8 },
+      mcp:      { evidence_coverage_pct: 84.9, boundary_accuracy: 1.0,  actionability: 4.0, hallucinations: 0, median_latency_s: 66.2 }
     }
   });
 });

@@ -1,0 +1,326 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m→ [0mRead .
+[0m
+[0m$ [0mfind /tmp/bgi-ab-repos/prometheus -maxdepth 2 -type d | sort
+/tmp/bgi-ab-repos/prometheus
+/tmp/bgi-ab-repos/prometheus/.git
+/tmp/bgi-ab-repos/prometheus/.git/branches
+/tmp/bgi-ab-repos/prometheus/.git/hooks
+/tmp/bgi-ab-repos/prometheus/.git/info
+/tmp/bgi-ab-repos/prometheus/.git/logs
+/tmp/bgi-ab-repos/prometheus/.git/objects
+/tmp/bgi-ab-repos/prometheus/.git/refs
+/tmp/bgi-ab-repos/prometheus/.github
+/tmp/bgi-ab-repos/prometheus/.github/ISSUE_TEMPLATE
+/tmp/bgi-ab-repos/prometheus/.github/workflows
+/tmp/bgi-ab-repos/prometheus/cmd
+/tmp/bgi-ab-repos/prometheus/cmd/prometheus
+/tmp/bgi-ab-repos/prometheus/cmd/promtool
+/tmp/bgi-ab-repos/prometheus/compliance
+/tmp/bgi-ab-repos/prometheus/config
+/tmp/bgi-ab-repos/prometheus/config/testdata
+/tmp/bgi-ab-repos/prometheus/discovery
+/tmp/bgi-ab-repos/prometheus/discovery/aws
+/tmp/bgi-ab-repos/prometheus/discovery/azure
+/tmp/bgi-ab-repos/prometheus/discovery/consul
+/tmp/bgi-ab-repos/prometheus/discovery/digitalocean
+/tmp/bgi-ab-repos/prometheus/discovery/dns
+/tmp/bgi-ab-repos/prometheus/discovery/eureka
+/tmp/bgi-ab-repos/prometheus/discovery/file
+/tmp/bgi-ab-repos/prometheus/discovery/gce
+/tmp/bgi-ab-repos/prometheus/discovery/hetzner
+/tmp/bgi-ab-repos/prometheus/discovery/http
+/tmp/bgi-ab-repos/prometheus/discovery/install
+/tmp/bgi-ab-repos/prometheus/discovery/ionos
+/tmp/bgi-ab-repos/prometheus/discovery/kubernetes
+/tmp/bgi-ab-repos/prometheus/discovery/linode
+/tmp/bgi-ab-repos/prometheus/discovery/marathon
+/tmp/bgi-ab-repos/prometheus/discovery/moby
+/tmp/bgi-ab-repos/prometheus/discovery/nomad
+/tmp/bgi-ab-repos/prometheus/discovery/openstack
+/tmp/bgi-ab-repos/prometheus/discovery/outscale
+/tmp/bgi-ab-repos/prometheus/discovery/ovhcloud
+/tmp/bgi-ab-repos/prometheus/discovery/puppetdb
+/tmp/bgi-ab-repos/prometheus/discovery/refresh
+/tmp/bgi-ab-repos/prometheus/discovery/scaleway
+/tmp/bgi-ab-repos/prometheus/discovery/stackit
+/tmp/bgi-ab-repos/prometheus/discovery/targetgroup
+/tmp/bgi-ab-repos/prometheus/discovery/triton
+/tmp/bgi-ab-repos/prometheus/discovery/uyuni
+/tmp/bgi-ab-repos/prometheus/discovery/vultr
+/tmp/bgi-ab-repos/prometheus/discovery/xds
+/tmp/bgi-ab-repos/prometheus/discovery/zookeeper
+/tmp/bgi-ab-repos/prometheus/docs
+/tmp/bgi-ab-repos/prometheus/docs/command-line
+/tmp/bgi-ab-repos/prometheus/docs/configuration
+/tmp/bgi-ab-repos/prometheus/docs/images
+/tmp/bgi-ab-repos/prometheus/docs/querying
+/tmp/bgi-ab-repos/prometheus/documentation
+/tmp/bgi-ab-repos/prometheus/documentation/examples
+/tmp/bgi-ab-repos/prometheus/documentation/images
+/tmp/bgi-ab-repos/prometheus/documentation/prometheus-mixin
+/tmp/bgi-ab-repos/prometheus/internal
+/tmp/bgi-ab-repos/prometheus/internal/tools
+/tmp/bgi-ab-repos/prometheus/model
+/tmp/bgi-ab-repos/prometheus/model/exemplar
+/tmp/bgi-ab-repos/prometheus/model/histogram
+/tmp/bgi-ab-repos/prometheus/model/labels
+/tmp/bgi-ab-repos/prometheus/model/metadata
+/tmp/bgi-ab-repos/prometheus/model/relabel
+/tmp/bgi-ab-repos/prometheus/model/rulefmt
+/tmp/bgi-ab-repos/prometheus/model/textparse
+/tmp/bgi-ab-repos/prometheus/model/timestamp
+/tmp/bgi-ab-repos/prometheus/model/value
+/tmp/bgi-ab-repos/prometheus/notifier
+/tmp/bgi-ab-repos/prometheus/plugins
+/tmp/bgi-ab-repos/prometheus/prompb
+/tmp/bgi-ab-repos/prometheus/prompb/io
+/tmp/bgi-ab-repos/prometheus/prompb/rwcommon
+/tmp/bgi-ab-repos/prometheus/promql
+/tmp/bgi-ab-repos/prometheus/promql/parser
+/tmp/bgi-ab-repos/prometheus/promql/promqltest
+/tmp/bgi-ab-repos/prometheus/rules
+/tmp/bgi-ab-repos/prometheus/rules/fixtures
+/tmp/bgi-ab-repos/prometheus/schema
+/tmp/bgi-ab-repos/prometheus/scrape
+/tmp/bgi-ab-repos/prometheus/scrape/testdata
+/tmp/bgi-ab-repos/prometheus/scripts
+/tmp/bgi-ab-repos/prometheus/storage
+/tmp/bgi-ab-repos/prometheus/storage/remote
+/tmp/bgi-ab-repos/prometheus/template
+/tmp/bgi-ab-repos/prometheus/tracing
+/tmp/bgi-ab-repos/prometheus/tracing/testdata
+/tmp/bgi-ab-repos/prometheus/tsdb
+/tmp/bgi-ab-repos/prometheus/tsdb/agent
+/tmp/bgi-ab-repos/prometheus/tsdb/chunkenc
+/tmp/bgi-ab-repos/prometheus/tsdb/chunks
+/tmp/bgi-ab-repos/prometheus/tsdb/compression
+/tmp/bgi-ab-repos/prometheus/tsdb/docs
+/tmp/bgi-ab-repos/prometheus/tsdb/encoding
+/tmp/bgi-ab-repos/prometheus/tsdb/fileutil
+/tmp/bgi-ab-repos/prometheus/tsdb/goversion
+/tmp/bgi-ab-repos/prometheus/tsdb/index
+/tmp/bgi-ab-repos/prometheus/tsdb/record
+/tmp/bgi-ab-repos/prometheus/tsdb/testdata
+/tmp/bgi-ab-repos/prometheus/tsdb/tombstones
+/tmp/bgi-ab-repos/prometheus/tsdb/tsdbutil
+/tmp/bgi-ab-repos/prometheus/tsdb/wlog
+/tmp/bgi-ab-repos/prometheus/util
+/tmp/bgi-ab-repos/prometheus/util/almost
+/tmp/bgi-ab-repos/prometheus/util/annotations
+/tmp/bgi-ab-repos/prometheus/util/compression
+/tmp/bgi-ab-repos/prometheus/util/convertnhcb
+/tmp/bgi-ab-repos/prometheus/util/documentcli
+/tmp/bgi-ab-repos/prometheus/util/features
+/tmp/bgi-ab-repos/prometheus/util/fmtutil
+/tmp/bgi-ab-repos/prometheus/util/fuzzing
+/tmp/bgi-ab-repos/prometheus/util/gate
+/tmp/bgi-ab-repos/prometheus/util/httputil
+/tmp/bgi-ab-repos/prometheus/util/jsonutil
+/tmp/bgi-ab-repos/prometheus/util/junitxml
+/tmp/bgi-ab-repos/prometheus/util/kahansum
+/tmp/bgi-ab-repos/prometheus/util/logging
+/tmp/bgi-ab-repos/prometheus/util/namevalidationutil
+/tmp/bgi-ab-repos/prometheus/util/netconnlimit
+/tmp/bgi-ab-repos/prometheus/util/notifications
+/tmp/bgi-ab-repos/prometheus/util/osutil
+/tmp/bgi-ab-repos/prometheus/util/pool
+/tmp/bgi-ab-repos/prometheus/util/runtime
+/tmp/bgi-ab-repos/prometheus/util/runutil
+/tmp/bgi-ab-repos/prometheus/util/stats
+/tmp/bgi-ab-repos/prometheus/util/strutil
+/tmp/bgi-ab-repos/prometheus/util/testrecord
+/tmp/bgi-ab-repos/prometheus/util/teststorage
+/tmp/bgi-ab-repos/prometheus/util/testutil
+/tmp/bgi-ab-repos/prometheus/util/testwal
+/tmp/bgi-ab-repos/prometheus/util/treecache
+/tmp/bgi-ab-repos/prometheus/util/zeropool
+/tmp/bgi-ab-repos/prometheus/web
+/tmp/bgi-ab-repos/prometheus/web/api
+/tmp/bgi-ab-repos/prometheus/web/ui
+[0m
+[0m$ [0mwc -l /tmp/bgi-ab-repos/prometheus/go.mod
+268 /tmp/bgi-ab-repos/prometheus/go.mod
+[0m
+I'll systematically explore the Prometheus codebase to identify its architectural boundaries, integration seams, and coupling points.
+[0m→ [0mRead cmd/prometheus
+[0m→ [0mRead storage
+[0m→ [0mRead scrape
+[0m
+[0m$ [0mfind /tmp/bgi-ab-repos/prometheus/cmd -name "main.go" | sort
+/tmp/bgi-ab-repos/prometheus/cmd/prometheus/main.go
+/tmp/bgi-ab-repos/prometheus/cmd/promtool/main.go
+[0m
+[0m→ [0mRead cmd/prometheus/main.go
+[0m→ [0mRead storage/interface.go
+[0m→ [0mRead storage/interface_append.go
+[0m→ [0mRead storage/fanout.go
+[0m→ [0mRead scrape/manager.go[90m [limit=80][0m
+[0m→ [0mRead web/web.go[90m [limit=120][0m
+[0m
+[0m$ [0mls /tmp/bgi-ab-repos/prometheus/storage/remote/
+azuread
+chunked.go
+chunked_test.go
+client.go
+client_test.go
+codec.go
+codec_test.go
+dial_context.go
+dial_context_test.go
+ewma.go
+googleiam
+intern.go
+intern_test.go
+max_timestamp.go
+metadata_watcher.go
+metadata_watcher_test.go
+otlptranslator
+queue_manager.go
+queue_manager_test.go
+read.go
+read_handler.go
+read_handler_test.go
+read_test.go
+stats.go
+storage.go
+storage_test.go
+write.go
+write_handler.go
+write_handler_test.go
+write_otlp_handler.go
+write_otlp_handler_test.go
+write_test.go
+[0m
+Now let me examine the key integration components - fanout storage, remote storage, and how modules connect:
+[0m→ [0mRead web/web.go[90m [offset=120, limit=100][0m
+[0m→ [0mRead rules/manager.go[90m [limit=100][0m
+[0m✗ [0mread failed
+[91m[1mError: [0mFile not found: /tmp/bgi-ab-repos/prometheus/notifier/notifier.go
+[0m→ [0mRead config/config.go[90m [limit=80][0m
+[0m✱ [0mGrep "type Options struct"[90m in web · 1 match[0m
+[0m→ [0mRead cmd/prometheus/main.go[90m [offset=1139][0m
+[0m✱ [0mGrep "type readyStorage struct"[90m in cmd/prometheus · 1 match[0m
+[0m→ [0mRead web/web.go[90m [offset=220, limit=100][0m
+[0m→ [0mRead notifier
+[0m→ [0mRead discovery/manager.go[90m [limit=60][0m
+## Prometheus Architecture Analysis
+
+### **VERIFIED** Architectural Boundaries (Layered Architecture)
+
+The codebase is organized into distinct layers with clear interface-based boundaries:
+
+**Layer 1: Core Domain Models** (`model/`, `prompb/`)
+- Labels, histograms, exemplars, metadata, textparse, relabel, value, rulefmt, timestamp
+- Protocol buffer definitions
+- **No imports from** `storage/`, `scrape/`, `promql/`, `rules/`, `web/`
+- Source: `model/labels/`, `model/histogram/` — leaf packages
+
+**Layer 2: Storage Abstraction** (`storage/`)
+- `storage.Storage`, `storage.Appendable`, `storage.AppendableV2` interfaces at `storage/interface.go:82-97` and `storage/interface_append.go:27-33`
+- `storage.Fanout` multiplexes primary (TSDB) + secondaries (remote) at `storage/fanout.go:45-51`
+- Querier/Appender interfaces are the central contract
+
+**Layer 3: TSDB** (`tsdb/`)
+- Implements `storage.Storage` — the primary storage backend
+- Sub-packages: `chunkenc/`, `chunks/`, `index/`, `wlog/`, `tombstones/`, `record/`, `encoding/`, `compression/`
+
+**Layer 4: Modules (Scrape, Rules, PromQL, Notifier)**
+- All depend on `storage.Storage` interface — never directly on TSDB
+- Scrape: writes via `storage.Appendable` / `storage.AppendableV2` at `scrape/manager.go:51-58`
+- Rules: uses `storage.Appendable` + `storage.Queryable` at `rules/manager.go:34-41`
+- PromQL: queries via `storage.Queryable` at `promql/engine.go`
+
+**Layer 5: Web + API** (`web/`)
+- Orchestrator handler — depends on **all** modules: `scrape.Manager`, `rules.Manager`, `promql.Engine`, `notifier.Manager`, `storage.Storage` at `web/web.go:224-232`
+- Imports: `config`, `notifier`, `promql`, `rules`, `scrape`, `storage`, `web/api/v1`
+
+**Layer 6: Config** (`config/`)
+- Global configuration — imported by every module (scrape, discovery, remote storage, web, TSDB, notifier, rules)
+- Contains scrape configs, remote write configs, service discovery configs, alerting configs
+
+**Layer 7: Discovery** (`discovery/`)
+- Provider pattern — multiple implementations (kubernetes, consul, aws, azure, etc.)
+- Communicates via `discovery/targetgroup.Group` channel at `discovery/manager.go`
+- Consumed by scrape manager and notifier manager via `SyncCh()`
+
+**Layer 8: Remote Storage** (`storage/remote/`)
+- Implements `storage.Storage` — secondary/best-effort backend
+- Queue manager, codecs, write/read handlers, OTLP translation
+
+---
+
+### **VERIFIED** Integration Seams
+
+| Seam | Mechanism | Location |
+|------|-----------|----------|
+| **Scrape → Storage** | `storage.Appendable` / `storage.AppendableV2` interface | `scrape/manager.go:55-56`, `storage/interface_append.go:27` |
+| **Rules → Storage** | `storage.Appendable` + `storage.Queryable` interfaces | `rules/manager.go:34-41` |
+| **PromQL → Storage** | `storage.Queryable` interface | `promql/engine.go` (EngineOpts has `Queryable` field) |
+| **Discovery → Scrape** | `chan []*targetgroup.Group` channel | `scrape/manager.go:1284` (`discoveryManagerScrape.SyncCh()`) |
+| **Discovery → Notifier** | `chan []*targetgroup.Group` channel | `notifier/manager.go:1578` (`discoveryManagerNotify.SyncCh()`) |
+| **Rules → Notifier** | `notify.NotifyFunc` callback | `rules/manager.go:987` (`rules.SendAlerts(notifierManager, ...)`) |
+| **Config → All Modules** | `config.Config` passed to `ApplyConfig()` | `cmd/prometheus/main.go:1653` (reloader pattern) |
+| **Storage Fan-out** | `storage.Storage` interface | `storage/fanout.go:45-51` (primary=TSDB, secondaries=[remote]) |
+| **Web → All Modules** | Direct struct pointer injection | `web/web.go:269-319` (Options struct) |
+| **Agent mode switch** | `readyStorage` facade | `cmd/prometheus/main.go:1761-1816` (type-switches on `*tsdb.DB` vs `*agent.DB`) |
+| **Lifecycle** | `oklog/run.Group` actor model | `cmd/prometheus/main.go:1204` (signal handlers, startup order) |
+
+---
+
+### **VERIFIED** Strongest Coupling Points
+
+**1. `cmd/prometheus/main.go` (The God Constructor) — `main.go:892-1023`**
+- **Strongest coupling** in the system. Manually wires every module:
+  ```go
+  var (
+      localStorage  = &readyStorage{...}
+      scraper       = &readyScrapeManager{}
+      remoteStorage = remote.NewStorage(...)
+      fanoutStorage = storage.NewFanout(logger, localStorage, remoteStorage)
+  )
+  ```
+- Injects `fanoutStorage` into `scrape.NewManager()` at `main.go:944`
+- Creates `promql.Engine` with `localStorage` as queryable at `main.go:960-978`
+- Creates `rules.Manager` with both `fanoutStorage` (appendable) and `localStorage` (queryable) at `main.go:982-1002`
+- All 8 reloers listed at `main.go:1056-1166` directly reference concrete module instances
+
+**2. `web/web.go` — `Options` struct at `web/web.go:269-319`**
+- Central dependency hub: holds pointers to `*scrape.Manager`, `*rules.Manager`, `*promql.Engine`, `*notifier.Manager`, `storage.Storage`
+- Any new module feature exposed via API needs new fields here — creates a bottleneck
+
+**3. `storage/fanout.go` — `fanout` struct at `storage/fanout.go:29-34`**
+- The **write path coupling point**: all scraped data flows through `fanoutAppender` → `primary` (TSDB/Agent) + `secondaries` (Remote Storage)
+- Primary is authoritative; secondary errors are demoted to warnings
+- Read path merges from primary (authoritative) + secondaries (best-effort)
+
+**4. `storage/remote/storage.go` — Remote storage as `secondary`**
+- Tightly coupled to TSDB (needs `StartTime()` from local storage) at `cmd/prometheus/main.go:895`
+- `SetWriteNotified` call bridges TSDB → remote storage at `main.go:1475`
+- Queue manager has complex coupling between write-ahead semantics and remote write protocol
+
+**5. `config/config.go` — Global Configuration**
+- Imported by: `scrape`, `storage/remote`, `web`, `rules`, `discovery`, `notifier`, `cmd/prometheus`
+- Any config field addition cascades changes across all these modules
+
+**6. Agent Mode — `readyStorage` at `main.go:1761-1816`**
+- Runtime type-switch on `*tsdb.DB` vs `*agent.DB` across 7+ methods (`Querier`, `Appender`, `ExemplarQuerier`, `CleanTombstones`, `BlockMetas`, `Delete`, `Snapshot`, `Stats`)
+- **HYPOTHESIS**: This pattern suggests incomplete abstraction — if `agent.DB` and `tsdb.DB` shared a richer interface, the type-switches would disappear
+
+**7. Rules → PromQL — `EngineQueryFunc` at `rules/manager.go:50-73`**
+- Rules manager takes a `QueryFunc` closure that captures `promql.Engine` + `storage.Queryable`
+- Can't create rules without a query engine; can't evaluate rules without both
+
+---
+
+### Summary
+
+| Perspective | Key Insight |
+|---|---|
+| **Strongest boundary** | `storage.Storage` interface separates TSDB from all consumers (scrape, promql, rules) |
+| **Primary integration seam** | `storage.Fanout` — the write/read multiplexer between TSDB and remote storage |
+| **Tightest coupling** | `cmd/prometheus/main.go` — the composition root that wires 8+ modules manually |
+| **Most central module** | `web.Handler` — depends on all modules; every feature adds a field to its `Options` |
+| **Hidden coupling** | Agent mode type-switches on `readyStorage` — TSDB and Agent should share more interface surface |

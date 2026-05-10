@@ -14,7 +14,7 @@ Each mode received the same 4 architectural prompts (p01–p04):
 architecture overview, boundary identification, blast-radius analysis,
 and safe implementation path.
 
-Current scored set: **36 scored runs** (invalid MCP-invocation runs excluded from scoring).
+Current scored set: **40 scored runs** (invalid MCP-invocation runs excluded from scoring).
 
 ---
 
@@ -22,11 +22,11 @@ Current scored set: **36 scored runs** (invalid MCP-invocation runs excluded fro
 
 | Metric | Baseline | **MCP** | Δ |
 |---|---|---|---|
-| Evidence coverage | 76.4% | **83.2%** | +6.8% |
-| Boundary accuracy | 0.94 | **1.0** | +0.06 |
+| Evidence coverage | 78.7% | **84.9%** | +6.2% |
+| Boundary accuracy | 0.95 | **1.0** | +0.05 |
 | Actionability (1–5) | 4.00 | **4.00** | +0.0 |
 | Hallucination flags | 0 | **0** | 0 |
-| Median latency | 133.8s | 63.0s | — |
+| Median latency | 133.8s | 66.2s | — |
 
 ---
 
@@ -40,8 +40,8 @@ Current scored set: **36 scored runs** (invalid MCP-invocation runs excluded fro
 | fastapi      | **MCP**  | 3 | 54.8s   | 66.7% | 1.00 | 4.33 | 0 |
 | pydantic     | Baseline | 4 | 192.2s  | 48.6% | 0.75 | 4.00 | 0 |
 | pydantic     | **MCP**  | 4 | 63.3s   | 86.7% | 1.00 | 4.00 | 0 |
-| prometheus   | Baseline | 4 | 87.3s   | 85.0% | 1.00 | 4.00 | 0 |
-| prometheus   | **MCP**  | 4 | 112.7s  | 85.0% | 1.00 | 4.00 | 0 |
+| prometheus   | Baseline | 6 | 89.9s   | 90.0% | 1.00 | 4.00 | 0 |
+| prometheus   | **MCP**  | 6 | 119.9s  | 90.0% | 1.00 | 4.00 | 0 |
 | nextjs       | Baseline | 3 | 291.8s  | 89.2% | 1.00 | 3.67 | 0 |
 | nextjs       | **MCP**  | 3 | 66.4s   | 91.7% | 1.00 | 3.67 | 0 |
 
@@ -68,10 +68,11 @@ granular file-level verifications, while baseline performed exhaustive file read
 tradeoff we are documenting transparently.
 
 ### prometheus (Go)
-Prometheus adds a non-Python repo to the sample. In this batch:
-- Evidence coverage remained flat (85.0% baseline vs 85.0% MCP)
+Prometheus adds a non-Python repo to the sample. After routing retest rows were added:
+- Evidence coverage is now flat at a higher level (90.0% baseline vs 90.0% MCP)
 - Boundary accuracy stayed perfect in both modes
-- MCP was slower on median latency (112.7s vs 87.3s)
+- MCP remains slower on median latency (119.9s vs 89.9s)
+- The post-routing first pass only invoked MCP tools on p02/p03; p01/p04 rerun rows are retained as invalid/unscored for transparency
 
 This is an important neutral finding: MCP gains are strongest in repos where baseline models are
 architecturally blind; gains are smaller when baseline exploration is already strong.
@@ -93,7 +94,7 @@ so Next.js is currently scored on 3 prompt pairs.
 |---|---|
 | Repos | tiangolo/fastapi, django/django, pydantic/pydantic-core, prometheus/prometheus, vercel/next.js |
 | CLI | opencode 1.14.41 |
-| Model | deepseek-v4-flash |
+| Model | deepseek-v4-flash (rerun alias: `deepseek/deepseek-v4-flash`) |
 | MCP server | `bgi mcp --graph ... --fuse-graph ...` |
 | Scoring | Evidence coverage: recall of architectural facts vs ground-truth checklist |
 | Boundary accuracy | 0/1 whether seam boundaries are correctly identified |

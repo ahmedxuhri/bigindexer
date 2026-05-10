@@ -1,0 +1,171 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m→ [0mRead .
+[0m→ [0mRead README.md[90m [limit=80][0m
+[0m→ [0mRead go.mod[90m [limit=20][0m
+[0m
+[0m# [0mTodos
+[x] Explore project structure and identity
+[ ] Assess code quality and engineering practices
+[ ] Assess testing, security, community health
+[ ] Synthesize strong/weak points with evidence
+[0m
+[0m→ [0mRead .golangci.yml[90m [limit=60][0m
+[0m→ [0mRead CONTRIBUTING.md[90m [limit=50][0m
+[0m→ [0mRead Makefile[90m [limit=80][0m
+[0m→ [0mRead SECURITY.md
+[0m→ [0mRead go.mod[90m [limit=50, offset=250][0m
+[0m→ [0mRead VERSION
+[0m→ [0mRead AGENTS.md
+[0m→ [0mRead SECURITY-INSIGHTS.yml[90m [limit=40][0m
+[0m→ [0mRead tsdb
+[0m
+[0m$ [0mwc -l $(find . -name '*.go' -not -path './vendor/*' -not -path './.git/*' | head -5) && echo "---" && find . -name '*.go' -not -path './vendor/*' -not -path './.git/*' | wc -l && echo "---" && find . -name '*_test.go' -not -path './vendor/*' -not -path './.git/*' | wc -l && echo "---" && find . -name '*.go' -not -path './vendor/*' -not -path './.git/*' -exec wc -l {} + 2>/dev/null | tail -1
+1911 ./util/fuzzing/corpus_protobuf.go
+  237 ./util/fuzzing/corpus_gen/main.go
+  377 ./util/fuzzing/fuzz_test.go
+  207 ./util/fuzzing/corpus.go
+   50 ./util/almost/almost_test.go
+ 2782 total
+---
+704
+---
+265
+---
+  345310 total
+[0m
+[0m→ [0mRead promql
+[0m→ [0mRead SECURITY-INSIGHTS.yml[90m [offset=40][0m
+[0m→ [0mRead promql/engine.go[90m [limit=40][0m
+[0m→ [0mRead tsdb/head.go[90m [limit=40][0m
+[0m→ [0mRead scrape
+[0m
+[0m$ [0mcd /tmp/bgi-ab-repos/prometheus && git log --oneline -20
+ecab2f4 Merge pull request #18651 from roidelapluie/roidelapluie/fgprof-concurrency-limit
+[0m
+[0m→ [0mRead CLAUDE.md
+[0m→ [0mRead storage
+[0m→ [0mRead notifier
+[0m→ [0mRead discovery
+[0m
+[0m$ [0mcd /tmp/bgi-ab-repos/prometheus && ls -d */
+cmd/
+compliance/
+config/
+discovery/
+docs/
+documentation/
+internal/
+model/
+notifier/
+plugins/
+prompb/
+promql/
+rules/
+schema/
+scrape/
+scripts/
+storage/
+template/
+tracing/
+tsdb/
+util/
+web/
+[0m
+[0m→ [0mRead CHANGELOG.md[90m [limit=50][0m
+[0m
+[0m$ [0mcd /tmp/bgi-ab-repos/prometheus && find . -path ./.git -prune -o -name '*_test.go' -print | xargs wc -l 2>/dev/null | tail -1
+185436 total
+[0m
+[0m→ [0mRead web
+[0m
+[0m$ [0mcd /tmp/bgi-ab-repos/prometheus && for f in promql/engine.go tsdb/head.go scrape/scrape.go discovery/manager.go rules/manager.go notifier/manager.go; do echo "$f: $(wc -l < $f) lines"; done
+promql/engine.go: 4743 lines
+tsdb/head.go: 2762 lines
+scrape/scrape.go: 2301 lines
+discovery/manager.go: 572 lines
+rules/manager.go: 652 lines
+notifier/manager.go: 326 lines
+[0m
+[0m# [0mTodos
+[x] Explore project structure and identity
+[x] Assess code quality and engineering practices
+[x] Assess testing, security, community health
+[ ] Synthesize strong/weak points with evidence
+[0m
+[0m✱ [0mGlob "**/*openapi*"[90m 11 matches[0m
+[0m→ [0mRead Makefile.common[90m [limit=40][0m
+[0m
+[0m# [0mTodos
+[x] Explore project structure and identity
+[x] Assess code quality and engineering practices
+[x] Assess testing, security, community health
+[x] Synthesize strong/weak points with evidence
+[0m
+## Project Identity
+
+**VERIFIED** — This is the Prometheus monitoring system (v3.11.3), a CNCF-graduated project written in Go (`go 1.25.0`). It collects metrics via pull/HTTP, stores them in a local TSDB, evaluates PromQL queries, and triggers alerts. ~345K lines of Go across 704 `.go` files with 265 test files (54% of Go files are production-only). Sources: `VERSION:1`, `README.md:22-35`, `go.mod:3`, file count via bash.
+
+---
+
+## Strong Points
+
+**VERIFIED — Engineering rigor is exceptional.**
+- 20+ linters enforced via `golangci-lint`: `gocritic`, `revive`, `staticcheck`, `govet`, `testifylint`, `errorlint`, `perfsprint`, `usestdlibvars`, etc. (`.golangci.yml:24-46`).
+- Formatters `gofumpt` with extra-rules, `gci`, `goimports` (`.golangci.yml:2-14`).
+- PRs require proof of performance improvement with `benchstat` output for PERF changes (`AGENTS.md:83-92`).
+- Bug fixes must include a reproducing test; new features require unit/e2e tests (`AGENTS.md:71-77`).
+- DCO sign-off required on every commit (`CONTRIBUTING.md:22`).
+- OpenAPI golden file tests exist (`web/api/v1/openapi_golden_test.go`).
+- `govulncheck`, CodeQL SAST, Dependabot SCA, oss-fuzz all integrated in CI (`SECURITY-INSIGHTS.yml:32-45`, `README.md:15,18`).
+
+**VERIFIED — Modular architecture with broad ecosystem integration.**
+- Clean subsystem separation: tsdb, promql, scrape, storage (interface-based), discovery, notifier, rules, web.
+- 20+ service discovery providers including Kubernetes, AWS EC2/ECS/ElastiCache/RDS, Azure, GCE, Consul, DNS, File-based (`discovery/` has 41 entries).
+- Pluggable storage backend via `storage/interface.go`.
+
+**VERIFIED — Strong security posture.**
+- Security policy + email contact (`SECURITY.md`, `SECURITY-INSIGHTS.yml:28-30`).
+- Multiple CVEs fixed in recent releases (3.11.3 had 3 security fixes: `CHANGELOG.md:12-14`).
+- Fuzzing integrated with oss-fuzz (badge at `README.md:18`).
+
+**VERIFIED — Test-to-code ratio is strong.**
+- 185K lines of test code vs 345K total Go = ~54% test lines. Sources: bash `wc -l` on test files vs all `.go` files.
+
+**VERIFIED — Active community and release cadence.**
+- 3.11.3 released 2026-04-27, 3.11.0 on 2026-04-02 — roughly monthly releases (`CHANGELOG.md:3,28`).
+- 20+ discovery providers maintained simultaneously.
+
+---
+
+## Weak Points
+
+**VERIFIED — Core files are monolithically large, a maintenance burden.**
+- `promql/engine.go`: 4,743 lines (single file).
+- `tsdb/head.go`: 2,762 lines.
+- `scrape/scrape.go`: 2,301 lines.
+- These handle the most performance-critical paths yet are very large, making review and refactoring difficult.
+
+**VERIFIED — UI is in a transitional, dual-codebase state.**
+- Two parallel UI implementations exist: old React app and new Mantine-based UI (`Makefile:65-68`, `web/ui/`).
+- The Makefile comment states: *"This is a temporary solution until the new Mantine-based UI is fully integrated and the old app can be removed."* — indicating ongoing migration debt.
+
+**VERIFIED — Dependency workarounds in go.mod.**
+- Uses `exclude` directives for `grpc-gateway v1.14.7` and `google.golang.org/api v0.30.0` due to breaking changes (`go.mod:262-266`, referencing issue #7621).
+- Excludes `linodego v1.0.0` as no longer published (`go.mod:260`).
+- `replace` directive for `cloud.google.com/go` (`go.mod:268`).
+- Uses third-party `go.uber.org/atomic` alongside `sync/atomic` with `//nolint:depguard` suppression (`tsdb/head.go:29,35`) — doubles atomic import paths when Go stdlib `sync/atomic` suffices.
+
+**HYPOTHESIS — Fuzzing coverage may be limited.**
+- Only 3 fuzzing-related files exist under `util/fuzzing/` (corpus gen, corpus, one test file).
+- oss-fuzz integration is badge-confirmed but the in-repo fuzzing surface appears small relative to codebase size.
+
+**VERIFIED — One intentional linter gap.**
+- `nolintlint` disabled due to a known golangci-lint bug (#3228) per TODO in `.golangci.yml:36-37` — meaning `//nolint` abuse could go undetected.
+
+---
+
+## Historical Context
+
+This is a mature (~13 year old) CNCF-graduated project. Its early architectural bet on pull-based monitoring and a local TSDB (rather than a distributed backend) proved prescient. The codebase shows the tension of that success: high engineering standards coexist with large monolithic core files and a UI migration that reflects its age. The dependency exclusions point to growing pains with the Go ecosystem's evolution. The extensive service discovery surface (20+ providers) reflects community-driven growth rather than top-down design — a strength in breadth, but a maintenance tax.
