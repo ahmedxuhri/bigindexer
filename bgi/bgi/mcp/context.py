@@ -7,7 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter, defaultdict, deque
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +27,34 @@ def _normalize_path(path: str) -> str:
     return path.replace("\\", "/").lstrip("./")
 
 
+@dataclass(frozen=True)
+class PromptClass:
+    scope: str
+    confidence: float
+    needs_ast: bool
+    needs_call_graph: bool
+    needs_interfaces: bool
+    needs_repo_scope: bool
+    focal_file: str
+    focal_symbol: str
+    package_hint: str
+    signals: list[str]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "scope": self.scope,
+            "confidence": self.confidence,
+            "needs_ast": self.needs_ast,
+            "needs_call_graph": self.needs_call_graph,
+            "needs_interfaces": self.needs_interfaces,
+            "needs_repo_scope": self.needs_repo_scope,
+            "focal_file": self.focal_file,
+            "focal_symbol": self.focal_symbol,
+            "package_hint": self.package_hint,
+            "signals": self.signals,
+        }
+
+
 class ArchitectureContextService:
     """Query helper over BGI graph artifacts for MCP tools."""
 
@@ -40,6 +70,26 @@ class ArchitectureContextService:
         self._planner = None
         self._response_cache: dict[tuple[Any, ...], Any] = {}
         self.reload()
+
+    _FILE_HINT_RE = re.compile(
+        r"(?<![\w/.-])([\w./-]+\.(?:go|py|ts|tsx|js|jsx|java|rs|rb|php|c|cc|cpp|h|hpp|cs|kt|scala|lua))(?![\w/.-])",
+        re.IGNORECASE,
+    )
+    _SYMBOL_HINT_RE = re.compile(r"\b([A-Z][A-Za-z0-9_]{2,}|[a-z][A-Za-z0-9_]{2,})\b")
+    _PACKAGE_RE = re.compile(r"\b([a-z0-9_.-]+(?:/[a-z0-9_.-]+)+)\b", re.IGNORECASE)
+
+    _AST_TERMS = ("struct", "embed", "embedded", "generics", "type param", "ast", "parser", "build tag", "//go:build")
+    _CALLGRAPH_TERMS = ("goroutine", "channel", "chan", "deadlock", "race", "waitgroup", "select", "call graph", "fanout")
+    _INTERFACE_TERMS = ("interface", "implements", "satisfy", "satisfies", "mock", "contract")
+    _REPO_TERMS = (
+        "entire repo",
+        "repo-wide",
+        "across repository",
+        "whole codebase",
+        "global architecture",
+        "entire codebase",
+    )
+    _MODULE_TERMS = ("across packages", "cross-package", "module", "boundary", "architecture", "blast radius")
 
     def _load_graph(self) -> dict[str, Any]:
         if not self.graph_path.exists():
@@ -206,6 +256,249 @@ class ArchitectureContextService:
             "files": c.get("files", []),
             "member_count": len(c.get("members", [])),
         }
+
+    def classify_prompt(self, prompt: str) -> dict[str, Any]:
+        """Classify a prompt into scope and structural needs for staged MCP retrieval."""
+        key = ("classify_prompt", prompt)
+
+        def _build() -> dict[str, Any]:
+            p = prompt.strip()
+            low = p.lower()
+            file_hint = ""
+            package_hint = ""
+            symbol_hint = ""
+
+            file_match = self._FILE_HINT_RE.search(p)
+            if file_match:
+                file_hint = _normalize_path(file_match.group(1))
+
+            for m in self._PACKAGE_RE.finditer(p):
+                candidate = m.group(1)
+                if "." in candidate and "/" not in candidate:
+                    continue
+                if candidate.endswith(".go"):
+                    continue
+                package_hint = _normalize_path(candidate)
+                break
+
+            symbol_matches = self._SYMBOL_HINT_RE.findall(p)
+            if symbol_matches:
+                for token in symbol_matches:
+                    tlow = token.lower()
+                    if tlow in {"what", "where", "which", "when", "why", "does", "from", "with", "that", "this"}:
+                        continue
+                    symbol_hint = token
+                    break
+
+            needs_ast = any(t in low for t in self._AST_TERMS)
+            needs_call_graph = any(t in low for t in self._CALLGRAPH_TERMS)
+            needs_interfaces = any(t in low for t in self._INTERFACE_TERMS)
+            needs_repo_scope = any(t in low for t in self._REPO_TERMS)
+            has_module_signal = any(t in low for t in self._MODULE_TERMS)
+
+            if file_hint:
+                scope = "file"
+            elif package_hint:
+                scope = "package"
+            elif needs_repo_scope:
+                scope = "repository"
+            elif has_module_signal:
+                scope = "module"
+            else:
+                scope = "package"
+
+            confidence = 0.25
+            if file_hint:
+                confidence += 0.2
+            if package_hint:
+                confidence += 0.15
+            if needs_ast:
+                confidence += 0.12
+            if needs_call_graph:
+                confidence += 0.16
+            if needs_interfaces:
+                confidence += 0.12
+            if has_module_signal:
+                confidence += 0.08
+            if needs_repo_scope:
+                confidence += 0.05
+            confidence = max(0.05, min(0.95, round(confidence, 2)))
+
+            signals = []
+            if needs_ast:
+                signals.append("ast")
+            if needs_call_graph:
+                signals.append("call_graph")
+            if needs_interfaces:
+                signals.append("interfaces")
+            if has_module_signal:
+                signals.append("module")
+            if needs_repo_scope:
+                signals.append("repo_scope")
+            if file_hint:
+                signals.append("file_anchor")
+            if package_hint:
+                signals.append("package_anchor")
+
+            prompt_class = PromptClass(
+                scope=scope,
+                confidence=confidence,
+                needs_ast=needs_ast,
+                needs_call_graph=needs_call_graph,
+                needs_interfaces=needs_interfaces,
+                needs_repo_scope=needs_repo_scope,
+                focal_file=file_hint,
+                focal_symbol=symbol_hint,
+                package_hint=package_hint,
+                signals=signals,
+            )
+            return prompt_class.to_dict()
+
+        return self._cached(key, _build)
+
+    def _infer_package_scope(self, prompt_class: dict[str, Any]) -> str:
+        focal_file = prompt_class.get("focal_file", "")
+        if focal_file:
+            p = Path(focal_file)
+            parent = _normalize_path(str(p.parent))
+            return "" if parent == "." else parent
+        return prompt_class.get("package_hint", "")
+
+    @staticmethod
+    def _confidence_gain(
+        *,
+        focal_found: bool,
+        unresolved_refs: int,
+        coverage_ratio: float,
+        ambiguity: float,
+    ) -> float:
+        gain = (
+            (0.4 * float(unresolved_refs))
+            + (0.4 * (1.0 - max(0.0, min(1.0, coverage_ratio))))
+            + (0.2 * max(0.0, min(1.0, ambiguity)))
+        )
+        if not focal_found:
+            gain += 0.25
+        return round(min(1.0, gain), 3)
+
+    def guided_arch_context(self, prompt: str, max_items: int = 8) -> dict[str, Any]:
+        """
+        Build staged architecture context with scope-first escalation gates.
+
+        This keeps payloads small by default and escalates only when confidence gain is likely.
+        """
+        max_items = max(2, min(max_items, 20))
+        key = ("guided_arch_context", prompt, max_items)
+
+        def _build() -> dict[str, Any]:
+            prompt_class = self.classify_prompt(prompt)
+            package_scope = self._infer_package_scope(prompt_class)
+            focal_symbol = prompt_class.get("focal_symbol", "")
+            focal_file = prompt_class.get("focal_file", "")
+            scope = prompt_class.get("scope", "package")
+
+            thresholds = {
+                "package": 0.4,
+                "module": 0.65,
+                "repository": 0.85,
+            }
+
+            steps: list[dict[str, Any]] = []
+            focal_data: dict[str, Any] = {}
+            focal_found = False
+
+            if focal_file:
+                file_info = self.cluster_of_file(focal_file)
+                focal_data["cluster_of_file"] = file_info
+                steps.append({"tier": 1, "action": "cluster_of_file", "scope": "file"})
+                focal_found = bool(file_info.get("found"))
+
+                if focal_found:
+                    bridges = self.boundary_edges(focal_file, limit=min(6, max_items))
+                    focal_data["boundary_edges"] = bridges
+                    steps.append({"tier": 1, "action": "boundary_edges", "scope": "file"})
+            else:
+                symbol_query = focal_symbol or prompt.split(" ", 1)[0]
+                symbol_info = self.search_symbols(symbol_query, limit=min(6, max_items))
+                focal_data["search_symbols"] = symbol_info
+                steps.append({"tier": 1, "action": "search_symbols", "scope": "symbol"})
+                focal_found = bool(symbol_info.get("count"))
+
+            unresolved_refs = 0 if focal_found else 1
+            seed_coverage = 0.7 if focal_found else 0.2
+            ambiguity = 0.6 if prompt_class.get("needs_call_graph") else 0.35
+            gain = self._confidence_gain(
+                focal_found=focal_found,
+                unresolved_refs=unresolved_refs,
+                coverage_ratio=seed_coverage,
+                ambiguity=ambiguity,
+            )
+
+            package_data: dict[str, Any] = {}
+            if gain >= thresholds["package"] or scope in {"package", "module", "repository"}:
+                package_data["architecture_summary"] = self.architecture_summary(
+                    path_scope=package_scope,
+                    top_clusters=min(4, max_items),
+                    seam_limit=min(6, max_items),
+                )
+                steps.append(
+                    {
+                        "tier": 2,
+                        "action": "architecture_summary",
+                        "scope": package_scope or "repository_root",
+                    }
+                )
+                gain = self._confidence_gain(
+                    focal_found=focal_found,
+                    unresolved_refs=max(0, unresolved_refs - 1),
+                    coverage_ratio=0.85 if focal_found else 0.6,
+                    ambiguity=0.45 if prompt_class.get("needs_call_graph") else 0.25,
+                )
+
+            module_data: dict[str, Any] = {}
+            if (
+                gain >= thresholds["module"]
+                or scope in {"module", "repository"}
+                or prompt_class.get("needs_call_graph")
+                or prompt_class.get("needs_interfaces")
+            ):
+                seed = focal_symbol or focal_file or package_scope or prompt
+                module_data["impact_neighbors"] = self.impact_neighbors(seed, depth=2, limit=max_items)
+                module_data["high_coupling_seams"] = self.high_coupling_seams(package_scope, limit=min(8, max_items))
+                steps.append({"tier": 3, "action": "impact_neighbors", "scope": "module"})
+                steps.append({"tier": 3, "action": "high_coupling_seams", "scope": package_scope or "module"})
+                gain = self._confidence_gain(
+                    focal_found=True,
+                    unresolved_refs=0,
+                    coverage_ratio=0.92,
+                    ambiguity=0.15,
+                )
+
+            repo_data: dict[str, Any] = {}
+            classifier_confidence = float(prompt_class.get("confidence", 0.0))
+            if prompt_class.get("needs_repo_scope") and (
+                classifier_confidence >= thresholds["repository"] or (scope == "repository" and classifier_confidence >= 0.65)
+            ):
+                repo_data["architecture_summary"] = self.architecture_summary(
+                    path_scope="",
+                    top_clusters=min(4, max_items),
+                    seam_limit=min(6, max_items),
+                )
+                steps.append({"tier": 4, "action": "architecture_summary", "scope": "repository"})
+
+            return {
+                "prompt": prompt,
+                "classification": prompt_class,
+                "thresholds": thresholds,
+                "estimated_gain": gain,
+                "steps": steps,
+                "focal_context": focal_data,
+                "package_context": package_data,
+                "module_context": module_data,
+                "repository_context": repo_data,
+            }
+
+        return self._cached(key, _build)
 
     def cluster_of_file(self, file_path: str) -> dict[str, Any]:
         """Return cluster info for a file path."""

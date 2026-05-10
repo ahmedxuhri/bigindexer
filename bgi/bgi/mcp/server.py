@@ -64,6 +64,16 @@ def create_mcp_server(
         return service.architecture_summary(path_scope=path_scope, top_clusters=top_clusters, seam_limit=seam_limit)
 
     @mcp.tool()
+    def classify_prompt(prompt: str):
+        """Classify a prompt into scope and retrieval requirements."""
+        return service.classify_prompt(prompt=prompt)
+
+    @mcp.tool()
+    def guided_arch_context(prompt: str, max_items: int = 8):
+        """Get staged architecture context with scope-first escalation gates."""
+        return service.guided_arch_context(prompt=prompt, max_items=max_items)
+
+    @mcp.tool()
     def reload_artifacts():
         """Reload graph and fuse artifacts from disk."""
         return service.reload()

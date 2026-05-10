@@ -192,3 +192,39 @@ def test_response_cache_reuse_and_reload_invalidation(tmp_path: Path):
 
     seams_after = service.high_coupling_seams("", limit=10)
     assert seams_after["seam_count"] == 3
+
+
+def test_classify_prompt_defaults_to_package_scope(tmp_path: Path):
+    graph_path, fuse_path, _ = _build_artifacts(tmp_path)
+    service = ArchitectureContextService(str(graph_path), str(fuse_path))
+
+    classified = service.classify_prompt("How is AuthService wired with interfaces and goroutines?")
+    assert classified["scope"] == "package"
+    assert classified["needs_call_graph"] is True
+    assert classified["needs_interfaces"] is True
+    assert "call_graph" in classified["signals"]
+    assert "interfaces" in classified["signals"]
+
+
+def test_guided_arch_context_stages_without_repo_escalation(tmp_path: Path):
+    graph_path, fuse_path, _ = _build_artifacts(tmp_path)
+    service = ArchitectureContextService(str(graph_path), str(fuse_path))
+
+    guided = service.guided_arch_context("Trace impact of auth.py::AuthService::login across boundaries", max_items=6)
+    tiers = {step["tier"] for step in guided["steps"]}
+    assert 1 in tiers
+    assert tiers.issubset({1, 2, 3})
+    assert guided["repository_context"] == {}
+
+
+def test_guided_arch_context_repo_escalates_only_when_explicit_and_high_confidence(tmp_path: Path):
+    graph_path, fuse_path, _ = _build_artifacts(tmp_path)
+    service = ArchitectureContextService(str(graph_path), str(fuse_path))
+
+    guided = service.guided_arch_context(
+        "For the entire repo-wide architecture and cross-package boundaries in auth.py, map goroutines and interfaces.",
+        max_items=6,
+    )
+    assert guided["classification"]["needs_repo_scope"] is True
+    assert guided["classification"]["scope"] in {"file", "repository"}
+    assert guided["repository_context"] != {}
