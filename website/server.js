@@ -6,6 +6,7 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Middleware
 app.use(cors());
@@ -78,7 +79,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Big Indexer website running on port ${PORT}`);
-  console.log(`📍 Visit http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 Big Indexer website running on ${HOST}:${PORT}`);
+  console.log(`📍 Visit http://${HOST}:${PORT}`);
 });
