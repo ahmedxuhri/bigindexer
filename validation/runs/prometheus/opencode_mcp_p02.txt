@@ -1,0 +1,108 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m⚙ [0mbigindexer_architecture_summary {"top_clusters":8,"seam_limit":15}
+[0m⚙ [0mbigindexer_high_coupling_seams {"limit":20}
+[0m⚙ [0mbigindexer_boundary_edges {"limit":30}
+[0m⚙ [0mbigindexer_impact_neighbors {"symbol_or_file":"storage.Storage","depth":2,"limit":30}
+[0m
+[0m$ [0mls -d */
+cmd/
+compliance/
+config/
+discovery/
+docs/
+documentation/
+internal/
+model/
+notifier/
+plugins/
+prompb/
+promql/
+rules/
+schema/
+scrape/
+scripts/
+storage/
+template/
+tracing/
+tsdb/
+util/
+web/
+[0m
+[0m⚙ [0mbigindexer_search_symbols {"query":"Storage interface","limit":10}
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"storage/","limit":20}
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"storage/storage.go","limit":20}
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"scrape/scrape.go","limit":20}
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"promql/engine.go","limit":20}
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"tsdb/db.go","limit":20}
+[0m⚙ [0mbigindexer_high_coupling_seams {"file_or_cluster":"storage/storage.go","limit":15}
+[0m⚙ [0mbigindexer_high_coupling_seams {"file_or_cluster":"scrape/scrape.go","limit":15}
+[0m⚙ [0mbigindexer_high_coupling_seams {"file_or_cluster":"promql/engine.go","limit":15}
+[0m⚙ [0mbigindexer_impact_neighbors {"symbol_or_file":"main.go","depth":2,"limit":40}
+[0m✱ [0mGrep "type Storage interface"[90m in storage · 1 match[0m
+[0m✱ [0mGrep "type ScrapeManager interface|type Manager interface"[90m in scrape · 0 matches[0m
+[0m✱ [0mGrep "QueryEngine|type Engine"[90m in promql · 17 matches[0m
+[0m→ [0mRead storage/interface.go[90m [offset=75, limit=60][0m
+[0m→ [0mRead promql/engine.go[90m [offset=120, limit=50][0m
+[0m→ [0mRead cmd/prometheus/main.go[90m [limit=80][0m
+[0m✱ [0mGrep "type Appendable interface"[90m in storage · 1 match[0m
+[0m✱ [0mGrep "QueueManager|RemoteStorage"[90m in storage/remote · 68 matches[0m
+[0m→ [0mRead cmd/prometheus/main.go[90m [offset=80, limit=80][0m
+[0m→ [0mRead storage/interface.go[90m [offset=60, limit=30][0m
+[0m→ [0mRead cmd/prometheus/main.go[90m [offset=200, limit=100][0m
+Here's the architectural analysis of Prometheus:
+
+## Top-Level Modules (architectural clusters)
+
+| Module | Role | Size |
+|---|---|---|
+| **`prompb/`** | Protobuf types (generated) | ~475 units across 2 files |
+| **`tsdb/`** | Time-series database engine | ~4 clusters: `head.go`, `db.go`, tests |
+| **`promql/`** | Query engine (`engine.go`, `functions.go`, `parser/`) | ~2 large clusters |
+| **`scrape/`** | Target scraping subsystem | large test + production clusters |
+| **`storage/`** | Abstract storage interfaces | fan-in/fan-out nexus |
+| **`cmd/prometheus/`** | Main orchestrator (`main.go`) | central wiring hub |
+| **`storage/remote/`** | Remote write (`QueueManager`) | outbound integration |
+| **`config/`** | Configuration parsing | heavily consumed |
+| **`discovery/`** | Service discovery | moderate |
+| **`notifier/`** | Alert notification | moderate |
+| **`rules/`** | Rule evaluation | moderate |
+| **`web/`** | HTTP API/UI | consumer of most modules |
+
+## Integration Seams (strongest coupling)
+
+1. **`main.go` → everything** — The central orchestrator wires scrape → storage → promql → rules → web. Blast radius: ~1440 impacted units across 10+ clusters.
+
+2. **`promql/engine.go` ↔ `storage.Queryable`** — The `QueryEngine` interface (line 125) depends on `storage.Queryable`. This is the primary read-path seam. PromQL knows nothing about TSDB — only the `Querier` interface.
+
+3. **`scrape/` ↔ `storage.Appendable`** — The scrape loop ingests samples via `storage.Appendable`. This is the primary write-path seam. Scrape also passes `storage.Storage` for metadata writing.
+
+4. **`storage/remote/` ↔ `tsdb/wal`** — The `QueueManager` is a WAL watcher — it reads the TSDB WAL to ship samples remotely. This is a log-based async coupling.
+
+5. **`rules/` ↔ `promql.QueryEngine` + `storage.Queryable`** — Rules evaluates queries via `QueryEngine` and writes results back through `storage.Appendable`.
+
+6. **`web/` → many** — HTTP API depends on `promql.QueryEngine`, `storage.Storage`, `rules.Manager`, `scrape.Manager`, `notifier.Manager`, `config`, etc.
+
+## Strongest Coupling Points
+
+- **`storage.Storage` interface** (`storage/interface.go:82`) — defines the contract that TSDB implements and that scrape/rules/remote all consume. This is the **keystone interface** of the entire system.
+- **TSDB WAL** — used by both TSDB itself and the remote write `QueueManager`. A second, implicit coupling path between TSDB and remote storage.
+- **`config.Config`** — consumed by every subsystem. The main `flagConfig` in `main.go:160` is a giant struct with options for all subsystems.
+- **`model/` package** — shared types (`labels`, `histogram`, `exemplar`, `metadata`, `relabel`) used across *all* layers.
+
+## Architectural Summary
+
+```
+discovery ──► scrape ──► storage.Storage ──► tsdb (local)
+                │            │
+                │            ├──► storage/remote (WAL watcher → remote write)
+                │            │
+                ▼            ▼
+           rules ──► promql.QueryEngine ──► storage.Queryable
+                         │
+                         ▼
+                      web (HTTP API/UI)
+```
+
+The system is a **layered pipeline with a central interface (`storage.Storage`) as the primary decoupling mechanism**. The major integration seams are all defined by Go interfaces in `storage/`, not by concrete types — which is good architecture. The main risk areas are the `config` package (too many consumers with implicit coupling) and `main.go` (too much orchestration logic in one place).

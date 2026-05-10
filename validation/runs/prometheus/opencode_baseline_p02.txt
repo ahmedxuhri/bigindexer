@@ -1,0 +1,97 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m→ [0mRead .
+[0m✱ [0mGlob "**/go.mod"[90m in . · 5 matches[0m
+[0m→ [0mRead go.mod[90m [limit=30][0m
+[0m→ [0mRead cmd
+[0m→ [0mRead storage
+[0m→ [0mRead scrape
+[0m→ [0mRead tsdb
+[0m→ [0mRead web
+[0m→ [0mRead rules
+[0m→ [0mRead notifier
+[0m→ [0mRead discovery
+[0m→ [0mRead promql
+[0m→ [0mRead storage/interface.go
+[0m→ [0mRead scrape/manager.go[90m [limit=80][0m
+[0m→ [0mRead rules/manager.go[90m [limit=80][0m
+[0m→ [0mRead notifier/manager.go[90m [limit=80][0m
+[0m→ [0mRead storage/remote
+[0m✱ [0mGlob "cmd/prometheus/*.go"[90m in . · 9 matches[0m
+[0m→ [0mRead storage/fanout.go[90m [limit=60][0m
+[0m→ [0mRead cmd/prometheus/main.go[90m [limit=150][0m
+[0m✱ [0mGrep "scrape\.NewManager|rules\.NewManager|notifier\.NewManager|promql\.NewEngine|fanout\.New"[90m in cmd · 6 matches[0m
+[0m→ [0mRead cmd/prometheus/main.go[90m [offset=880, limit=200][0m
+[0m→ [0mRead config
+[0m→ [0mRead web/web.go[90m [limit=100][0m
+[0m→ [0mRead config/config.go[90m [limit=60][0m
+Here is the architectural analysis:
+
+---
+
+## Architectural Boundaries
+
+The codebase has **five macro modules** separated by interface boundaries:
+
+| Module | Responsibility | Exported Interface/API |
+|---|---|---|
+| **`tsdb/`** | Local time-series storage (WAL, blocks, compaction) | Implements `storage.Storage` |
+| **`storage/remote/`** | Remote read/write | Implements `storage.Storage` |
+| **`scrape/`** | Prometheus HTTP target scraping | Depends on `storage.Appendable` |
+| **`promql/`** | Query engine | Depends on `storage.Queryable` |
+| **`rules/`** | Recording & alerting rule evaluation | Depends on `storage.Appendable` + `storage.Queryable` + `notifier` + `promql` |
+| **`notifier/`** | Alert dispatch to Alertmanager | Depends on `discovery/targetgroup` |
+| **`discovery/`** | Service discovery (30+ providers) | Outputs `targetgroup.Group` |
+| **`web/`** | HTTP API + UI | Orchestrator — imports everything |
+| **`config/`** | YAML config parsing | Imports `discovery` + `storage/remote` auth |
+
+---
+
+## Integration Seams
+
+The three critical seams:
+
+1. **`storage.Storage` / `storage.Appendable` / `storage.Queryable`** — the central interfaces. All data producers (`scrape`, `rules`) write through it; all consumers (`promql`, `rules`, `web/api`) read through it.
+2. **`discovery/targetgroup.Group`** — the SD output contract. `discovery.Manager` feeds `[]*targetgroup.Group` into `scrape.Manager` and `notifier.Manager` via `ApplyConfig()`.
+3. **`rules.QueryFunc` / `rules.NotifyFunc`** — function-typed seams decoupling rule evaluation from PromQL execution and alert dispatch.
+
+---
+
+## Strongest Coupling Points
+
+**1. `rules` → `notifier` + `promql` (direct imports)**
+`rules/manager.go` imports `notifier` and `promql` (and `promql/parser`). This is the tightest intra-repo coupling: the rule manager constructs PromQL queries directly and sends alerts directly. Both are hard dependencies, not interface-decoupled.
+
+**2. `web` → everything (hub-and-spoke)**
+`web/web.go` directly imports `scrape`, `rules`, `notifier`, `promql`, `promql/parser`, `storage`, `config`, `template`. The `web.Handler` struct holds references to all managers. Any change to the scrapers' or rules' public API ripples here.
+
+**3. `config` → `discovery` (schema coupling)**
+`config/config.go` directly imports `discovery` — every SD provider's config struct is embedded in `config.ScrapeConfig`. Adding a new SD provider requires changes in both `discovery/` and `config/`. The config package also imports `storage/remote/azuread` and `storage/remote/googleiam` for auth.
+
+**4. `scrape` → `storage` (performance-critical append path)**
+The scrape loop calls `storage.Appendable.Append()` (and the new AppendableV2) on every scrape. The `storage/fanout` layer and `storage/Appender` interface are in the hot path. This is a vertical coupling with hard performance constraints.
+
+**5. `storage/fanout` + `storage/remote` → local TSDB**
+`cmd/prometheus/main.go:896` creates `fanoutStorage = NewFanout(logger, localStorage, remoteStorage)`. The fanout's primary/secondary semantics (primary errors are fatal, secondary errors are warnings) encode an assumption that `tsdb` is always "the truth" and remote is best-effort. This hierarchical assumption propagates through the entire read path.
+
+**6. `discovery.Manager` ↔ `scrape.Manager` / `notifier.Manager` (lifecycle coupling)**
+Despite the `targetgroup.Group` data seam, the *lifecycle* is tightly coupled at `main.go` — the reload/apply-config path chains `discoveryManagerScrape.ApplyConfig()` → `scrapeManager.ApplyConfig()` in sequence, and a config reload touches all three managers atomically.
+
+---
+
+**Summary diagram** (data flow, not import graph):
+
+```
+discovery ──targetgroup──▶ scrape ──Appendable──▶ fanout ──primary──▶ tsdb
+                          │                        └─secondary──▶ remote
+                          │
+discovery ──targetgroup──▶ notifier ──HTTP──▶ Alertmanager
+                          ▲
+rules ──QueryFunc──────▶ promql ──Queryable──▶ fanout
+  │                                              │
+  └──NotifyFunc──▶ notifier                      │
+  └──Appendable──────────────────────────────────▶ fanout
+
+web (orchestrates all of the above)
+```

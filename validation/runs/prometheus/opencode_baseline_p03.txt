@@ -1,0 +1,60 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m✱ [0mGrep "fanout\.Querier"[90m in . · 0 matches[0m
+[0m✱ [0mGrep "type Querier struct"[90m in storage/fanout.go · 0 matches[0m
+[0m→ [0mRead storage/fanout.go
+[0m✱ [0mGrep "type Querier interface"[90m in storage · 1 match[0m
+[0m✱ [0mGrep "Querier interface"[90m in storage · 5 matches[0m
+[0m✱ [0mGrep "\.Querier\("[90m in storage/fanout.go · 2 matches[0m
+The `fanout` type in `storage/fanout.go` is unexported. Its `Querier()` method returns the `storage.Querier` interface. Let me find all related types and usages.
+[0m→ [0mRead storage/interface.go[90m [offset=115, limit=60][0m
+[0m✱ [0mGrep "func \(.*\) Querier\("[90m in . · 17 matches[0m
+[0m✱ [0mGrep "Querier\b"[90m in storage · 326 matches[0m
+[0m✱ [0mGrep "NewFanout\("[90m in . · 8 matches[0m
+[0m✱ [0mGrep "fanout\b"[90m in storage · 12 matches[0m
+[0m→ [0mRead storage/interface.go[90m [offset=95, limit=25][0m
+[0m→ [0mRead cmd/prometheus/main.go[90m [offset=885, limit=25][0m
+[0m✱ [0mGrep "\.Querier\(mint"[90m in . · 18 matches[0m
+[0m✱ [0mGrep "\.Select\(ctx"[90m in . · 77 matches[0m
+Now I have a complete picture. Here's the blast radius summary:
+
+---
+
+**`fanout.Querier()`** (at `storage/fanout.go:74`) is the `Querier(mint, maxt)` method on the unexported `fanout` struct. It returns a `storage.Querier` interface. The blast radius depends on what kind of change you're making:
+
+### 1. If you change the **return type or signature** of `Querier()`:
+
+Breaks the `Storage`/`Queryable` interface contract, affecting **every caller** through that interface:
+
+- **`promql/engine.go:781`** — the PromQL engine retrieves a querier for every query
+- **`rules/group.go:750`** — rule evaluation (recording + alerting)
+- **`web/federate.go:80`** — the `/federate` endpoint
+- **`storage/remote/read_handler.go:136`** — remote read handler
+- **`storage/remote/storage.go:166`** — remote storage internally (when chaining)
+
+### 2. If you change the **internal logic** (e.g. how it merges, error handling, or which queriers it constructs):
+
+Affects **all downstream query consumers** through the returned `Querier` interface calls:
+
+- **`Querier.Select()`** — PromQL engine (`promql/engine.go:1059`), rules (`rules/alerting.go:297`), federation (`web/federate.go:98`), remote read handler (`storage/remote/read_handler.go:160`), promtool (`cmd/promtool/tsdb.go:729`)
+- **`Querier.LabelValues()` / `Querier.LabelNames()`** — through various `LabelQuerier` consumers
+- **`Querier.Close()`** — deferred cleanup at call sites
+
+### 3. Other implementations of the same `Querier` interface (if you change it):
+
+- `tsdb/db.go:2315` — TSDB `*DB.Querier()`
+- `tsdb/db.go:705` — TSDB `*DBReadOnly.Querier()`
+- `tsdb/agent/db.go:846` — Agent mode `*DB.Querier()`
+- `storage/remote/read.go:52` — Remote client `*sampleAndChunkQueryableClient.Querier()`
+- `storage/remote/storage.go:159` — Remote `*Storage.Querier()`
+- `storage/interface.go:118` — `MockQueryable.Querier()` (tests)
+- Various test helpers in `web/`, `promql/`, `scrape/`, `rules/`
+
+### 4. The fanout call chain itself:
+
+`fanout.Querier()` calls `f.primary.Querier()` and `storage.Querier()` on each secondary, then wraps results in `NewMergeQuerier()` (`storage/merge.go:46`), which internally wraps primary+secondary queriers into a `mergeGenericQuerier` that also implements `Querier`. So the merge layer (`storage/merge.go`, `storage/secondary.go`, `storage/generic.go`) would be directly affected.
+
+### 5. The single production instantiation:
+
+`cmd/prometheus/main.go:896` — `fanoutStorage = storage.NewFanout(logger, localStorage, remoteStorage)` — every PromQL query, rule evaluation, and federation call routes through this instance.

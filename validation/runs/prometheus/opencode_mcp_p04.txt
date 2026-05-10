@@ -1,0 +1,37 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m• [0mExplore HTTP API architecture[90m Explore Agent[0m
+[0m✓ [0mExplore HTTP API architecture[90m Explore Agent[0m
+The existing `serveTSDBStatus` handler at `web/api/v1/api.go:1915` already exposes label cardinality stats via `api.db.Stats()`, gated by the `TSDBAdminStats` interface. Here's the safest path:
+
+## 1. Add a new handler method on `*API`
+
+Follow the `serveTSDBStatus` pattern exactly:
+
+```go
+func (api *API) labelCardinality(r *http.Request) apiFuncResult {
+    // parse params with existing helpers (parseLimitParam, etc.)
+    // call api.db.Stats(statsByLabelName, limit)
+    // return apiFuncResult{data, err, warnings, nil}
+}
+```
+
+## 2. Register in `Register()` (line ~450)
+
+Use `wrapAgent()` (not `wrap()`) since it depends on TSDB being ready:
+
+```go
+r.Get("/status/tsdb/label_cardinality", wrapAgent(api.labelCardinality))
+```
+
+## 3. Keep it behind `TSDBAdminStats`
+
+Do **not** go through `api.Queryable.Querier()` — the `Stats()` method on `TSDBAdminStats` is the canonical, efficient way to get cardinality data. It's already wired up in `web.go` and handles the TSDB-specific internal stats.
+
+**Key safety rules:**
+- Use `wrapAgent()` (blocks in agent mode, calls `ready()` middleware)
+- Close any querier via `finalizer`, never via `defer` (the `wrap()` helper runs finalizer after response)
+- Reuse `parseLimitParam`, `parseTimeParam`, `parseMatchersParam` helpers
+- Define response types as simple `json:"name"` structs, no pointer types unless needed
+- Add an OpenAPI path spec in `openapi_paths.go` following the existing `serveTSDBStatus` pattern

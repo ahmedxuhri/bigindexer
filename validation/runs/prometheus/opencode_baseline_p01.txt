@@ -1,0 +1,39 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m→ [0mRead .
+[0m• [0mExplore Prometheus architecture[90m Explore Agent[0m
+[0m✓ [0mExplore Prometheus architecture[90m Explore Agent[0m
+Here's the architecture overview:
+
+**Core data flow:** `scrape → storage → query`, with `rules` and `notifier` as secondary producers/consumers.
+
+**Main modules:**
+
+| Module | Responsibility |
+|--------|---------------|
+| `cmd/prometheus/main.go` | Wires all components, manages lifecycle (startup/reload/shutdown) via `run.Group` |
+| `discovery/` | Discovers scrape targets & Alertmanager instances. Providers implement `Discoverer` interface, `Manager` coalesces updates onto `SyncCh()` |
+| `scrape/` | Receives target groups from discovery, creates per-job `scrapePool`s. Each target loop scrapes HTTP, parses metrics, appends via `storage.AppendableV2` |
+| `storage/` | Key interfaces: `Appendable{V2}`, `Queryable`, `ChunkQueryable`. `Fanout` multiplexes writes to local TSDB + remote write, merges reads |
+| `tsdb/` | Local time-series DB: in-memory Head → WAL → compressed Blocks. Optional OOO head, exemplar buffer. Agent mode is write-only (WAL + forward) |
+| `promql/` | Query engine: parses PromQL → AST → execution plan → calls `Querier.Select()`. Returns Vector/Matrix/Scalar |
+| `rules/` | Periodically evaluates rule groups. Recording rules write results back to storage; alerting rules send to notifier |
+| `notifier/` | Dispatches alerts to Alertmanager instances (discovered via SD) with batching |
+| `web/` | HTTP handler: API v1, UI, `/federate`, remote write/OTLP receivers, lifecycle endpoints |
+
+**Module boundaries are defined by interfaces:**
+- `storage.Storage` (= `Appendable` + `Queryable`) connects scrape→storage and storage→query
+- `discovery.Discoverer` defines SD provider contract
+- `promql.QueryEngine` isolates the query engine
+- `rules.QueryFunc` / `rules.NotifyFunc` bridge rules→engine and rules→notifier
+
+**Data flow:**
+```
+Config → discovery.Manager → SyncCh → scrape.Manager → HTTP scrape → textparse
+  → storage.Fanout → [tsdb.DB (primary) + remoteStorage (secondary)]
+  → promql.Engine ← rules.Manager → notifier.Manager → Alertmanager
+  → web.Handler exposes everything via REST API
+```
+
+Writes fan out to local TSDB (durable, queryable) and remote write (best-effort). Reads merge primary + secondary. Reloads are ordered through a reloader chain triggered by SIGHUP or `/-/reload`.

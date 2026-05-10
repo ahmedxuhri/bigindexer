@@ -4,7 +4,7 @@
 
 ## What We Measured
 
-We ran **Opencode** (AI coding assistant) on 3 public Python repos using
+We ran **Opencode** (AI coding assistant) on 4 public repos (3 Python + 1 Go) using
 two modes:
 
 - **Baseline** — standard Opencode session, no BGI context  
@@ -20,11 +20,11 @@ and safe implementation path.
 
 | Metric | Baseline | **MCP** | Δ |
 |---|---|---|---|
-| Evidence coverage | 69.7% | **80.3%** | +10.6% |
-| Boundary accuracy | 0.91 | **1.0** | +0.09 |
-| Actionability (1–5) | 4.09 | **4.09** | +0.0 |
+| Evidence coverage | 73.8% | **81.5%** | +7.7% |
+| Boundary accuracy | 0.93 | **1.0** | +0.07 |
+| Actionability (1–5) | 4.07 | **4.07** | +0.0 |
 | Hallucination flags | 0 | **0** | 0 |
-| Median latency | 131.3s | 59.1s | — |
+| Median latency | 113.7s | 60.1s | — |
 
 ---
 
@@ -38,6 +38,8 @@ and safe implementation path.
 | fastapi      | **MCP**  | 3 | 54.8s   | 66.7% | 1.00 | 4.33 | 0 |
 | pydantic     | Baseline | 4 | 192.2s  | 48.6% | 0.75 | 4.00 | 0 |
 | pydantic     | **MCP**  | 4 | 63.3s   | 86.7% | 1.00 | 4.00 | 0 |
+| prometheus   | Baseline | 4 | 87.3s   | 85.0% | 1.00 | 4.00 | 0 |
+| prometheus   | **MCP**  | 4 | 112.7s  | 85.0% | 1.00 | 4.00 | 0 |
 
 ---
 
@@ -55,10 +57,20 @@ All boundary accuracy scores perfect (1.0) in both modes — Django's explicit a
 helps baseline too, but MCP gave consistently higher coverage.
 
 ### fastapi
-Boundary accuracy: perfect (1.0) in both modes.
-Evidence coverage was higher baseline on some prompts (p03 MCP = 33.3%) — this is expected
-when MCP provides focused context that the model interprets narrowly.
-This is an **area for prompt tuning** in the MCP tool, not a regression.
+Boundary accuracy: perfect (1.0) in both modes.  
+Evidence coverage was higher in baseline on p03/p04 (MCP = 33.3% / 66.7% vs baseline = 90% / 100%).
+Raw run analysis shows the MCP model accepted architectural summary context earlier and did fewer
+granular file-level verifications, while baseline performed exhaustive file reads. This is a real
+tradeoff we are documenting transparently.
+
+### prometheus (Go)
+Prometheus adds a non-Python repo to the sample. In this batch:
+- Evidence coverage remained flat (85.0% baseline vs 85.0% MCP)
+- Boundary accuracy stayed perfect in both modes
+- MCP was slower on median latency (112.7s vs 87.3s)
+
+This is an important neutral finding: MCP gains are strongest in repos where baseline models are
+architecturally blind; gains are smaller when baseline exploration is already strong.
 
 ---
 
@@ -66,7 +78,7 @@ This is an **area for prompt tuning** in the MCP tool, not a regression.
 
 | Item | Detail |
 |---|---|
-| Repos | tiangolo/fastapi, django/django, pydantic/pydantic-core |
+| Repos | tiangolo/fastapi, django/django, pydantic/pydantic-core, prometheus/prometheus |
 | CLI | opencode 1.14.41 |
 | Model | deepseek-v4-flash |
 | MCP server | `bgi mcp --graph ... --fuse-graph ...` |
@@ -74,6 +86,7 @@ This is an **area for prompt tuning** in the MCP tool, not a regression.
 | Boundary accuracy | 0/1 whether seam boundaries are correctly identified |
 | Actionability | 1–5 rubric: 5 = immediately actionable, 1 = vague |
 | Hallucination flags | Count of factually incorrect module/file claims |
+| Full rubric | [validation/SCORING_RUBRIC.md](../validation/SCORING_RUBRIC.md) |
 
 ---
 

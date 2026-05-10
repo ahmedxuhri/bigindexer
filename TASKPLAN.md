@@ -91,14 +91,23 @@ Next for MCP track:
 3. ~~Add thin website/waitlist flow on `bigindexer.com`~~ - **COMPLETE (Step 3)**
 4. ~~Use `validation/` workspace for managed A/B runs and public evidence collection~~ - **COMPLETE (Step 4)**
 
+## Phase 9 Validation Credibility Fixes - COMPLETE
+
+Responding to external review feedback (four concrete gaps):
+
+1. **Transparency** - Published scoring rubric + raw outputs → `validation/SCORING_RUBRIC.md` ✅
+2. **FastAPI regression** - p03/p04 drop explained rigorously on `/validation` and rubric ✅
+3. **Expand sample** - Added Prometheus (Go) A/B run: cross-language evidence ✅
+4. **Limitations section** - Added honest limitations to `/validation` page ✅
+
 Phase 8 Step 4 evidence (A/B validation runs) - COMPLETE:
 
-- **Repos**: tiangolo/fastapi, django/django, pydantic/pydantic-core (3 repos × 4 prompts × 2 modes = 22 scored runs)
+- **Repos**: tiangolo/fastapi, django/django, pydantic/pydantic-core, prometheus/prometheus (4 repos, 30 scored runs)
 - **CLI**: opencode 1.14.41, model: deepseek-v4-flash
-- **Evidence coverage**: 69.7% baseline → 80.3% MCP (+10.6 pp)
-- **Boundary accuracy**: 0.91 baseline → 1.00 MCP (perfect)
+- **Evidence coverage**: 73.8% baseline → 81.5% MCP (+7.7 pp)
+- **Boundary accuracy**: 0.93 baseline → 1.00 MCP (perfect)
 - **Hallucinations**: 0 in both modes
-- **Median latency**: 131.3s baseline → 59.1s MCP (55% faster)
+- **Median latency**: 113.7s baseline → 60.1s MCP (47% faster)
 - **Key finding**: pydantic-core p01 baseline had 0% coverage, MCP brought it to 80%
 - **Public page**: `https://bigindexer.com/validation`
 - **Public doc**: `docs/VALIDATION_EVIDENCE.md`

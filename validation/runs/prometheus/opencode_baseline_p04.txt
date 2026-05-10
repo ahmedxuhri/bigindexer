@@ -1,0 +1,20 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m• [0mExplore HTTP API architecture[90m Explore Agent[0m
+Let me explore the existing API architecture to give you a precise answer.
+[0m✓ [0mExplore HTTP API architecture[90m Explore Agent[0m
+Based on the architecture, the safest approach is to follow the exact same pattern as existing endpoints like `/status/tsdb` and `/status/buildinfo`. Here's the minimal recipe:
+
+1. **Define a response struct** in `web/api/v1/api.go` (e.g., `LabelCardinalityStatus`) with `json:"..."` tags
+2. **Add a handler method** on `*API` returning `apiFuncResult` (the idiomatic wrapper)
+3. **Register the route** in the `Register()` method with `r.Get("/status/cardinality", wrap(api.serveLabelCardinality))`
+4. **Add OpenAPI metadata** in `openapi_paths.go` to pass the golden spec test (`make openapi-update` if needed)
+
+The critical safety elements:
+- Use `wrap()` (not `wrapAgent()`) unless you need agent-mode gating — this ensures CORS, readiness checks, compression, and error wrapping are applied consistently
+- Access TSDB cardinality data through `api.db.Stats()` (already used by `serveTSDBStatus`) — this goes through the `TSDBAdminStats` interface, respecting the 30-second cache in `tsdb/head.go`
+- If the query could be expensive, accept a `?limit=N` parameter (as `serveTSDBStatus` does) to cap resource usage
+- Return through `apiFuncResult{data, nil, nil, nil}` — the `wrap()` layer serializes it into the standard `{"status":"success","data":...}` envelope
+
+You should **not** bypass `wrap()` unless you need a non-JSON response format. The existing `/status/tsdb` endpoint already exposes cardinality data, so consider whether a dedicated endpoint is needed or whether extending the `TSDBStatus` response field set is simpler.

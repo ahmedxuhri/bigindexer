@@ -1,0 +1,47 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m⚙ [0mbigindexer_impact_neighbors {"symbol_or_file":"storage/fanout.go","depth":2,"limit":50}
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"storage/fanout.go","limit":30}
+[0m⚙ [0mbigindexer_architecture_summary {"path_scope":"storage","top_clusters":5,"seam_limit":10}
+[0m✱ [0mGrep "fanout\.Querier|fanoutQuerier"[90m 0 matches[0m
+[0m⚙ [0mbigindexer_search_symbols {"query":"fanout.Querier","limit":20}
+[0m→ [0mRead storage/fanout.go
+[0m✱ [0mGrep "\bfanout\b"[90m in storage · 12 matches[0m
+[0m✱ [0mGrep "NewFanout\("[90m 8 matches[0m
+[0m✱ [0mGrep "\.Querier\("[90m in storage · 8 matches[0m
+[0m✱ [0mGrep "NewMergeQuerier\("[90m 19 matches[0m
+[0m✱ [0mGrep "type Storage interface"[90m 1 match[0m
+[0m✱ [0mGrep "func.* Storage\) Querier\("[90m 0 matches[0m
+[0m✱ [0mGrep "type Querier interface"[90m 1 match[0m
+[0m→ [0mRead storage/interface.go[90m [offset=80, limit=80][0m
+[0m✱ [0mGrep "\.Querier\("[90m 151 matches[0m
+[0m✱ [0mGrep "\.Querier\("[90m in web · 5 matches[0m
+[0m✱ [0mGrep "\.Querier\("[90m in rules · 5 matches[0m
+[0m✱ [0mGrep "Queryable\.Querier\("[90m 4 matches[0m
+The `fanout.Querier` (`storage/fanout.go:74`) has a **very broad blast radius** — it's on the read path for essentially all query operations in Prometheus.
+
+**How it's reached:**
+- The `fanout` struct is created in exactly **1 production site**: `cmd/prometheus/main.go:896` via `NewFanout(logger, localStorage, remoteStorage)` and assigned to `Storage fanoutStorage`.
+- Every query eventually calls `.Querier()` on this object through the `Queryable` interface.
+
+**Direct callers of `.Querier()` on the fanout instance (4 production callers):**
+- `web/federate.go:80` — federation endpoint
+- `web/api/v1/api.go:783,871,986` — HTTP API (query, query_range, series, labels, etc.)
+- `rules/group.go:750` — rule evaluation
+
+**What it calls internally:**
+- `f.primary.Querier(mint, maxt)` on the primary Storage (local TSDB)
+- `storage.Querier(mint, maxt)` on each secondary Storage (remote storage endpoints)
+
+**What it returns:**
+- `NewMergeQuerier` (`storage/merge.go:46`) — which is also directly used in `tsdb/db.go:2388` and `storage/remote/storage.go:172`
+
+**Downstream consumers (indirectly via the returned `Querier` interface):**
+- `promql/engine.go` PromQL evaluation (via `Queryable`)
+- `storage/fanout_test.go` tests
+- `storage/merge_test.go`
+- All `tsdb/*_test.go` files that test query behavior
+- All `web/api/v1/api_test.go` and `rules/manager_test.go` tests
+
+**Summary:** Changing `fanout.Querier` affects **every read path in Prometheus** — APIs, rules, federation, and all query evaluation. You'd need to test across `storage/`, `web/api/v1/`, `rules/`, `promql/`, and `tsdb/`.

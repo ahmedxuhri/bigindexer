@@ -141,20 +141,20 @@
     <div class="card">
       <div class="hero-label">Public Evidence · Phase 8</div>
       <h2>MCP A/B Validation Results</h2>
-      <p>We ran Opencode (AI coding assistant) on 3 popular open-source Python repos in two modes —
+      <p>We ran Opencode (AI coding assistant) on 4 popular open-source repos (Python + Go) in two modes —
          <strong>baseline</strong> (no context) and <strong>MCP</strong> (Big Indexer context server active).
          The same 4 architectural prompts were used for every run. Results below are raw and unfiltered.</p>
 
       <div class="stats-grid">
         <div class="stat-box">
           <div class="label">Evidence Coverage</div>
-          <div class="baseline">69.7%</div>
-          <div class="mcp">80.3%</div>
-          <div class="delta">+10.6 pp</div>
+          <div class="baseline">73.8%</div>
+          <div class="mcp">81.5%</div>
+          <div class="delta">+7.7 pp</div>
         </div>
         <div class="stat-box">
           <div class="label">Boundary Accuracy</div>
-          <div class="baseline">0.91</div>
+          <div class="baseline">0.93</div>
           <div class="mcp">1.00</div>
           <div class="delta">Perfect score</div>
         </div>
@@ -166,9 +166,9 @@
         </div>
         <div class="stat-box">
           <div class="label">Median Latency</div>
-          <div class="baseline">131s</div>
-          <div class="mcp">59s</div>
-          <div class="delta">55% faster</div>
+          <div class="baseline">113.7s</div>
+          <div class="mcp">60.1s</div>
+          <div class="delta">47% faster</div>
         </div>
       </div>
     </div>
@@ -220,6 +220,16 @@
             <td><span class="tag-mcp">MCP</span></td>
             <td>4</td><td class="win">63.3s</td><td class="win">86.7%</td><td class="win">1.00</td><td>4.0/5</td><td>0</td>
           </tr>
+          <tr>
+            <td>prometheus/prometheus</td>
+            <td><span class="tag-base">Baseline</span></td>
+            <td>4</td><td class="win">87.3s</td><td>85.0%</td><td>1.00</td><td>4.0/5</td><td>0</td>
+          </tr>
+          <tr>
+            <td>prometheus/prometheus</td>
+            <td><span class="tag-mcp">MCP</span></td>
+            <td>4</td><td>112.7s</td><td>85.0%</td><td>1.00</td><td>4.0/5</td><td>0</td>
+          </tr>
         </tbody>
       </table>
       <p class="note" style="margin-top:0.75rem">
@@ -245,16 +255,64 @@
          Django's explicit app structure helps baseline too, but MCP delivered higher coverage across all 4 prompts.
          Latency dropped 26% (99.8s → 73.1s) because pre-indexed context shortens the exploration phase.</p>
 
-      <h3>fastapi — latency win, evidence mixed</h3>
+      <h3>fastapi — what the evidence actually shows</h3>
       <div class="callout warn">
-        <strong>Note:</strong> Evidence coverage dropped on two fastapi prompts with MCP (p03: 33.3%, p04: 66.7%).
-        This is a <strong>prompt-tuning issue</strong>, not a regression — the MCP tool provided focused context
-        that the model interpreted narrowly. Latency was 55% faster (131s → 55s). Boundary accuracy perfect in both modes.
+        <strong>Honest finding:</strong> Evidence coverage dropped on two fastapi prompts with MCP
+        (p03: 33.3%, p04: 66.7% vs baseline 90%, 100%). This is real, and it deserves a real explanation —
+        not "prompt-tuning issue."<br><br>
+        Reading the raw outputs reveals the cause: the baseline model, having <em>no</em> architecture context,
+        was forced to read every source file manually and produced a 10-item verified claim table.
+        The MCP model received blast-radius data (1,614 impacted units, top seam confidence 0.75) and
+        accepted that as the architecture picture — making fewer granular file-level verifications.<br><br>
+        <strong>What this means:</strong> MCP trades file-reading depth for architectural accuracy.
+        On well-structured repos, baseline file-reading can score high on a granular checklist.
+        MCP wins most where the baseline is architecturally blind (pydantic: 0% → 80%).
+        Boundary accuracy was perfect in both fastapi modes — MCP understood the architecture correctly,
+        it just verified fewer granular claims explicitly.<br><br>
+        The raw outputs for all fastapi runs are in
+        <a href="https://github.com/ahmedxuhri/bigindexer/tree/master/validation/runs/fastapi" target="_blank" rel="noopener">validation/runs/fastapi/</a>
+        on GitHub. Read them and judge for yourself.
       </div>
 
+      <h3>prometheus (Go) — cross-language reality check</h3>
+      <p>Prometheus expanded this validation beyond Python. Evidence coverage was <strong>85.0%</strong> in both modes,
+         and boundary accuracy stayed perfect (1.0). In this batch MCP did <strong>not</strong> improve coverage and was slower
+         on median latency (112.7s vs 87.3s), which is important to report publicly.
+         This indicates MCP gains are strongest when baseline models are architecturally blind (as in pydantic-core),
+         and less dramatic when baseline exploration is already strong.</p>
+
       <h3>Hallucination rate: 0 in both modes</h3>
-      <p>No factually incorrect module or file claims were observed in any of the 22 scored runs.
-         MCP context appears to ground the model rather than introduce new errors.</p>
+      <p>No factually incorrect module or file claims were observed in any of the 30 scored runs.
+         MCP context grounds the model rather than introducing new errors.</p>
+    </div>
+
+    <!-- Limitations -->
+    <div class="card">
+      <h2>Limitations — Read This</h2>
+      <p style="margin-bottom:1rem">We believe in publishing limitations alongside results. A reader who finds these themselves will trust the evidence less than a reader we told first.</p>
+
+      <h3>Self-reported scoring</h3>
+      <p>The ground-truth checklists were written by us, and the runs were scored by us.
+         The checklists were defined before scoring by reading the actual source code, and the full scoring rubric is published at
+         <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/validation/SCORING_RUBRIC.md" target="_blank" rel="noopener">validation/SCORING_RUBRIC.md</a>.
+         Every raw AI output is committed to GitHub. Anyone can re-score independently — and we explicitly invite it.
+         If you score any run differently, open an issue with your reasoning.</p>
+
+      <h3>Sample size is still limited</h3>
+      <p>30 scored runs across 4 repos (3 Python + 1 Go) is stronger than the initial batch, but still not conclusive.
+         The pydantic-core finding is strong enough to stand on its own, but the aggregate story still needs more language diversity (especially large Java/TypeScript monorepos).</p>
+
+      <h3>Actionability was flat</h3>
+      <p>Actionability scored 4.0–4.3/5 in both modes across all repos. MCP did not improve actionability scores.
+         This is honest signal: MCP helps the model <em>understand</em> the architecture, but does not yet produce
+         <em>more actionable</em> output. Combining MCP context with more directive prompts ("use MCP AND provide
+         copy-paste ready code") is an open improvement area.</p>
+
+      <h3>We need one independent replication</h3>
+      <p>The single thing that would most improve this evidence: one engineer who has never used Big Indexer
+         running these prompts on their own repo and publishing their raw results.
+         If you're willing to do this, <a href="https://github.com/ahmedxuhri/bigindexer/issues" target="_blank" rel="noopener">open an issue</a>
+         and we'll send you the exact protocol.</p>
     </div>
 
     <!-- Reproduce -->
@@ -277,7 +335,9 @@ bgi mcp --graph output/bgi-graph.json --fuse-graph output/fuse-graph.json
 # { "mcp": { "bgi": { "command": "bgi", "args": ["mcp", ...] } } }
 opencode  # BGI context auto-injected via MCP</code></pre>
       <p style="margin-top:1rem">
-        Full run logs and scores in
+        Full run logs, scores, and the complete
+        <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/validation/SCORING_RUBRIC.md" target="_blank" rel="noopener">scoring rubric</a>
+        are in
         <a href="https://github.com/ahmedxuhri/bigindexer/tree/master/validation" target="_blank" rel="noopener">
           validation/ on GitHub
         </a>.

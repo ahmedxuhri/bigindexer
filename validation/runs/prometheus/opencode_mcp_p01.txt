@@ -1,0 +1,49 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m⚙ [0mbigindexer_architecture_summary {"path_scope":"","top_clusters":10,"seam_limit":15}
+[0m→ [0mRead .
+[0m• [0mExplore Prometheus architecture[90m Explore Agent[0m
+[0m✓ [0mExplore Prometheus architecture[90m Explore Agent[0m
+## Prometheus Architecture Overview
+
+Prometheus is organized into loosely coupled modules connected through interfaces and wired together in `cmd/prometheus/main.go`.
+
+### Main Modules
+
+| Module | Responsibility |
+|--------|---------------|
+| **`scrape/`** | HTTP pull-based metrics collection. `scrape.Manager` runs scrape pools per job, parses `/metrics` responses. |
+| **`discovery/`** | Service discovery. `discovery.Manager` runs 30+ providers (k8s, consul, file, DNS, etc.), delivers target groups via `SyncCh()` channel. |
+| **`storage/`** | Abstract interfaces: `Storage`, `Appendable`/`AppendableV2` (write), `Queryable`/`Querier` (read), `SeriesSet` (iterator). `storage.Fanout` fans writes to primary TSDB + secondary remote storage. |
+| **`tsdb/`** | Time series database. In-memory Head + WAL + on-disk blocks + compaction. Also `tsdb/agent/` for agent mode (WAL-only). |
+| **`storage/remote/`** | Remote write/read protocol. Forwards samples to external endpoints via protobuf over HTTP. |
+| **`promql/`** | Query engine + parser + functions. `promql.Engine` executes instant/range queries against a `Querier`. |
+| **`rules/`** | Rule evaluation. `rules.Manager` periodically evaluates recording rules (write results back) and alerting rules (transition pending→firing, notify). |
+| **`notifier/`** | Alert dispatch. `notifier.Manager` batches alerts and POSTs to Alertmanager instances (discovered separately). |
+| **`web/`** | HTTP server. React UI, JSON API v1 (`/api/v1/query`, `/api/v1/query_range`, etc.), federation (`/federate`), lifecycle (`/-/reload`, `/-/ready`). |
+| **`config/`** | YAML config loading and validation. `config.Config` holds all sections (scrape, rules, alerting, remote storage, etc.). |
+| **`model/`** | Core data types: `labels.Labels`, `labels.Matcher`, native `histogram`, `exemplar`, `relabel`, `textparse`. |
+
+### Data Flow
+
+```
+Discovery ──SyncCh()──> Scrape Manager ──Appendable──> FanoutStorage ──> TSDB (primary)
+                                                                     └─> Remote Storage (secondary)
+                                                                           │
+Rules Manager ──QueryFunc──> PromQL Engine ──Querier──> TSDB ◄──────────┘
+     │                            │
+     └──NotifyFunc──> Notifier Manager ──HTTP POST──> Alertmanager(s)
+                                                      │
+Web Handler ◄── (holds refs to all components) ─────┘
+```
+
+### Wiring (main.go)
+
+The `main()` function constructs all components, then threads references through `web.Options`:
+
+1. **Write path**: `scrapeManager` → `fanoutStorage` (primary=TSDB, secondary=remote)
+2. **Read path**: `promql.Engine` → `storage.Querier` → `localStorage` (TSDB)
+3. **Rules path**: `ruleManager` reads via `QueryFunc(promql.Engine + fanoutStorage)` and writes recording rules via `Appendable(fanoutStorage)`, sends alerts via `NotifyFunc(notifierManager)`
+4. **Config reload**: Ordered reloader chain on SIGHUP (scrape → SD → notify → rules → tracing → ...)
+5. **Two modes**: Server mode (full TSDB + query + rules + alerting) and Agent mode (WAL-only, no querying/rules/alerting)

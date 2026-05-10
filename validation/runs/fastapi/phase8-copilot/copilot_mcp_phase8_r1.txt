@@ -1,0 +1,13 @@
+Running the architecture summarizer across the repository to extract the top clusters; will use its output to condense the main architectural areas into three bullets. Calling tools now.
+
+● architecture_summary (MCP: bigindexer) · path_scope: "", top_clusters: 8, seam_limit: 10
+  └ {"scope":"repository","cluster_count":333,"unit_count":2511,"top_cluster...
+
+- Core framework: FastAPI runtime (applications, routing, request/response handling, datastructures, encoders, OpenAPI generation).  
+- Dependency, security & concurrency: dependency-injection utilities, background/concurrency helpers, and security (HTTP/OAuth) modules.  
+- Tests, docs & tooling: large test suites, documentation examples, and scripts (doc/translation tooling and test harness).
+
+
+Changes   +0 -0
+Requests  0 Premium (29s)
+Tokens    ↑ 37.4k • ↓ 2.2k • 18.4k (cached) • 2.0k (reasoning)
