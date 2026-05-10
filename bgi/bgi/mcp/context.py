@@ -1,6 +1,6 @@
 """Architecture context service for MCP tools.
 
-Copyright (c) 2026 Ahmed F A Abuzuhri
+Copyright (c) 2026 bigindexer.com
 SPDX-License-Identifier: Apache-2.0
 """
 

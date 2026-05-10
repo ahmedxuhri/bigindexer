@@ -1,6 +1,6 @@
 """MCP server entrypoint for Big Indexer architecture context.
 
-Copyright (c) 2026 Ahmed F A Abuzuhri
+Copyright (c) 2026 bigindexer.com
 SPDX-License-Identifier: Apache-2.0
 """
 

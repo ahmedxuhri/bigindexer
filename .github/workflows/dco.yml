@@ -1,0 +1,42 @@
+name: DCO
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  dco-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify Signed-off-by trailer on each commit
+        run: |
+          if [ "${{ github.actor }}" = "dependabot[bot]" ] || [ "${{ github.actor }}" = "github-actions[bot]" ]; then
+            echo "Skipping DCO check for bot account: ${{ github.actor }}"
+            exit 0
+          fi
+
+          git fetch origin "${{ github.base_ref }}" --depth=1
+
+          commits=$(git rev-list --no-merges "origin/${{ github.base_ref }}..HEAD")
+          if [ -z "$commits" ]; then
+            echo "No commits to check."
+            exit 0
+          fi
+
+          missing=0
+          for c in $commits; do
+            if ! git show -s --format=%B "$c" | grep -qi '^Signed-off-by:'; then
+              echo "::error::Commit $c is missing a Signed-off-by trailer. Use: git commit -s"
+              missing=1
+            fi
+          done
+
+          exit $missing
