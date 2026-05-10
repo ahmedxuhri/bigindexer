@@ -1,0 +1,55 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m⚙ [0mbigindexer_architecture_summary {"top_clusters":8,"seam_limit":8}
+[0m→ [0mRead .
+[0m• [0mExplore Prometheus architecture[90m General Agent[0m
+[0m✓ [0mExplore Prometheus architecture[90m General Agent[0m
+Here's a high-level architecture of Prometheus:
+
+**Entry Point** (`cmd/prometheus/main.go`) wires all components together using `oklog/run.Group` for coordinated lifecycle management.
+
+## Core Modules
+
+| Module | Directory | Responsibility |
+|--------|-----------|--------------|
+| **Service Discovery** | `discovery/` | Discovers scrape targets & Alertmanager endpoints via 20+ providers (Kubernetes, Consul, DNS, file, etc.) |
+| **Scrape Engine** | `scrape/` | HTTP scrapes targets, parses metrics, writes to storage via `Appender` |
+| **TSDB** | `tsdb/` | Local on-disk time-series storage (WAL → Head → immutable Blocks → Compaction) |
+| **Remote Storage** | `storage/remote/` | Fans out writes to external systems via Remote Write protocol; remote reads (best-effort) |
+| **PromQL Engine** | `promql/` | Parses & executes PromQL queries against `storage.Queryable` |
+| **Rule Engine** | `rules/` | Evaluates recording rules (→ PromQL → write back) and alerting rules (→ notifier) |
+| **Notifier** | `notifier/` | Sends alerts to Alertmanager(s) |
+| **Web/API** | `web/` | HTTP server: `/api/v1/*`, UI, remote write receiver, OTLP receiver, `/federate` |
+| **Config** | `config/` | YAML config model (`Config`, `ScrapeConfig`, etc.) |
+| **Model** | `model/` | Core data types: `Labels`, `Histogram`, `Exemplar`, relabeling, text parsing |
+
+## Communication Patterns
+
+```
+discovery.Manager ──(channel: SyncCh())──► scrape.Manager
+discovery.Manager ──(channel: SyncCh())──► notifier.Manager
+
+scrape.Manager ──(Appender interface)──► storage.Fanout
+                                              ├──► tsdb.DB (local)
+                                              └──► remote.Storage (remote write)
+
+rules.Manager ──(QueryFunc)──► promql.Engine ──(Queryable)──► storage.Fanout
+             ──(NotifyFunc)──► notifier.Manager ──► Alertmanager
+
+web.Handler ──► promql.Engine (queries)
+            ──► scrape.Manager (targets status)
+            ──► rules.Manager (rules status)
+            ──► notifier.Manager (alert status)
+```
+
+## Data Flow
+
+1. **Discovery** sends target groups via channels to **Scrape** and **Notifier**
+2. **Scrape** HTTP GETs `/metrics`, parses into samples, calls `Appender.Append()` → **Fanout Storage**
+3. **Fanout** writes to **TSDB** (local, full TSDB with WAL+blocks) and **Remote Storage** (queue → HTTP POST)
+4. **Rule Manager** periodically evaluates PromQL → reads via **Queryable**, writes results back via **Appendable**
+5. **API** serves queries by **PromQL Engine** reading via **Queryable**
+6. **Config reload** (SIGHUP or `/-/reload`) iterates `ApplyConfig()` on each manager in order
+
+Key interfaces: `storage.Storage` / `storage.Appendable` / `storage.Queryable` (abstraction layer), and `channel-based` SyncCh for discovery→consumer handoff.

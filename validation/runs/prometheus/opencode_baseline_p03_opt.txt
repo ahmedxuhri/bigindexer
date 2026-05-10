@@ -1,0 +1,49 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m✱ [0mGrep "fanout\.Querier|fanout\.Select|fanout\.Querier\b"[90m 0 matches[0m
+[0m✱ [0mGrep "type Querier struct"[90m in storage/fanout.go · 0 matches[0m
+[0m✱ [0mGrep ""github.com/prometheus/prometheus/storage/fanout""[90m 0 matches[0m
+[0m→ [0mRead storage/fanout.go[90m [limit=100][0m
+[0m✱ [0mGrep "Querier"[90m in storage · 375 matches[0m
+[0m→ [0mRead storage/fanout.go
+[0m✱ [0mGrep "\.Querier\("[90m in storage · 8 matches[0m
+[0m✱ [0mGrep "NewFanout\("[90m 8 matches[0m
+[0m✱ [0mGrep "fanoutStorage"[90m in cmd/prometheus · 7 matches[0m
+[0m→ [0mRead cmd/prometheus/main.go[90m [offset=885, limit=40][0m
+[0m→ [0mRead cmd/prometheus/main.go[90m [offset=935, limit=60][0m
+[0m✱ [0mGrep "\.Querier\b"[90m in web · 11 matches[0m
+[0m✱ [0mGrep "\.Querier\("[90m in rules · 5 matches[0m
+[0m✱ [0mGrep "func EngineQueryFunc"[90m in rules · 1 match[0m
+[0m✱ [0mGrep "\.Storage\s*=\s*fanoutStorage|fanoutStorage\s*$|cfg\.web\.Storage"[90m in cmd/prometheus · 1 match[0m
+[0m→ [0mRead cmd/prometheus/main.go[90m [offset=1005, limit=30][0m
+[0m→ [0mRead rules/manager.go[90m [offset=48, limit=25][0m
+[0m✱ [0mGrep "\.Storage\b.*Querier|Storage\.Querier"[90m in web · 1 match[0m
+[0m✱ [0mGrep "queryable|Queryable"[90m in web/api/v1/api.go · 12 matches[0m
+[0m✱ [0mGrep "Storage\s+storage\.|Storage\s+storage\.SampleAndChunkQueryable"[90m in web · 3 matches[0m
+[0m→ [0mRead web/web.go[90m [limit=60][0m
+[0m✱ [0mGrep "\.Storage\b|\.Queryable\b""[90m in web/web.go · 4 matches[0m
+[0m→ [0mRead web/web.go[90m [offset=225, limit=100][0m
+[0m✱ [0mGrep "h\.storage\.Querier|h\.localStorage\.Querier|h\.storage\.ChunkQuerier"[90m in web · 1 match[0m
+[0m→ [0mRead web/web.go[90m [offset=355, limit=60][0m
+[0m→ [0mRead web/api/v1/api.go[90m [offset=260, limit=60][0m
+Here's the blast radius analysis for changing `fanout.Querier` at `storage/fanout.go:74-99`:
+
+**The method:** Creates `NewMergeQuerier` wrapping primary and secondary queriers, with filtering of noop queriers from secondaries.
+
+**Direct callers** (all via `storage.Storage` interface, since `fanout` is unexported):
+
+1. **`cmd/prometheus/main.go:896`** — `fanoutStorage` is created via `NewFanout(localStorage, remoteStorage)`. It flows to:
+   - **Web API** (`web/api/v1/api.go`): Assigned to `api.Queryable` at line 311, which calls `.Querier()` at lines **783** (label names), **871** (label values), **986** (series query)
+   - **Rule evaluation** (`rules/manager.go:50`): `EngineQueryFunc(queryEngine, fanoutStorage)` passes it to `promql.Engine`, which calls `.Querier()` during rule evaluation
+   - **Scrape manager** (`scrape.NewManager`): Only uses `Appendable`, so no impact
+   - **Federation endpoint** (`web/federate.go:80`): Uses `localStorage.Querier()`, NOT fanout
+
+2. **`storage/fanout_test.go`**: Lines 80, 185, 268 — tests that directly call `.Querier()` on fanout instances
+
+3. **`storage/merge.go`**: The return value is a `mergeGenericQuerier` — any change to how primary/secondary queriers are combined affects merges behavior
+
+**Key downstream types used within the method:**
+- `storage.Querier` interface (from `storage/interface.go`)
+- `NewMergeQuerier` (from `storage/merge.go:46`)
+- `noopQuerier` type assertion (from `storage/merge.go`)

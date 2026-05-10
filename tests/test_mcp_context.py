@@ -159,3 +159,36 @@ def test_impact_neighbors_and_symbol_fallback_search(tmp_path: Path):
     search = service.search_symbols("login", limit=5)
     assert search["count"] >= 1
     assert search["results"][0]["name"] in {"login", "post_login"}
+
+
+def test_response_cache_reuse_and_reload_invalidation(tmp_path: Path):
+    graph_path, fuse_path, _ = _build_artifacts(tmp_path)
+    service = ArchitectureContextService(str(graph_path), str(fuse_path))
+
+    seams_before = service.high_coupling_seams("", limit=10)
+    cache_size_before = len(service._response_cache)
+    seams_cached = service.high_coupling_seams("", limit=10)
+    cache_size_after = len(service._response_cache)
+
+    assert seams_cached == seams_before
+    assert cache_size_before == cache_size_after
+    assert seams_before["seam_count"] == 2
+
+    graph_payload = json.loads(graph_path.read_text(encoding="utf-8"))
+    graph_payload["edges"].append(
+        {
+            "source": "api.py::Routes::post_login",
+            "target": "billing.py::BillingService::charge",
+            "key": "COV.ROUTE",
+            "lock": "COV.PERSIST",
+            "confidence": 0.9,
+            "type": "HARD",
+        }
+    )
+    _write_json(graph_path, graph_payload)
+
+    service.reload()
+    assert len(service._response_cache) == 0
+
+    seams_after = service.high_coupling_seams("", limit=10)
+    assert seams_after["seam_count"] == 3

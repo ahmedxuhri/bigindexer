@@ -1,0 +1,47 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m→ [0mRead .
+[0m• [0mExplore Prometheus codebase architecture[90m Explore Agent[0m
+[0m✓ [0mExplore Prometheus codebase architecture[90m Explore Agent[0m
+## Architectural Boundaries
+
+The codebase follows a **layered hexagonal architecture** with three key boundary types:
+
+### 1. Interface Boundaries (Integration Seams)
+
+| Seam | Interface | Decouples |
+|------|-----------|-----------|
+| **Storage port** | `storage.Storage` → `Queryable` + `Appendable` / `AppendableV2` | Producers (scrape, rules) from consumers (promql, rules read path) |
+| **Rule evaluation** | `QueryFunc`, `NotifyFunc`, `Sender` | `rules.Manager` from `promql.Engine` and `notifier.Manager` — pure function injection |
+| **Web API** | `TargetRetriever`, `AlertmanagerRetriever`, `RulesRetriever`, etc. | `web/api/v1` from concrete `scrape.Manager`, `notifier.Manager` |
+| **Storage fanout** | `storage.Storage` (decorated in `storage/fanout.go`) | Primary (local TSDB) from secondaries (remote write/read) |
+| **Service discovery** | `discovery.Discoverer` + `init()` registry in `discovery/registry.go` | Discovery implementations from one another — plugin pattern |
+| **Config reload** | Slice of `reloader func(*config.Config) error` | Config changes from subsystem reaction — observer pattern |
+
+### 2. Strongest Coupling Points
+
+1. **`web/`** — the hub. References `scrape.Manager`, `rules.Manager`, `notifier.Manager`, `promql.Engine`, `storage.Storage`, `config.Config`. Highest outward dependency count.
+2. **`scrape/scrape.go` → `model/`** — directly imports 8 model sub-packages (labels, exemplar, histogram, metadata, relabel, textparse, timestamp, value). Deepest dependency on the data model.
+3. **`rules/manager.go` → `storage/` + `promql/` + `notifier/`** — sits at the intersection of query, record, and alert paths.
+4. **`cmd/prometheus/main.go`** — strongest single point. Wires all components together, owns lifecycle ordering, list of reloaders, and `oklog/run.Group` orchestration.
+
+### 3. Dependency Direction
+
+```
+model/ (zero deps, foundation)
+  ↓
+config/ (depends only on model/)
+storage/ (pure interfaces, depends on model/)
+  ↓
+promql/ ← depends on storage/ (querying), NOT on scrape/rules/notifier
+tsdb/  ← implements storage/, depends on config/
+  ↓
+scrape/ → depends on storage/, config/, model/
+rules/  → depends on storage/, promql/, notifier/ (via Sender)
+notifier/ → depends on config/, model/ (self-contained)
+  ↓
+web/ → imports everything (outmost layer)
+```
+
+The graph is a strict DAG — no circular dependencies between major packages — enforced by Go's import cycle rules.

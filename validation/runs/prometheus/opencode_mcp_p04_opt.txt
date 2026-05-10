@@ -1,0 +1,27 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m• [0mExplore API architecture[90m Explore Agent[0m
+[0m• [0mFind cardinality code[90m Explore Agent[0m
+[0m✓ [0mExplore API architecture[90m Explore Agent[0m
+[0m✓ [0mFind cardinality code[90m Explore Agent[0m
+Based on the codebase exploration, here is the pattern to follow:
+
+**Follow the existing `/status/tsdb` endpoint exactly.** The architecture uses a consistent pattern:
+
+1. **Define response types** as exported structs with `json` tags in `web/api/v1/api.go` (alongside existing `TSDBStat`, `TSDBStatus`)
+2. **Define the handler** as a method `func (api *API) myEndpoint(r *http.Request) apiFuncResult` in the same file, reusing existing infrastructure (`parseTimeParam`, `parseMatchersParam`, `api.db.Stats()`)
+3. **Register the route** in `Register()` using `wrapAgent()` (to get CORS, compression, OpenAPI wrapping, ready-check, and agent-unavailable guard for free)
+4. **Add OpenAPI spec** — a path method in `openapi_paths.go`, any new schemas in `openapi_schemas.go`, examples in `openapi_examples.go`, and wire it into `getAllPathDefinitions()` in `openapi.go`
+5. **Write tests** in `api_test.go` using the test helpers from `web/api/testhelpers/`
+6. **Document** in `docs/querying/api.md`
+7. **Add `release-notes` block** in the PR description per `AGENTS.md`
+
+Key safety rules:
+- Never bypass the `wrap()`/`wrapAgent()` middleware chain (CORS + compression + ready-check + OpenAPI wrapping)
+- Use `apiFuncResult` return type, never write directly to `http.ResponseWriter`
+- Leverage the existing `TSDBAdminStats` interface — `api.db.Stats(statsByLabelName, limit)` already computes cardinality via `Head.PostingsCardinalityStats()` with a 30-second cache
+- Block agent mode via `wrapAgent()` if the endpoint doesn't apply to agents
+- Add OpenAPI coverage or the `openapi_coverage_test.go` will fail
+
+Want me to implement this? I'd need to know what specific label cardinality statistics you want to expose (e.g., cardinality for a specific label name, per-label breakdown, etc.).

@@ -1,0 +1,35 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m⚙ [0mbigindexer_architecture_summary {"top_clusters":6,"seam_limit":10}
+[0m⚙ [0mbigindexer_high_coupling_seams {"limit":15}
+[0m⚙ [0mbigindexer_boundary_edges {"limit":15}
+[0m→ [0mRead .
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"cmd/prometheus","limit":15}
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"cluster_scrape_scrape_test_go_newTestReg","limit":15}
+[0m⚙ [0mbigindexer_impact_neighbors {"symbol_or_file":"storage/remote","depth":2,"limit":20}
+[0m⚙ [0mbigindexer_impact_neighbors {"symbol_or_file":"scrape","depth":2,"limit":20}
+[0m⚙ [0mbigindexer_impact_neighbors {"symbol_or_file":"cmd/prometheus/main.go","depth":1,"limit":30}
+[0m⚙ [0mbigindexer_impact_neighbors {"symbol_or_file":"storage","depth":1,"limit":30}
+[0m⚙ [0mbigindexer_impact_neighbors {"symbol_or_file":"promql","depth":1,"limit":30}
+Based on the architectural analysis data, here are the key findings:
+
+**Main architectural modules** (top-level domains): `cmd/prometheus` (orchestrator), `scrape/`, `storage/` (incl. `storage/remote`), `promql/`, `tsdb/`, `config/`, `discovery/`, `notifier/`, `rules/`, `web/`, `model/`.
+
+**Integration seams** (strongest cross-module coupling points):
+
+1. **`cmd/prometheus/main.go` → everything** — the central wiring hub. It composes all subsystems: opens TSDB, wires scrape → storage, connects discovery → scrape, rules → PromQL, web → all APIs.
+
+2. **`storage/remote` → TSDB + main** (597 seed symbols, 1440 impacted units) — the remote write path is the most broadly coupled module. It bridges `tsdb/` (block storage) → wire protocol (protobuf codecs) → queue management → HTTP transport, and is wired directly into `main.go`.
+
+3. **`promql/` → `storage/`** — the query engine (768 seed symbols, 829 impacted) couples to storage via the `Querier`/`SeriesSet` interfaces. The `promql/promqltest` package is itself a coupling hub shared across all test infrastructure.
+
+4. **`scrape/` → `storage/`** — via the `Appender` interface, the scrape loop writes every ingested sample through this boundary. This is the hottest write-path seam in the system.
+
+5. **`tsdb/` ↔ `promql/` ↔ `scrape/`** — the database clusters (`head_test`, `db_test`, `querier_test`) repeatedly appear as sources in the top-10 coupling seams targeting the `cmd/prometheus` test harness, indicating these three modules are the most tightly co-evolved.
+
+**Key interfaces defining the boundaries:**
+- `storage.Storage` / `storage.Appender` / `storage.Querier` — the contract between ingestion, querying, and persistence
+- `scrape.ScrapeManager` — target lifecycle managed by discovery
+- `promql.Engine` — consumed by rules, API, and promtool
+- Remote write `codec`/`handler` — the serialization boundary between TSDB blocks and wire format

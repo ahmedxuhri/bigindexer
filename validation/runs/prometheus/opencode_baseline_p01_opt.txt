@@ -1,0 +1,67 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m→ [0mRead .
+[0m• [0mExplore Prometheus architecture[90m Explore Agent[0m
+[0m✓ [0mExplore Prometheus architecture[90m Explore Agent[0m
+## Prometheus Architecture Overview
+
+The codebase is at `github.com/prometheus/prometheus` — a Go monolith organized around a scrape→store→query→alert data pipeline.
+
+### Main Modules
+
+| Module | Responsibility |
+|--------|---------------|
+| **`scrape/`** | HTTP scraper: polls targets, parses exposition formats, writes samples to storage |
+| **`storage/`** | Core interfaces (`Storage`, `Appendable`, `Queryable`) + fanout multiplexer; defines all inter-module contracts |
+| **`tsdb/`** | Local time-series DB (WAL, compactor, index, chunks). Primary storage backend |
+| **`tsdb/agent/`** | Agent-mode: WAL-only, no index/compaction/queries — just forwards via remote write |
+| **`storage/remote/`** | Remote write (WAL watcher + sharded queue managers) and remote read clients |
+| **`promql/`** | Query engine: parser, evaluator, functions. Reads via `storage.Queryable` |
+| **`rules/`** | Rule evaluation engine: recording rules (eval→store) and alerting rules (eval→notify) |
+| **`discovery/`** | Service discovery abstraction: `Discoverer` interface + providers (k8s, consul, file, dns...) |
+| **`notifier/`** | Alert dispatch to Alertmanager: discovery of AM instances + HTTP POST with batching |
+| **`web/`** | HTTP server: API v1, UI, `/federate`, lifecycle (`/-/reload`, `/-/ready`) |
+| **`config/`** | YAML config parsing (`Config`, `ScrapeConfig`, `RemoteWriteConfig`, etc.) |
+| **`model/`** | Data types: labels, histograms, exemplars, textparse, relabel engine |
+| **`cmd/prometheus/`** | `main.go`: CLI arg parsing, component wiring, `run.Group` lifecycle |
+
+### Communication Patterns
+
+1. **Interface-based (storage layer)**: All modules speak through `storage.Queryable` (read) and `storage.Appendable`/`AppendableV2` (write). The `storage.Fanout` multiplexes writes to both TSDB (primary) and remote storage (secondaries), and merges reads.
+
+2. **Channel-based (discovery → scrape/notify)**: `discovery.Manager.SyncCh()` returns `<-chan map[string][]*targetgroup.Group`. Both `scrape.Manager` and `notifier.Manager` consume this channel to receive target updates.
+
+3. **Function callbacks (rules → notifier)**: `rules.Manager` takes a `NotifyFunc` callback — wired as `rules.SendAlerts(notifierManager, ...)` in `main.go`. Similarly, `QueryFunc` decouples rules from the PromQL engine.
+
+4. **Config reloader chain**: On SIGHUP, an ordered list of `reloader` functions (defined inline in `main.go`) applies config changes to each subsystem in sequence.
+
+5. **Lifecycle via `oklog/run.Group`**: Every component provides `execute`/`interrupt` functions. When any actor exits, all others are cleanly shut down.
+
+### Data Flow (Standard Server Mode)
+
+```
+discovery.Manager  ──(channel)──→  scrape.Manager  ──(HTTP)──→  targets
+                                        │
+                                  textparse / relabel
+                                        │
+                                  storage.Appendable (fanout)
+                                   ┌────┴────┐
+                                   │         │
+                                tsdb.DB   remote.WriteStorage
+                                               │
+                                     WAL watcher → QueueManager → HTTP POST
+                                               │
+promql.Engine ──(reads via Queryable)──→ tsdb.DB (primary) + remote (best-effort)
+      │
+rules.Manager ── eval loop ──→ recording rules: write back to Appendable
+                           ──→ alerting rules: → NotifyFunc → notifier.Manager → Alertmanager
+```
+
+### Key Architectural Patterns
+
+- **Storage abstraction**: Everything depends on `storage.*` interfaces — TSDB, agent DB, remote storage, and tests all implement the same contracts.
+- **Fanout on writes, merge on reads**: The `Fanout` storage transparently duplicates writes and merges queried series from primary + secondaries.
+- **Dual appender migration**: Codebase is mid-migration from `Appender` (v1) to `AppenderV2` — the V2 `Append()` call unifies floats, histograms, exemplars, and metadata into one call with `AppendV2Options`.
+- **Relabeling as a pure pipeline**: `model/relabel.ProcessBuilder` is a reusable chain applied at discovery, scrape (metric_relabel_configs), remote write, and alertmanager discovery.
+- **Ready-state wrappers**: `readyStorage` / `readyScrapeManager` implement their interfaces but return `ErrNotReady` until the component asynchronously initializes, allowing early wiring.

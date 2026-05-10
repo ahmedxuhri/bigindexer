@@ -1,0 +1,22 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m⚙ [0mbigindexer_impact_neighbors {"symbol_or_file":"storage/fanout.go","depth":2,"limit":30}
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"storage/fanout.go","limit":12}
+[0m• [0mFind external callers of fanout.Querier[90m Explore Agent[0m
+[0m✓ [0mFind external callers of fanout.Querier[90m Explore Agent[0m
+The blast radius is broad but indirect. `fanout.Querier` is **unexported** — no code outside `storage/` references it directly. However, it implements `storage.Storage` / `storage.Queryable`, so **changing its signature breaks the interface contract**.
+
+**Files that would fail to compile** (call `.Querier()` on the interface):
+1. `web/api/v1/api.go` — 3 call sites (lines 783, 871, 986)
+2. `storage/remote/read_handler.go` — line 136
+3. `promql/engine.go` — line 781
+
+**Files that propagate the reference** (hold `storage.Storage` or `storage.Queryable`):
+4. `cmd/prometheus/main.go` — line 896 (sole producer of `NewFanout`)
+5. `web/web.go` — stores as `storage.Storage` (line 229), passes to API
+6. `rules/manager.go` — `EngineQueryFunc` expects `storage.Queryable` (line 50)
+7. `scrape/manager.go` — stores as `storage.Appendable` (line 55, no `.Querier()` usage)
+8. `storage/fanout_test.go` — 6 test call sites
+
+**Summary:** Changing the `Querier` method signature breaks 3 direct `.Querier()` callers and the interface contract across 5 packages. If you're adding/removing parameters or changing return types, these 8 files need updating. If you're only changing the internal implementation (signature stays the same), the blast radius is zero — the interface shields callers.

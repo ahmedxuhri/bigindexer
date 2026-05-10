@@ -1,0 +1,20 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m• [0mExplore HTTP API architecture[90m Explore Agent[0m
+Let me explore the existing API architecture to give you a precise answer.
+[0m✓ [0mExplore HTTP API architecture[90m Explore Agent[0m
+The safest way follows this pattern used by `serveTSDBStatus`:
+
+1. **Define the response types** near existing ones in `web/api/v1/api.go` (around line 1836).
+2. **Add a handler method** on `*API` that parses params, calls `api.db.Stats(labelName, limit)` (already on the `TSDBAdminStats` interface at line 208), and returns `apiFuncResult{data, nil, nil, nil}`.
+3. **Register the route** in `Register()` as `r.Get("/labels/:name/cardinality", wrapAgent(api.labelCardinality))`.
+4. **Optionally add OpenAPI** in `openapi_paths.go` + `openapi_schemas.go` (skip if not required).
+
+Key safety points:
+- **Reuse `TSDBAdminStats`** — it's already injected and tested, no new dependency wiring needed
+- **Use `wrapAgent`** (not raw `wrap`) for consistency with other read endpoints
+- **No new struct fields** on `API` needed — `api.db` already exposes `Stats()`
+- **Don't touch web.go** — `db` is already wired in `NewAPI`
+- **Handle errors** with `&apiError{errorBadData, ...}` / `&apiError{errorInternal, ...}`
+- **Parse limit from query params** like `serveTSDBStatus` does for defensive input handling
