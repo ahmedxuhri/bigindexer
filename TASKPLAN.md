@@ -89,9 +89,22 @@ Next for MCP track:
 1. ~~Validate MCP with real client sessions (OpenCode/Gemini/Copilot)~~ - **COMPLETE (Step 1)**
 2. ~~Add demo script + example transcript for public launch~~ - **COMPLETE (Step 2)**
 3. ~~Add thin website/waitlist flow on `bigindexer.com`~~ - **COMPLETE (Step 3)**
-4. ~~Use `validation/` workspace for managed A/B runs and public evidence collection~~ - **IN PROGRESS (Step 4)**
+4. ~~Use `validation/` workspace for managed A/B runs and public evidence collection~~ - **COMPLETE (Step 4)**
 
-Phase 8 Step 2 evidence (demo script and example transcripts) - COMPLETE:
+Phase 8 Step 4 evidence (A/B validation runs) - COMPLETE:
+
+- **Repos**: tiangolo/fastapi, django/django, pydantic/pydantic-core (3 repos × 4 prompts × 2 modes = 22 scored runs)
+- **CLI**: opencode 1.14.41, model: deepseek-v4-flash
+- **Evidence coverage**: 69.7% baseline → 80.3% MCP (+10.6 pp)
+- **Boundary accuracy**: 0.91 baseline → 1.00 MCP (perfect)
+- **Hallucinations**: 0 in both modes
+- **Median latency**: 131.3s baseline → 59.1s MCP (55% faster)
+- **Key finding**: pydantic-core p01 baseline had 0% coverage, MCP brought it to 80%
+- **Public page**: `https://bigindexer.com/validation`
+- **Public doc**: `docs/VALIDATION_EVIDENCE.md`
+- **Aggregate CSV**: `output/validation/mcp-ab/aggregate.csv` (gitignored, reproducible)
+
+
 
 - **Demo script**: `scripts/mcp-demo.sh` with support for OpenCode, Copilot, Gemini CLIs
   - Automates: repo cloning, scanning, MCP setup, guided query execution

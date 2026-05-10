@@ -68,6 +68,26 @@ app.get('/api/admin/waitlist', (req, res) => {
   });
 });
 
+// Validation evidence page
+app.get('/validation', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'validation.html'));
+});
+
+// API: validation summary (JSON)
+app.get('/api/validation/summary', (req, res) => {
+  res.json({
+    generated: '2026-05-10',
+    repos: ['tiangolo/fastapi', 'django/django', 'pydantic/pydantic-core'],
+    cli: 'opencode 1.14.41',
+    model: 'deepseek-v4-flash',
+    total_scored_runs: 22,
+    global: {
+      baseline: { evidence_coverage_pct: 69.7, boundary_accuracy: 0.91, actionability: 4.09, hallucinations: 0, median_latency_s: 131.3 },
+      mcp:      { evidence_coverage_pct: 80.3, boundary_accuracy: 1.0,  actionability: 4.09, hallucinations: 0, median_latency_s: 59.1 }
+    }
+  });
+});
+
 // Catch-all: serve index.html for SPA routing
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
