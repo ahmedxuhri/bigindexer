@@ -1,0 +1,99 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m• [0mExplore trace-id header architecture[90m Explore Agent[0m
+[0m✓ [0mExplore trace-id header architecture[90m Explore Agent[0m
+[0m→ [0mRead packages/next/src/server/base-server.ts[90m [offset=870, limit=120][0m
+[0m→ [0mRead packages/next/src/server/lib/router-server.ts[90m [offset=220, limit=60][0m
+[0m→ [0mRead packages/next/src/server/request-meta.ts[90m [offset=1, limit=80][0m
+[0m→ [0mRead packages/next/src/server/lib/server-ipc/utils.ts[90m [offset=40, limit=40][0m
+[0m→ [0mRead packages/next/src/server/lib/trace/tracer.ts[90m [offset=230, limit=50][0m
+Now let me read the key files at the relevant sections to give precise recommendations.
+[0m→ [0mRead packages/next/src/server/request-meta.ts[90m [offset=80, limit=80][0m
+[0m→ [0mRead packages/next/src/server/lib/router-server.ts[90m [offset=340, limit=80][0m
+[0m→ [0mRead packages/next/src/server/lib/router-server.ts[90m [offset=440, limit=50][0m
+[0m→ [0mRead packages/next/src/server/lib/router-server.ts[90m [offset=620, limit=90][0m
+Let me also check the rest of RequestMeta and how it's used, plus the router-server.ts response header application points.
+[0m→ [0mRead packages/next/src/server/lib/router-server.ts[90m [offset=226, limit=10][0m
+Based on a thorough analysis of the request/response architecture, here's my assessment:
+
+## Safest approach: `router-server.ts` `requestHandlerImpl`
+
+The outermost handler in `packages/next/src/server/lib/router-server.ts:226` is the best single location because it covers **every** request path — routes, 404s, i18n redirects, static files, HMR, and favicon. Lower layers (like `base-server.ts`) miss requests handled entirely in the router server.
+
+### What to do:
+
+1. **Generate a UUID** at the top of `requestHandlerImpl` (after `filterInternalHeaders` at line 231)
+2. **Store in `RequestMeta`** for downstream consumers  
+3. **Set `res.setHeader('x-request-id', id)`** immediately so all exit paths have it
+4. **Add `'x-request-id'` to `INTERNAL_HEADERS`** in `packages/next/src/server/lib/server-ipc/utils.ts:42` to prevent external forgery
+[0m→ [0mRead packages/next/src/server/lib/router-server.ts[90m [offset=1, limit=30][0m
+[0m→ [0mRead packages/next/src/server/request-meta.ts[90m [offset=155, limit=50][0m
+[0m→ [0mRead packages/next/src/server/request-meta.ts[90m [offset=300, limit=150][0m
+Here's the recommendation, with precise code for each change:
+
+### The pattern (3 files to touch):
+
+**Step 1: Add `x-request-id` to `INTERNAL_HEADERS`** — prevents external clients from forging their own request ID (security)
+
+`packages/next/src/server/lib/server-ipc/utils.ts:42`:
+```typescript
+const INTERNAL_HEADERS = [
+  'x-middleware-rewrite',
+  'x-middleware-redirect',
+  // ... existing entries ...
+  'x-request-id',  // <-- add here
+]
+```
+
+**Step 2: Generate and set at the outermost handler** — covers all request paths
+
+`packages/next/src/server/lib/router-server.ts:226`:
+```typescript
+const requestHandlerImpl: WorkerRequestHandler = async (req, res) => {
+    addRequestMeta(req, 'relativeProjectDir', relativeProjectDir)
+    // highlight-next-line
+    const requestId = crypto.randomUUID()
+    // highlight-next-line
+    addRequestMeta(req, 'requestId', requestId)
+
+    // internal headers should not be honored by the request handler
+    if (!process.env.NEXT_PRIVATE_TEST_HEADERS) {
+      filterInternalHeaders(req.headers)
+    }
+
+    // highlight-next-line
+    if (!res.headersSent) res.setHeader('x-request-id', requestId)
+```
+
+**Step 3: Add `requestId` field to `RequestMeta`** for downstream consumers
+
+`packages/next/src/server/request-meta.ts` (add before closing `}` of the interface):
+```typescript
+/**
+ * A unique identifier for the request, generated at the outermost
+ * request handler.
+ */
+requestId?: string
+```
+
+### Why this is the safest:
+
+| Concern | Mitigation |
+|---------|-----------|
+| **Coverage** | `router-server.ts` wraps ALL requests (routes, 404, static, HMR, redirects) |
+| **HeaderSent** | Guarded with `!res.headersSent` check |
+| **Forgery** | `x-request-id` is stripped from incoming requests via `INTERNAL_HEADERS` |
+| **Propagation** | Stored in `RequestMeta` so any downstream code can read it via `getRequestMeta(req, 'requestId')` |
+| **OTEL integration** (optional bonus) | To use the W3C trace ID instead of a random UUID, override in `base-server.ts:908` from the active span context: `span?.spanContext()?.traceId` |
+
+### If you need OTEL trace IDs specifically
+
+Add after `base-server.ts:907` (inside the `tracer.trace` callback, before `handleRequestImpl`):
+```typescript
+const traceId = span?.spanContext()?.traceId
+if (traceId && !res.headersSent) {
+  res.setHeader('x-request-id', traceId)
+}
+```
+This overrides the UUID with the W3C `traceparent` trace ID for requests flowing through BaseServer, giving you distributed tracing integration while the UUID in the router-server ensures coverage for static/404/HMR paths.

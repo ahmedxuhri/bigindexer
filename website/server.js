@@ -77,13 +77,13 @@ app.get('/validation', (req, res) => {
 app.get('/api/validation/summary', (req, res) => {
   res.json({
     generated: '2026-05-10',
-    repos: ['tiangolo/fastapi', 'django/django', 'pydantic/pydantic-core'],
+    repos: ['tiangolo/fastapi', 'django/django', 'pydantic/pydantic-core', 'prometheus/prometheus', 'vercel/next.js'],
     cli: 'opencode 1.14.41',
     model: 'deepseek-v4-flash',
-    total_scored_runs: 22,
+    total_scored_runs: 36,
     global: {
-      baseline: { evidence_coverage_pct: 69.7, boundary_accuracy: 0.91, actionability: 4.09, hallucinations: 0, median_latency_s: 131.3 },
-      mcp:      { evidence_coverage_pct: 80.3, boundary_accuracy: 1.0,  actionability: 4.09, hallucinations: 0, median_latency_s: 59.1 }
+      baseline: { evidence_coverage_pct: 76.4, boundary_accuracy: 0.94, actionability: 4.0, hallucinations: 0, median_latency_s: 133.8 },
+      mcp:      { evidence_coverage_pct: 83.2, boundary_accuracy: 1.0,  actionability: 4.0, hallucinations: 0, median_latency_s: 63.0 }
     }
   });
 });

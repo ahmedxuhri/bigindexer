@@ -1,0 +1,112 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m⚙ [0mbigindexer_architecture_summary {"path_scope":"/tmp/bgi-ab-repos/nextjs","top_clusters":6,"seam_limit":8}
+[0m→ [0mRead .
+[0m→ [0mRead packages
+[0m→ [0mRead packages/next/src
+[0m→ [0mRead crates
+[0m→ [0mRead turbopack
+[0m→ [0mRead packages/next/src/server
+[0m→ [0mRead packages/next/src/build
+[0m→ [0mRead packages/next/src/client
+[0m→ [0mRead packages/next/src/shared
+[0m→ [0mRead packages/next/src/lib
+[0m→ [0mRead packages/next/src/cli
+[0m→ [0mRead packages/next/src/server/route-modules
+[0m→ [0mRead packages/next/src/server/app-render
+[0m→ [0mRead packages/next/src/server/request
+[0m→ [0mRead packages/next/src/server/dev
+[0m→ [0mRead packages/next/src/server/web
+[0m→ [0mRead packages/next/src/server/stream-utils
+[0m→ [0mRead packages/next/src/client/components
+Here's the architecture overview of this Next.js monorepo:
+
+## Top-Level Layout
+
+```
+nextjs/
+├── packages/next/src/   → Core framework source
+├── packages/             → Published npm packages (19 packages)
+├── crates/               → Rust crates (SWC transforms, napi bindings)
+├── turbopack/            → Turbopack bundler (Rust + JS)
+├── test/                 → All test suites
+├── docs/                 → Documentation (MDX)
+└── scripts/              → Build/CI tooling
+```
+
+## Core Package: `packages/next/src/`
+
+Organized into **6 major subsystems**:
+
+### 1. **CLI** (`cli/`) — Entry points
+- `next-dev.ts`, `next-build.ts`, `next-start.ts`, `next-export.ts`
+- Thin wrappers that bootstrap the right server or builder
+
+### 2. **Server** (`server/`) — Runtime
+- **`next-server.ts`** — Production HTTP server (request handling, route matching, rendering)
+- **`dev/next-dev-server.ts`** — Dev server (extends production server with HMR, on-demand compilation)
+- **`app-render/`** — App Router rendering pipeline (React Server Components, SSR, streaming)
+- **`route-modules/`** — Route handlers: `app-page/`, `app-route/`, `pages/`, `pages-api/`
+- **`request/`** — Request APIs (`headers()`, `cookies()`, `params()`, `search-params()`)
+- **`web/`** — Edge runtime (adapter, sandbox, spec extensions)
+- **`stream-utils/`** — Stream encoding, node-web-stream helpers for RSC
+- **`lib/`** — Router server, IPC, response caching, require hooks
+
+### 3. **Build** (`build/`) — Compilation pipeline
+- **`index.ts`** — Main build orchestrator (phases: compile, optimize, generate static)
+- **`webpack/`** — Webpack configuration and plugins
+- **`turbopack-build/`** — Turbopack production build integration
+- **`entries.ts`** — Entry point computation for pages/app
+- **`manifests/`** — Manifest generation (routes, middleware, etc.)
+
+### 4. **Client** (`client/`) — Browser runtime
+- **`app-index.tsx`** — Client bootstrap for App Router
+- **`router.ts`** — Pages Router client router
+- **`components/`** — App Router client components (layouts, navigation, redirect, error boundaries)
+- **`link.tsx`** — `<Link>` component
+- **`image-component.tsx`** — `<Image>` component
+
+### 5. **Shared** (`shared/lib/`) — Cross-platform utilities
+- Constants, router utils, app-path normalization, flatted data structures
+
+### 6. **Lib** (`lib/`) — General utilities
+- Metadata handling, TypeScript integration, custom routes/redirects, file system helpers
+
+## Communication Patterns
+
+| Boundary | Mechanism |
+|---|---|
+| **CLI → Server** | Direct class instantiation (e.g., `createDevServer()`) |
+| **Server ↔ Build** | Build outputs manifests + compiled files, server reads them at runtime |
+| **Client ↔ Server** | HTTP fetch (RSC payloads via Flight protocol), Server-Sent Events (dev HMR), WebSocket (Turbopack HMR) |
+| **Next.js ↔ Turbopack** | NAPI bindings (Rust FFI via `@next/swc`), or child process for `turbopack` binary |
+| **JS ↔ Rust** | NAPI-RS generated bindings in `packages/next-swc/`, SWC transforms in `crates/next-custom-transforms/` |
+| **Dev Server ↔ File Watcher** | Turbopack's file system watcher or Webpack's `watchFile` / `fs.watch` |
+
+## Key Architectural Flows
+
+**Build:**
+Config → Webpack/Turbopack → Build pipeline (`build/index.ts`) → Emits compiled output + route manifests in `.next/` directory
+
+**Dev Request:**
+HTTP Request → Router Server (IPC) → Dev Server → Turbopack/Webpack compile (if needed) → React Server Components render → Stream RSC payload + HTML to client
+
+**Production Request:**
+HTTP Request → `next-server.ts` → Route matching → Route module execution → Render (RSC/SSR/Static) → Response
+
+## Most Coupled Modules
+
+The architecture analysis shows the strongest dependencies between:
+1. **Server lib** ↔ **Build webpack** — the server imports heavily from build infrastructure
+2. **App render** ↔ **Build webpack** — rendering pipeline depends on build configuration
+3. **Client components** ↔ **Build webpack** — client-side code generation ties into the bundler
+
+## Rust / Native Layer
+
+- **`crates/next-core/`** — Turbopack-based Next.js core transforms
+- **`crates/next-custom-transforms/`** — SWC plugin transforms (JSX, stripping, etc.)
+- **`crates/next-build/`** — Turbopack production build orchestrator
+- **`turbopack/crates/`** — The Turbopack bundler itself (incremental, Rust-based)
+
+**Note:** The turbopack directory is a **git subtree** — it's semi-independent and synced from the Vercel Turbopack repo.

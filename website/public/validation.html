@@ -141,20 +141,20 @@
     <div class="card">
       <div class="hero-label">Public Evidence · Phase 8</div>
       <h2>MCP A/B Validation Results</h2>
-      <p>We ran Opencode (AI coding assistant) on 4 popular open-source repos (Python + Go) in two modes —
+      <p>We ran Opencode (AI coding assistant) on 5 popular open-source repos (Python + Go + TypeScript) in two modes —
          <strong>baseline</strong> (no context) and <strong>MCP</strong> (Big Indexer context server active).
          The same 4 architectural prompts were used for every run. Results below are raw and unfiltered.</p>
 
       <div class="stats-grid">
         <div class="stat-box">
           <div class="label">Evidence Coverage</div>
-          <div class="baseline">73.8%</div>
-          <div class="mcp">81.5%</div>
-          <div class="delta">+7.7 pp</div>
+          <div class="baseline">76.4%</div>
+          <div class="mcp">83.2%</div>
+          <div class="delta">+6.8 pp</div>
         </div>
         <div class="stat-box">
           <div class="label">Boundary Accuracy</div>
-          <div class="baseline">0.93</div>
+          <div class="baseline">0.94</div>
           <div class="mcp">1.00</div>
           <div class="delta">Perfect score</div>
         </div>
@@ -166,9 +166,9 @@
         </div>
         <div class="stat-box">
           <div class="label">Median Latency</div>
-          <div class="baseline">113.7s</div>
-          <div class="mcp">60.1s</div>
-          <div class="delta">47% faster</div>
+          <div class="baseline">133.8s</div>
+          <div class="mcp">63.0s</div>
+          <div class="delta">53% faster</div>
         </div>
       </div>
     </div>
@@ -230,6 +230,16 @@
             <td><span class="tag-mcp">MCP</span></td>
             <td>4</td><td>112.7s</td><td>85.0%</td><td>1.00</td><td>4.0/5</td><td>0</td>
           </tr>
+          <tr>
+            <td>vercel/next.js</td>
+            <td><span class="tag-base">Baseline</span></td>
+            <td>3</td><td>291.8s</td><td>89.2%</td><td>1.00</td><td>3.7/5</td><td>0</td>
+          </tr>
+          <tr>
+            <td>vercel/next.js</td>
+            <td><span class="tag-mcp">MCP</span></td>
+            <td>3</td><td class="win">66.4s</td><td class="win">91.7%</td><td>1.00</td><td>3.7/5</td><td>0</td>
+          </tr>
         </tbody>
       </table>
       <p class="note" style="margin-top:0.75rem">
@@ -281,8 +291,14 @@
          This indicates MCP gains are strongest when baseline models are architecturally blind (as in pydantic-core),
          and less dramatic when baseline exploration is already strong.</p>
 
+      <h3>next.js (TypeScript) — large monorepo signal</h3>
+      <p>Next.js adds a large TypeScript monorepo to the dataset. In the scored prompts, MCP slightly improved
+         evidence coverage (<strong>89.2% → 91.7%</strong>) with perfect boundary accuracy in both modes, while reducing
+         median latency from <strong>291.8s → 66.4s</strong>. One MCP p04 run did not invoke MCP tools and is marked
+         invalid/unscored, which is why Next.js currently shows 3 scored prompt pairs.</p>
+
       <h3>Hallucination rate: 0 in both modes</h3>
-      <p>No factually incorrect module or file claims were observed in any of the 30 scored runs.
+      <p>No factually incorrect module or file claims were observed in any of the 36 scored runs.
          MCP context grounds the model rather than introducing new errors.</p>
     </div>
 
@@ -299,8 +315,8 @@
          If you score any run differently, open an issue with your reasoning.</p>
 
       <h3>Sample size is still limited</h3>
-      <p>30 scored runs across 4 repos (3 Python + 1 Go) is stronger than the initial batch, but still not conclusive.
-         The pydantic-core finding is strong enough to stand on its own, but the aggregate story still needs more language diversity (especially large Java/TypeScript monorepos).</p>
+      <p>36 scored runs across 5 repos (Python + Go + TypeScript) is stronger than the initial batch, but still not conclusive.
+         The pydantic-core finding is strong enough to stand on its own, but the aggregate story still needs more language diversity (especially large Java/C# monorepos and independent replications).</p>
 
       <h3>Actionability was flat</h3>
       <p>Actionability scored 4.0–4.3/5 in both modes across all repos. MCP did not improve actionability scores.

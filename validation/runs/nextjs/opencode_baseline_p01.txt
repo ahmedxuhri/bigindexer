@@ -1,0 +1,150 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m• [0mExplore Next.js codebase architecture[90m Explore Agent[0m
+[0m✓ [0mExplore Next.js codebase architecture[90m Explore Agent[0m
+## Next.js Monorepo Architecture Overview
+
+**Version:** 16.3.0-canary.18 | **Monorepo:** pnpm workspaces | **Bundler:** Turbopack (default) + Webpack + Rspack
+
+---
+
+### Monorepo Layout
+
+| Directory | Purpose |
+|-----------|---------|
+| `packages/` | 19 npm packages — core `next`, `create-next-app`, `next-swc`, `eslint-plugin-next`, `font`, etc. |
+| `crates/` | 10 Rust crates — SWC transforms, NAPI bindings, build orchestration |
+| `turbopack/` | Turbopack bundler (Rust) — git subtree |
+| `test/` | All test suites (e2e, development, production, unit) |
+| `docs/` | Documentation (MDX) |
+| `scripts/` | Build, CI, maintenance scripts |
+
+---
+
+### Core Package: `packages/next/src/`
+
+```
+src/
+├── bin/next.ts              # CLI entry — commander parser, routes to subcommands
+├── cli/                     # Command implementations (dev, build, start, etc.)
+├── server/                  # ~81 files — server runtime (largest module)
+├── client/                  # 63 files — client-side runtime (router, link, image, etc.)
+├── build/                   # 61 files — build pipeline orchestrator
+├── lib/                     # Shared utilities (88 files)
+├── api/                     # User-facing API exports (next/link, next/image, etc.)
+├── compiled/                # 141 pre-compiled deps (React, webpack, zod, etc.)
+├── export/                  # Static export (next export)
+├── telemetry/               # Usage telemetry
+└── trace/                   # OpenTelemetry-compatible tracing
+```
+
+---
+
+### Server Architecture (Two-Process)
+
+```
+┌─────────────────────────────────────────────────────┐
+│  router-server.ts (Main HTTP process)                │
+│  ─────────────────────────────────────────────────    │
+│  • Entry HTTP server (start-server.ts)               │
+│  • filterInternalHeaders() — strips forgeable headers │
+│  • Route matching (RouteMatcherManager)               │
+│  • Middleware execution (Edge sandbox)                │
+│  • Static file serving                                │
+│  • Forwards to render workers via IPC                 │
+├─────────────────────────────────────────────────────┤
+│  render-server.ts (Worker process)                    │
+│  ───────────────────────────────────────────────     │
+│  • NextServer → next-server.ts / next-dev-server.ts   │
+│  • BaseServer.handleRequest()                         │
+│  • RouteModule.render() — React SSR / RSC rendering  │
+│  • Isolated per-request                               │
+└─────────────────────────────────────────────────────┘
+```
+
+**IPC Communication:** `server-ipc/utils.ts` — filtered internal headers, worker process proxy.
+
+**Route Resolution Layers:**
+```
+RouteMatcherManager
+  └── RouteMatcherProvider (app-page, app-route, pages, pages-api)
+        └── RouteMatcher
+              └── RouteMatch
+                    └── RouteModule (app-page, app-route, pages, pages-api)
+```
+
+The App Render (`server/app-render/`, 74 files) is the RSC rendering engine. Key file: `entry-base.ts` — the boundary for all `react-server-dom-webpack/*` imports.
+
+---
+
+### Dev Server Request Flow
+
+```
+Browser Request
+  │
+  ▼
+router-server.ts
+  ├── filterInternalHeaders()
+  ├── Route matching + Middleware
+  └── proxyRequest() → render worker
+        └── NextDevServer (next-dev-server.ts)
+              └── HMR via hot-reloader-{turbopack,webpack}.ts
+                    └── WebSocket updates → browser
+```
+
+---
+
+### Build Pipeline
+
+```
+next build → build/index.ts
+  ├── Load config, env, custom routes
+  ├── Create entrypoints (entries.ts)
+  ├── parseBundlerArgs() — selects Turbopack (default), Webpack, or Rspack
+  │
+  ├── [Turbopack] build/turbopack-build/impl.ts
+  │     └── Rust NAPI bindings (@next/swc) → native SWC
+  │
+  ├── [Webpack] build/webpack-build/impl.ts
+  │     └── 3 compilers (client + server + edge) with 30+ custom plugins
+  │
+  ├── Generate manifests (routes, pages, middleware, fonts)
+  ├── Prerender static pages
+  ├── Build tracing (collect-build-traces.ts — standalone output)
+  └── Output to .next/
+```
+
+---
+
+### Client Runtime
+
+| File | Purpose |
+|------|---------|
+| `app-index.tsx` | Bootstrap React hydration, setup router, register HMR |
+| `router.ts` | Client navigation, prefetching, history |
+| `link.tsx` | `<Link>` component |
+| `image-component.tsx` | `<Image>` component |
+| `route-loader.ts` | Dynamic route-based code splitting |
+| `page-loader.ts` | Page loading and rendering |
+| `components/redirect.tsx` | Client-side redirect utilities |
+
+---
+
+### Key Architecture Patterns
+
+1. **Two-process server model** — Router process owns HTTP + middleware; render workers handle React SSR/RSC in isolation. IPC for communication.
+
+2. **React vendoring** — React lives in `src/compiled/react*`. The boundary is `entry-base.ts` — all RSC imports must go through it.
+
+3. **Feature flag wiring** — Strict pipeline: type in `config-shared.ts` → schema in `config-schema.ts` → injection in `define-env.ts` → runtime env in `next-server.ts`.
+
+4. **Bundler abstraction** — Same API surface whether Turbopack, Webpack, or Rspack. Selected via `parseBundlerArgs()` at entry.
+
+5. **Pre-compiled deps** — 141 npm packages bundled via `@vercel/ncc` into `dist/compiled/` to eliminate runtime dependency resolution.
+
+6. **Testing matrix** — Tests run against 3 bundlers × 2 modes (dev/start) = 6 combinations. Commands: `test-dev-turbo`, `test-dev-webpack`, `test-start-turbo`, `test-start-webpack`, etc.
+
+7. **Rust/SWC integration** — `crates/next-napi-bindings` is the JS↔Rust bridge. Used for both SWC transforms and Turbopack builds.
+
+8. **Security** — Internal headers filtered at router entry point (`filterInternalHeaders()` in `router-server.ts`) to prevent header forgery.

@@ -1,0 +1,49 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m⚙ [0mbigindexer_impact_neighbors {"symbol_or_file":"packages/next/src/server/base-server.ts","depth":2,"limit":30}
+[0m⚙ [0mbigindexer_cluster_of_file {"file_path":"packages/next/src/server/base-server.ts"}
+[0m⚙ [0mbigindexer_high_coupling_seams {"file_or_cluster":"packages/next/src/server/base-server.ts","limit":12}
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"packages/next/src/server/base-server.ts","limit":12}
+[0m⚙ [0mbigindexer_architecture_summary {"path_scope":"packages/next/src/server/base-server.ts","top_clusters":8,"seam_limit":12}
+[0m• [0mFind direct importers of base-server.ts[90m Explore Agent[0m
+[0m✓ [0mFind direct importers of base-server.ts[90m Explore Agent[0m
+## Blast Radius: `packages/next/src/server/base-server.ts`
+
+**`base-server.ts` is the central server base class** — the highest-impact file in the Next.js server runtime. Changes here ripple broadly.
+
+### Direct Dependents (import it)
+
+| File | Relationship |
+|------|-------------|
+| `server/next-server.ts` | **Direct subclass** (`NextNodeServer extends BaseServer`) + re-exports everything |
+| `server/dev/next-dev-server.ts` | **Transitive subclass** (`DevServer extends NextNodeServer`) |
+| `server/app-render/types.ts` | Imports `RequestLifecycleOpts` type |
+| `server/async-storage/work-store.ts` | Imports `RequestLifecycleOpts` type |
+| `server/after/after-context.ts` | Imports `RequestLifecycleOpts` type |
+| `export/types.ts` | Imports `NextEnabledDirectories` type |
+| `export/routes/app-page.ts` | Imports `RequestLifecycleOpts` type |
+| `build/index.ts` | Imports `NextEnabledDirectories` type |
+
+### Highest-Coupling Areas (strongest seams)
+
+| Affected Area | Edge Count | Dominant Interaction |
+|--------------|-----------|---------------------|
+| **Webpack build** (`build/webpack/`) | 221 edges | Error/invoke patterns — modifying base-server can break build plugins |
+| **Client components** (`client/component*`) | 125 edges | Runtime error propagation |
+| **Server incremental cache** (`server/lib/incremental-*`) | 52 edges | Subscribe/emit — affects caching behavior |
+| **App renderer** (`server/app-render/`) | 45 edges | Subscribe/emit — render pipeline |
+| **SWC build** (`build/swc/`) | 43 edges | Error recovery — SWC integration |
+| **Router/route matching** (`server/route-mod*`, `shared/lib/rou*`) | 75+86 units | Routing decisions |
+| **Next devtools** (`next-devtools/`) | 34 edges | Dev tool integration |
+| **Segment config** (`build/segment-*`) | 30 edges | Config loading |
+
+### Risk Profile
+
+This file defines:
+- The `BaseServer` class (50+ methods including `handleRequest`, `render`, `pipe`, `prepare`)
+- Key types (`RequestLifecycleOpts`, `MiddlewareRoutingItem`, `NextEnabledDirectories`) consumed across server, export, and build subsystems
+
+**Modifying public API methods or types** on `BaseServer` will break the two subclass servers (`NextNodeServer`, `DevServer`) and any file consuming those types. **Modifying internal implementation details** primarily affects webpack build plugins, client error handling, and the incremental cache — the ~2200+ impacted units across the codebase.
+
+**To verify changes**: run `pnpm --filter=next types` first, then the server integration test suites (`test/development/`, `test/e2e/app-dir/`).

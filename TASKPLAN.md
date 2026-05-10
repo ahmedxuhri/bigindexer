@@ -102,13 +102,14 @@ Responding to external review feedback (four concrete gaps):
 
 Phase 8 Step 4 evidence (A/B validation runs) - COMPLETE:
 
-- **Repos**: tiangolo/fastapi, django/django, pydantic/pydantic-core, prometheus/prometheus (4 repos, 30 scored runs)
+- **Repos**: tiangolo/fastapi, django/django, pydantic/pydantic-core, prometheus/prometheus, vercel/next.js (5 repos, 36 scored runs)
 - **CLI**: opencode 1.14.41, model: deepseek-v4-flash
-- **Evidence coverage**: 73.8% baseline → 81.5% MCP (+7.7 pp)
-- **Boundary accuracy**: 0.93 baseline → 1.00 MCP (perfect)
+- **Evidence coverage**: 76.4% baseline → 83.2% MCP (+6.8 pp)
+- **Boundary accuracy**: 0.94 baseline → 1.00 MCP (perfect)
 - **Hallucinations**: 0 in both modes
-- **Median latency**: 113.7s baseline → 60.1s MCP (47% faster)
+- **Median latency**: 133.8s baseline → 63.0s MCP (53% faster)
 - **Key finding**: pydantic-core p01 baseline had 0% coverage, MCP brought it to 80%
+- **Note**: next.js p04 MCP run did not invoke MCP tools and is marked invalid/unscored
 - **Public page**: `https://bigindexer.com/validation`
 - **Public doc**: `docs/VALIDATION_EVIDENCE.md`
 - **Aggregate CSV**: `output/validation/mcp-ab/aggregate.csv` (gitignored, reproducible)

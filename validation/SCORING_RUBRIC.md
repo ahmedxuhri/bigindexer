@@ -114,6 +114,15 @@ Hallucinations are counted per run. Zero is expected; any non-zero value is a se
 6. Notes `model/labels/` as the shared label data model used across layers
 7. Notes `discovery/` as the service discovery subsystem
 
+#### vercel/next.js
+1. Identifies monorepo layout with `packages/` as the primary source root
+2. Identifies `packages/next/src/` as the core framework implementation
+3. Identifies `packages/next/src/server/` as the server/runtime layer
+4. Identifies `packages/next/src/build/` as the build pipeline layer
+5. Identifies `packages/next/src/client/` as the browser/runtime layer
+6. Identifies Rust/native layer in `crates/` and/or `turbopack/`
+7. Explains at least one concrete communication path (e.g. router↔render IPC, build manifests↔runtime, or client↔server request flow)
+
 ### p02 — Boundary Analysis
 
 **Prompt:** "Identify the main architectural boundaries in this codebase. Where are the integration seams? What are the strongest coupling points between modules?"
@@ -148,6 +157,16 @@ Hallucinations are counted per run. Zero is expected; any non-zero value is a se
 4. Notes the Appender interface as the storage boundary contract
 5. Identifies remote read/write as the external integration seam
 
+#### vercel/next.js
+1. Identifies process/runtime boundary between router-server and render server (or equivalent server boundary)
+2. Identifies JavaScript↔Rust boundary (SWC/NAPI or turbopack native integration)
+3. Identifies build↔runtime seam (manifest/chunk/config artifacts crossing phases)
+4. Identifies bundler seam/coupling (Webpack/Turbopack/Rspack integration point)
+5. Identifies RSC/app-render↔client boundary (or equivalent server-render/client-render seam)
+6. Identifies incremental cache / server lib seam as an integration boundary
+7. Identifies internal header / request metadata seam (security/protocol boundary)
+8. Names at least one concrete high-coupling hotspot file/module
+
 ### p03 — Blast Radius
 
 **Prompt:** "If I change [target function/module], what is the blast radius? What other parts of the codebase would be affected?"
@@ -157,6 +176,7 @@ Hallucinations are counted per run. Zero is expected; any non-zero value is a se
 - django: `get_response` in `django/core/handlers/base.py`
 - pydantic-core: `SchemaValidator.__init__` in the Rust core
 - prometheus: `fanout.Querier` in `storage/fanout.go`
+- next.js: `BaseServer` in `packages/next/src/server/base-server.ts`
 
 **Checklist (fastapi — `solve_dependencies`):**
 1. Identifies HTTP request path (routing.py) as a direct call site
@@ -187,6 +207,13 @@ Hallucinations are counted per run. Zero is expected; any non-zero value is a se
 4. Notes federation as a consumer of query results
 5. Identifies chunk iterators / series set protocol as the downstream contract
 
+**Checklist (next.js — `BaseServer`):**
+1. Identifies direct dependents (`next-server.ts`, `next-dev-server.ts`) as primary blast radius
+2. Identifies type consumers of `RequestLifecycleOpts` / related server types
+3. Identifies coupling to at least one major subsystem (build, app-render, client components, incremental cache)
+4. Notes signature/API changes as high-risk across subclasses/consumers
+5. Provides at least one concrete validation path (tests/typecheck/build checks)
+
 ### p04 — Safe Implementation Path
 
 **Prompt:** "What is the safest way to add [feature] to this codebase, given the existing architecture?"
@@ -196,6 +223,7 @@ Hallucinations are counted per run. Zero is expected; any non-zero value is a se
 - django: Add a per-request audit log
 - pydantic-core: Add a custom string validator
 - prometheus: Add a new HTTP API endpoint for label cardinality statistics
+- next.js: Add a per-request trace-id response header
 
 **Checklist (fastapi — timing middleware):**
 1. Recommends `@app.middleware("http")` or ASGI middleware pattern (not modifying routing internals)
@@ -224,6 +252,13 @@ Hallucinations are counted per run. Zero is expected; any non-zero value is a se
 3. Notes the existing `/api/v1/labels` endpoint as the pattern to follow
 4. Identifies the `series` query path for cardinality data
 5. Does NOT recommend modifying the storage layer itself
+
+**Checklist (next.js — trace-id header):**
+1. Recommends outer server handler insertion point (`router-server.ts`/equivalent) for widest path coverage
+2. Recommends server-generated request ID (not trusting client header input)
+3. Mentions `INTERNAL_HEADERS` hardening / anti-forgery boundary for request-id header
+4. Mentions request metadata propagation for downstream usage
+5. Notes implementation safety guard(s) (e.g. `headersSent`, optional OTel trace alignment, or equivalent)
 
 ---
 

@@ -1,30 +1,9 @@
 [BGI] Scanning /tmp/bgi-ab-repos/nextjs ...
-[BGI] Gate 1 complete — 6874 units fingerprinted
-[BGI] TOKEN-CENSUS — 2288 files, bands: Mask 1=10, Mask 2=9, Mask 3=10
-[BGI] Gate 2 complete — 40430 edges detected (1172 suspended)
-[BGI] Gate 3 complete — 2275 clusters (558 hard, 0 seams, 0 fuse events)
-[BGI] SEP — 1172 new suspended, 1145 resurrected, 0 promoted to INTENTIONAL_BOUNDARY
-[BGI] Graph written to /root/mad/sessions/bgi/output/validation/mcp-ab/nextjs/bgi-graph.json
+[BGI] Gate 1 complete — 14777 units fingerprinted
+[BGI] TOKEN-CENSUS — 7922 files, bands: Mask 1=11, Mask 2=11, Mask 3=7
+[BGI] Gate 2 complete — 213613 edges detected (345 suspended)
+[BGI] Gate 3 complete — 7891 clusters (792 hard, 0 seams, 0 fuse events)
+[BGI] SEP — 345 new suspended, 310 resurrected, 0 promoted to INTENTIONAL_BOUNDARY
+[BGI] Graph written to output/validation/mcp-ab/nextjs/bgi-graph.json
 [BGI] Resurrection forecasts: 1 odd group(s) analyzed
-Traceback (most recent call last):
-  File "/usr/local/bin/bgi", line 6, in <module>
-    sys.exit(main())
-  File "/root/mad/sessions/bgi/bgi/cli.py", line 84, in main
-    run_scan(
-  File "/root/mad/sessions/bgi/bgi/pipeline.py", line 195, in run_scan
-    ai_client = make_deepseek_client(ai_key) if ai_key else None
-  File "/root/mad/sessions/bgi/bgi/gate1/ai_fallback.py", line 90, in make_deepseek_client
-    from openai import OpenAI
-  File "/usr/local/lib/python3.10/dist-packages/openai/__init__.py", line 9, in <module>
-    from . import types
-  File "/usr/local/lib/python3.10/dist-packages/openai/types/__init__.py", line 5, in <module>
-    from .batch import Batch as Batch
-  File "/usr/local/lib/python3.10/dist-packages/openai/types/batch.py", line 6, in <module>
-    from .._models import BaseModel
-  File "/usr/local/lib/python3.10/dist-packages/openai/_models.py", line 23, in <module>
-    import pydantic
-  File "/usr/local/lib/python3.10/dist-packages/pydantic/__init__.py", line 8, in <module>
-    _ensure_pydantic_core_version()
-  File "/usr/local/lib/python3.10/dist-packages/pydantic/version.py", line 94, in _ensure_pydantic_core_version
-    raise SystemError(
-SystemError: The installed pydantic-core version (2.46.0) is incompatible with the current pydantic version, which requires 2.46.4. If you encounter this error, make sure that you haven't upgraded pydantic-core manually.
+[BGI] Architecture narration written to output/validation/mcp-ab/nextjs/agents.md

@@ -1,0 +1,24 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m• [0mExplore trace-id/header architecture[90m Explore Agent[0m
+[0m✱ [0mGrep "trace.?[Ii][Dd]|traceId|requestId|x-request-id|x-trace-id"[90m in packages/next/src · 143 matches[0m
+[0m✱ [0mGrep "x-nextjs-|setHeader|responseHeaders"[90m in packages/next/src/server · 132 matches[0m
+Let me explore the codebase to understand the existing architecture for request handling and response headers.
+[0m✓ [0mExplore trace-id/header architecture[90m Explore Agent[0m
+The safest insertion point is `packages/next/src/server/lib/router-server.ts` in `requestHandlerImpl`, right after `filterInternalHeaders()` (~line 232). This covers all code paths (static files, 404s, redirects, middleware, renders) in both dev and prod.
+
+```typescript
+// After filterInternalHeaders(req.headers) and addRequestMeta(req, 'relativeProjectDir', ...)
+const requestTraceId = crypto.randomUUID()
+res.setHeader('x-request-id', requestTraceId)
+addRequestMeta(req, 'traceId', requestTraceId)
+```
+
+**Key safety considerations:**
+
+1. **Always generate server-side** — do NOT read from incoming request headers (forgable by external callers). If you must accept client-provided trace IDs, add the header name to `INTERNAL_HEADERS` in `packages/next/src/server/lib/server-ipc/utils.ts:42-54` to prevent forgery.
+
+2. **For OpenTelemetry correlation**, access the active span's `traceId` in `base-server.ts:897` where `withPropagatedContext` is already called — this gives you the W3C `traceparent` trace ID if OTEL is enabled.
+
+3. **Don't put it further down** — `base-server.ts:880` misses static file serving; `send-payload.ts` only covers rendered pages. The `router-server.ts` location catches everything.

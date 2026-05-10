@@ -1,0 +1,29 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m• [0mExplore codebase architecture[90m Explore Agent[0m
+[0m✓ [0mExplore codebase architecture[90m Explore Agent[0m
+## Main Architectural Boundaries
+
+1. **Process boundary** — Dev mode uses a 3-tier process model: CLI → Router Server (IPC via `child_process.fork()`) → Render Server. The `RESTART_EXIT_CODE` protocol in `cli/next-dev.ts` allows crash-isolated restarts.
+
+2. **Rust/JS NAPI boundary** — `packages/next/src/build/swc/index.ts` ↔ `crates/next-napi-bindings/` via NAPI-2 `.node` binaries. Generated types (`generated-native.d.ts`) must stay in sync with Rust APIs.
+
+3. **User-space vs framework internals** — `server/app-render/entry-base.ts` is the sole bridge through which framework code reaches user-bundled route templates (`build/templates/app-page.ts`). Templates are compiled by the *user's* bundler, so they cannot `require()` internal modules directly.
+
+## Strongest Integration Seams
+
+- **Bundler abstraction**: Three backend implementations (Turbopack/Webpack/Rspack) behind `lib/bundler.ts`, with three parallel hot-reloader implementations sharing a common interface.
+- **Build-time manifests → runtime**: Route modules load 10+ JSON manifest files from `.next/` at startup; this is the main data contract between build and runtime phases.
+- **HMR wire protocol**: `server/dev/hot-reloader-types.ts` defines `HMR_MESSAGE_SENT_TO_BROWSER` enum — the shared schema between server-side HMR and client-side WebSocket handling.
+- **Internal header protocol**: `server/lib/server-ipc/utils.ts` lists `INTERNAL_HEADERS` — the security-critical boundary preventing external forgery of `x-middleware-*`/`x-nextjs-*` headers.
+
+## Strongest Coupling Points
+
+| Coupling | Modules | Why it's tight |
+|---|---|---|
+| **Entry-base + Templates** | `entry-base.ts` ↔ `templates/app-page.ts` | Template code imports vendored React via `entryBase.*`; every new internal export must flow through this chokepoint |
+| **Config Schema** | `config-shared.ts` ↔ `config-schema.ts` ↔ `define-env.ts` | Type declarations, Zod validation, and build-time env injection must stay in 3-way sync |
+| **SWC Bindings** | `build/swc/index.ts` ↔ Rust crates | JS wrapper calls NAPI directly; generated .d.ts is auto-generated but must reflect exact Rust API shape |
+| **Dev Bundler Service** | `router-server.ts` ↔ `dev-bundler-service.ts` ↔ `hot-reloader-*.ts` | 3-way cycle: HTTP router asks bundler service which talks to hot reloader which emits HMR to browser |
+| **Async Storage** | `server/app-render/` async stores ↔ React rendering pipeline | React's concurrent rendering depends on `AsyncLocalStorage` instances injected by the framework |

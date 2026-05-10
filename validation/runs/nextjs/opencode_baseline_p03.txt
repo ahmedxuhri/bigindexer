@@ -1,0 +1,22 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m• [0mAnalyze blast radius of base-server.ts[90m Explore Agent[0m
+[0m✓ [0mAnalyze blast radius of base-server.ts[90m Explore Agent[0m
+Changes to `base-server.ts` affect **three tiers**:
+
+**Tier 1 — Direct subclasses (highest risk):**
+- `next-server.ts` (`NextNodeServer`, extends `BaseServer`) — production `next start` server
+- `next-dev-server.ts` (`DevServer`, extends `NextNodeServer`) — `next dev` server  
+- `next.ts` (`NextServer` wrapper) — public API layer that instantiates both
+
+**Tier 2 — Type consumers (moderate risk):**
+- `app-render/types.ts`, `work-store.ts`, `after-context.ts` — import `RequestLifecycleOpts`
+- `export/types.ts`, `build/index.ts` — import `NextEnabledDirectories`
+- `export/routes/app-page.ts` — imports `RequestLifecycleOpts`
+
+**Tier 3 — Observability / build config (lower risk):**
+- OTEL tests asserting `'BaseServer.handleRequest'` span type (2 test files)
+- Build/export pipeline type usage
+
+The `export * from './base-server'` in `next-server.ts` means adding/removing exports propagates to everything importing from `next-server`. Changing abstract method signatures or the constructor breaks both subclasses.

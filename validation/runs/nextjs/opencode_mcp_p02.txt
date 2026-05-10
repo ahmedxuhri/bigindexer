@@ -1,0 +1,53 @@
+[0m
+> build · deepseek-v4-flash
+[0m
+[0m⚙ [0mbigindexer_architecture_summary {"top_clusters":10,"seam_limit":12}
+[0m⚙ [0mbigindexer_high_coupling_seams {"limit":15}
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"cluster_packages_next_src_build_webpack_","limit":15}
+[0m⚙ [0mbigindexer_boundary_edges {"file_or_cluster":"cluster_packages_next_src_server_app-ren","limit":15}
+[0m⚙ [0mbigindexer_impact_neighbors {"symbol_or_file":"packages/next/src/server/next-server.ts","depth":1,"limit":20}
+Here are the key architectural findings:
+
+## Major Clusters (by size)
+
+| Cluster | File | Size |
+|---|---|---|
+| `packages/next/src/server/next-server.ts` | Production server | 65 units |
+| `packages/next/src/server/base-server.ts` | Base server | 47 units |
+| `packages/next/src/server/next.ts` | Server factory | 45 units |
+| `packages/next/src/build/utils.ts` | Build utilities | 34 units |
+| `packages/next/src/server/dev/next-dev-server.ts` | Dev server | 32 units |
+
+## Strongest Integration Seams
+
+**1. `src/build/webpack` ↔ `src/server/lib/incremental`** (2329 edges)
+The **#1 coupling point** — webpack plugin system feeds into incremental cache (ISR, static generation). This is the build→cache seam.
+
+**2. `src/server/app-render` ↔ `src/build/webpack`** (1804 edges)
+App Router rendering is deeply coupled to webpack-generated manifests/chunks.
+
+**3. `src/client/components` ↔ `src/build/webpack`** (1755 edges)
+Client-side components depend on webpack's module graph and chunk loading.
+
+**4. `src/server/lib/incremental` ↔ `src/client/components`** (1220 edges, **HARD** seam)
+Cache revalidation logic directly calls into client component loading — a **hard boundary** (not predicted, concrete imports).
+
+**5. `src/server/request` → `src/build/webpack`** (997 edges)
+Request handling pulls in webpack module definitions at runtime.
+
+**6. `src/server/app-render` ↔ `src/client/components`** (762 edges, **HARD**)
+Server-side rendering hard-depends on client component internals — the RSC/client boundary.
+
+## Blast Radius Analysis
+
+`next-server.ts` impacts **926 units** across the codebase. The top impacted clusters:
+
+- `build/webpack` (138 units) — heaviest consumer
+- `client/components` (73 units)
+- `server/lib/incremental` (43 units) — cache layer
+- `server/route-matching` (38 units)
+- `server/app-render` (32 units)
+
+## Summary
+
+The **webpack build system** is the central hub — nearly every seam in the top 12 involves it. The **incremental cache** and **app-render** are the two most tightly integrated consumers. The **client components** package is a hard (non-predicted) dependency for both app-render and the incremental cache, making it a structural bottleneck. The **`next-server.ts`** production server is the widest-impact single file, touching practically every subsystem.
