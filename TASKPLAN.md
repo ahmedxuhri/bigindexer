@@ -104,7 +104,21 @@ Shipped in MCP context layer to address actionability plateau:
 Status:
 - Implementation shipped to repo.
 - Public docs updated (`README.md`, `docs/MCP_SETUP.md`, validation docs/page).
-- Next step: refresh A/B validation to measure actionability movement post-BGI-TWIN shipment.
+- Post-shipment refresh slice completed for p04 across 5 repos with valid MCP invocation evidence (`CallToolRequest` present in all 5 runs).
+
+## Update (2026-05-11) — p04 refresh slice completed
+
+BGI-TWIN post-shipment refresh (MCP, p04 only, 5 repos):
+
+- Actionability: **4.8/5** (up from pre-shipment aggregate 4.0/5)
+- Evidence coverage: **96.0%**
+- Boundary accuracy: **1.0**
+- Hallucinations: **0**
+- Median latency: **77.63s**
+
+Operational notes:
+- Pydantic MCP startup required running BGI MCP command from `/root/mad/sessions/bgi` (to avoid local repo `pydantic` package shadowing installed runtime deps).
+- Full 40-run protocol refresh remains open; p04 slice is now evidence-backed.
 
 ## Phase 9 Validation Credibility Fixes - COMPLETE
 

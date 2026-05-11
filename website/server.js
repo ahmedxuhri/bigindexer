@@ -76,12 +76,25 @@ app.get('/validation', (req, res) => {
 // API: validation summary (JSON)
 app.get('/api/validation/summary', (req, res) => {
   res.json({
-    generated: '2026-05-10',
+    generated: '2026-05-11',
     shipment_update: {
       date: '2026-05-11',
       name: 'BGI-TWIN MCP context package',
       tools: ['task_fingerprint', 'behavioral_twins', 'twin_context'],
-      note: 'Validation metrics below are pre-refresh; rerun pending.'
+      note: 'Global A/B metrics below are pre-refresh baseline. A post-shipment p04 refresh slice has now been added.'
+    },
+    refresh_update: {
+      date: '2026-05-11',
+      scope: 'p04 only, 5 repos, MCP mode, explicit twin_context usage',
+      prompts: 5,
+      mcp_invocation_evidence: 'CallToolRequest present in all runs',
+      metrics: {
+        evidence_coverage_pct: 96.0,
+        boundary_accuracy: 1.0,
+        actionability: 4.8,
+        hallucinations: 0,
+        median_latency_s: 77.63
+      }
     },
     repos: ['tiangolo/fastapi', 'django/django', 'pydantic/pydantic-core', 'prometheus/prometheus', 'vercel/next.js'],
     cli: 'opencode 1.14.41',

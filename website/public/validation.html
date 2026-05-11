@@ -143,7 +143,7 @@
       <h2>MCP A/B Validation Results</h2>
       <p>We ran Opencode (AI coding assistant) on 5 popular open-source repos (Python + Go + TypeScript) in two modes —
          <strong>baseline</strong> (no context) and <strong>MCP</strong> (Big Indexer context server active).
-         The same 4 architectural prompts were used for every run. Results below are raw and unfiltered.</p>
+         The same 4 architectural prompts were used for every run. Global A/B metrics below are pre-shipment baseline.</p>
 
       <div class="stats-grid">
         <div class="stat-box">
@@ -170,6 +170,12 @@
           <div class="mcp">66.2s</div>
           <div class="delta">51% faster</div>
         </div>
+      </div>
+      <div class="callout" style="margin-top:0.75rem">
+        <strong>Post-shipment refresh (2026-05-11, p04 slice):</strong>
+        5 MCP runs with explicit <code>twin_context</code> and valid MCP invocation evidence improved
+        actionability to <strong>4.8/5</strong> (from 4.0 aggregate), with
+        <strong>96.0%</strong> evidence coverage and <strong>0</strong> hallucinations.
       </div>
     </div>
 
@@ -319,16 +325,16 @@
       <p>40 scored runs across 5 repos (Python + Go + TypeScript) is stronger than the initial batch, but still not conclusive.
          The pydantic-core finding is strong enough to stand on its own, but the aggregate story still needs more language diversity (especially large Java/C# monorepos and independent replications).</p>
 
-      <h3>Actionability was flat</h3>
-      <p>Actionability scored 4.0–4.3/5 in both modes across all repos. MCP did not improve actionability scores.
-         This is honest signal: MCP helps the model <em>understand</em> the architecture, but does not yet produce
-         <em>more actionable</em> output. Combining MCP context with more directive prompts ("use MCP AND provide
-         copy-paste ready code") is an open improvement area.</p>
+      <h3>Actionability improved in the post-shipment refresh slice</h3>
+      <p>Before BGI-TWIN shipment, aggregate actionability was flat around 4.0/5. After shipment, a p04 refresh slice
+         (5 repos, MCP mode, explicit <code>twin_context</code>) raised actionability to <strong>4.8/5</strong>.
+         This is directional evidence that actionability improved, but a full 40-run rerun is still needed before replacing
+         the global A/B table above.</p>
       <div class="callout" style="margin-top:0.75rem">
         <strong>Shipped after this validation batch (2026-05-11):</strong>
         BGI-TWIN MCP context package:
         <code>task_fingerprint</code>, <code>behavioral_twins</code>, and <code>twin_context</code>
-        (top-3 twins + seam + rubric + confidence gate). Public metrics above are pre-refresh; rerun is next.
+        (top-3 twins + seam + rubric + confidence gate). The p04 refresh is complete; full-batch rerun is next.
       </div>
 
       <h3>We need one independent replication</h3>

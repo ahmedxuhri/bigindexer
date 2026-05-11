@@ -1,6 +1,6 @@
 # Big Indexer — MCP A/B Validation Summary
 
-> **Public evidence record** — Phase 8, generated May 10, 2026
+> **Public evidence record** — Phase 8, generated May 11, 2026
 
 ## What We Measured
 
@@ -18,7 +18,8 @@ Current scored set: **40 scored runs** (invalid MCP-invocation runs excluded fro
 
 > **Shipment update (2026-05-11):** BGI-TWIN context tools are now shipped in MCP:
 > `task_fingerprint`, `behavioral_twins`, and `twin_context` (top-3 twins + seam + rubric + confidence gate).
-> The metrics below are pre-refresh A/B metrics; a rerun on the same protocol is the next validation step.
+> A post-shipment refresh has now been run for p04 (safe implementation path) across 5 repos with verified MCP invocation.
+> Full 40-run refresh is still pending.
 
 ---
 
@@ -31,6 +32,30 @@ Current scored set: **40 scored runs** (invalid MCP-invocation runs excluded fro
 | Actionability (1–5) | 4.00 | **4.00** | +0.0 |
 | Hallucination flags | 0 | **0** | 0 |
 | Median latency | 133.8s | 66.2s | — |
+
+---
+
+## Post-shipment BGI-TWIN refresh (p04 only)
+
+MCP-only refresh slice (5 repos, p04 prompt, `twin_context` explicitly required, `CallToolRequest` evidence present in every run):
+
+| Metric | MCP pre-shipment (scored set) | MCP post-shipment p04 refresh | Δ |
+|---|---|---|---|
+| Actionability (1–5) | 4.00 | **4.80** | +0.80 |
+| Evidence coverage | 84.9% (all prompts) | **96.0%** (p04 refresh slice) | +11.1 pp |
+| Boundary accuracy | 1.00 | **1.00** | flat |
+| Hallucination flags | 0 | **0** | flat |
+| Median latency | 66.2s (all prompts) | 77.6s (p04 refresh slice) | +11.4s |
+
+Repo-level p04 refresh actionability:
+
+| Repo | Actionability | Notes |
+|---|---:|---|
+| fastapi | 5 | Explicit middleware recipe + test path, no routing internals |
+| django | 4 | Middleware-first path, clear insertion guidance, minor scope ambiguity remains |
+| pydantic | 5 | Python-side validator paths with concrete patterns |
+| prometheus | 5 | Anchored endpoint guidance in `web/api/v1/api.go` with seam-safe optioning |
+| next.js | 5 | Concrete header propagation patch and downstream metadata path |
 
 ---
 
