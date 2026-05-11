@@ -20,6 +20,7 @@ BGI is built to keep both under control, so the output remains usable on large r
 1. Find probable component boundaries for refactoring and ownership.
 2. Spot high-coupling seams between subsystems.
 3. Generate machine-readable architecture artifacts (`bgi-graph.json`, `fuse-graph.json`) for automation and review.
+4. Feed AI agents implementation-oriented MCP context (`task_fingerprint`, `behavioral_twins`, `twin_context`) so they start from proven in-repo patterns.
 
 ---
 
@@ -130,6 +131,7 @@ Artifact: `output/validation/kubernetes-optionb-controlled-median-v21.json`
 
 - Labeled precision/recall benchmark on external corpus.
 - Head-to-head quantitative benchmark vs external tools on the same labeled dataset.
+- Post-shipment benchmark refresh for BGI-TWIN context (`task → COV → top-3 twins + seam + rubric`) on the same 40-run protocol.
 
 ---
 
@@ -183,6 +185,14 @@ bgi diff /path/before /path/after --lang auto --out diff.json
 bgi mcp --graph bgi-graph.json --fuse-graph fuse-graph.json
 ```
 
+Example MCP usage pattern (from your client prompt):
+
+```text
+Use MCP tool twin_context for:
+"Add endpoint that validates input and persists data."
+Return top twin candidate, seam suggestion, and rubric checklist.
+```
+
 ---
 
 ## Current project status
@@ -191,6 +201,7 @@ bgi mcp --graph bgi-graph.json --fuse-graph fuse-graph.json
 - Phase 5 Water-Clock: complete
 - Phase 6 interactive index/search: complete
 - Phase 7 Option B (Gate 2 performance tuning): in progress
+- Phase 8 MCP + BGI-TWIN context packaging: shipped (validation rerun pending)
 
 Roadmap details: `TASKPLAN.md`
 

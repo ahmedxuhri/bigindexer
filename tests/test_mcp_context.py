@@ -21,13 +21,97 @@ def _build_artifacts(tmp_path: Path) -> tuple[Path, Path, dict]:
     cid_b = cluster_id_from_rep(rep_b)
     cid_c = cluster_id_from_rep(rep_c)
 
+    (tmp_path / "auth.py").write_text(
+        "\n".join(
+            [
+                "class AuthService:",
+                "    def login(self, request):",
+                "        if not request:",
+                "            raise ValueError('missing request')",
+                "        return {'ok': True}",
+                "",
+                "    def verify(self, token):",
+                "        return bool(token)",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "billing.py").write_text(
+        "\n".join(
+            [
+                "class BillingService:",
+                "    def charge(self, payload):",
+                "        if not payload:",
+                "            raise ValueError('empty payload')",
+                "        record = {'charged': True}",
+                "        return record",
+                "",
+                "    def refund(self, payment_id):",
+                "        return {'refund': payment_id}",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "api.py").write_text(
+        "\n".join(
+            [
+                "class Routes:",
+                "    def post_login(self, request):",
+                "        if not request:",
+                "            return {'ok': False}",
+                "        return {'ok': True}",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
     graph = {
         "units": [
-            {"id": "auth.py::AuthService::login", "cluster": cid_a, "language": "python"},
-            {"id": "auth.py::AuthService::verify", "cluster": cid_a, "language": "python"},
-            {"id": "billing.py::BillingService::charge", "cluster": cid_b, "language": "python"},
-            {"id": "billing.py::BillingService::refund", "cluster": cid_b, "language": "python"},
-            {"id": "api.py::Routes::post_login", "cluster": cid_c, "language": "python"},
+            {
+                "id": "auth.py::AuthService::login",
+                "cluster": cid_a,
+                "language": "python",
+                "confidence": 0.95,
+                "tokens": ["COV.AUTHENTICATE", "COV.INTAKE", "COV.VALIDATE", "COV.OUTPUT"],
+                "class_context": ["COV.CONTRACT"],
+                "line_range": [2, 5],
+            },
+            {
+                "id": "auth.py::AuthService::verify",
+                "cluster": cid_a,
+                "language": "python",
+                "confidence": 0.92,
+                "tokens": ["COV.AUTHENTICATE", "COV.VALIDATE"],
+                "class_context": [],
+                "line_range": [7, 8],
+            },
+            {
+                "id": "billing.py::BillingService::charge",
+                "cluster": cid_b,
+                "language": "python",
+                "confidence": 0.93,
+                "tokens": ["COV.PERSIST", "COV.VALIDATE", "COV.INTAKE", "COV.OUTPUT"],
+                "class_context": ["COV.CONTRACT"],
+                "line_range": [2, 6],
+            },
+            {
+                "id": "billing.py::BillingService::refund",
+                "cluster": cid_b,
+                "language": "python",
+                "confidence": 0.9,
+                "tokens": ["COV.FETCH", "COV.OUTPUT"],
+                "class_context": [],
+                "line_range": [8, 9],
+            },
+            {
+                "id": "api.py::Routes::post_login",
+                "cluster": cid_c,
+                "language": "python",
+                "confidence": 0.88,
+                "tokens": ["COV.ROUTE", "COV.INTAKE", "COV.VALIDATE", "COV.OUTPUT"],
+                "class_context": [],
+                "line_range": [2, 5],
+            },
         ],
         "edges": [
             {
@@ -228,3 +312,58 @@ def test_guided_arch_context_repo_escalates_only_when_explicit_and_high_confiden
     assert guided["classification"]["needs_repo_scope"] is True
     assert guided["classification"]["scope"] in {"file", "repository"}
     assert guided["repository_context"] != {}
+
+
+def test_task_fingerprint_derives_cov_tokens(tmp_path: Path):
+    graph_path, fuse_path, _ = _build_artifacts(tmp_path)
+    service = ArchitectureContextService(str(graph_path), str(fuse_path))
+
+    fingerprint = service.task_fingerprint("Add an API endpoint that validates input and persists user data.")
+    assert fingerprint["status"] in {"ok", "ambiguous"}
+    assert "INTAKE" in fingerprint["tokens"]
+    assert "VALIDATE" in fingerprint["tokens"]
+    assert "PERSIST" in fingerprint["tokens"]
+
+
+def test_behavioral_twins_returns_ranked_candidates(tmp_path: Path):
+    graph_path, fuse_path, _ = _build_artifacts(tmp_path)
+    service = ArchitectureContextService(str(graph_path), str(fuse_path))
+
+    twins = service.behavioral_twins(
+        "Implement validation and persistence for a request payload.",
+        limit=3,
+        min_score=0.2,
+    )
+    assert twins["twin_candidates"]
+    assert twins["twin_candidates"][0]["unit"] == "billing.py::BillingService::charge"
+    assert twins["twin_candidates"][0]["source_available"] is True
+
+
+def test_twin_context_includes_seam_and_rubric(tmp_path: Path):
+    graph_path, fuse_path, _ = _build_artifacts(tmp_path)
+    service = ArchitectureContextService(str(graph_path), str(fuse_path))
+
+    ctx = service.twin_context(
+        "Implement validation and persistence for a request payload.",
+        limit=3,
+        include_source=True,
+    )
+    assert ctx["rubric"] == [
+        "exact function body",
+        "no TODOs",
+        "exact imports",
+        "explicit error handling",
+        "test case included",
+    ]
+    assert ctx["seam"]["anchor_unit"]
+    assert ctx["status"] in {"ready_for_delta_generation", "needs_more_context"}
+
+
+def test_twin_context_escalates_for_vague_task(tmp_path: Path):
+    graph_path, fuse_path, _ = _build_artifacts(tmp_path)
+    service = ArchitectureContextService(str(graph_path), str(fuse_path))
+
+    ctx = service.twin_context("Fix the bug.", limit=3, include_source=False, min_score=0.25)
+    assert ctx["status"] == "needs_more_context"
+    assert ctx["confidence_gate"]["status"] == "no_confident_twin"
+    assert "escalation" in ctx

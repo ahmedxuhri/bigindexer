@@ -35,7 +35,12 @@ If you do not use index DB, omit `--index-db`.
 4. `impact_neighbors(symbol_or_file, depth=2, limit=50)`
 5. `search_symbols(query, limit=10, context_unit_id="")`
 6. `architecture_summary(path_scope="", top_clusters=5, seam_limit=10)`
-7. `reload_artifacts()`
+7. `classify_prompt(prompt)`
+8. `guided_arch_context(prompt, max_items=8)`
+9. `task_fingerprint(task, max_tokens=8)`
+10. `behavioral_twins(task, limit=3, min_score=0.25, include_source=true)`
+11. `twin_context(task, limit=3, include_source=true, min_score=0.25)`
+12. `reload_artifacts()`
 
 ## 4) Client configuration pattern
 
@@ -52,6 +57,7 @@ If your client supports environment variables, set them as needed for your works
 2. "Show boundary edges touching `src/auth`."
 3. "What is the blast radius if I change `auth.py::AuthService::login`?"
 4. "Give me top coupling seams in this repo."
+5. "For task: `add endpoint that validates input and persists data`, call `twin_context` and return the top twin and seam."
 
 ## 6) Notes
 

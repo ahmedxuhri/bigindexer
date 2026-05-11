@@ -91,6 +91,21 @@ Next for MCP track:
 3. ~~Add thin website/waitlist flow on `bigindexer.com`~~ - **COMPLETE (Step 3)**
 4. ~~Use `validation/` workspace for managed A/B runs and public evidence collection~~ - **COMPLETE (Step 4)**
 
+## Update (2026-05-11) — BGI-TWIN shipment reflected
+
+Shipped in MCP context layer to address actionability plateau:
+
+1. `task_fingerprint(task, max_tokens)` — natural-language task to COV token interpretation.
+2. `behavioral_twins(task, limit, min_score, include_source)` — top behavioral twin retrieval via COV-token Jaccard.
+3. `twin_context(task, ...)` — context package with top twins, seam suggestion, 5-point rubric, and confidence-gated escalation.
+4. MCP server tools registered for all three in `bgi/bgi/mcp/server.py`.
+5. Coverage added in `tests/test_mcp_context.py` (fingerprinting, twin ranking, seam/rubric output, vague-task escalation).
+
+Status:
+- Implementation shipped to repo.
+- Public docs updated (`README.md`, `docs/MCP_SETUP.md`, validation docs/page).
+- Next step: refresh A/B validation to measure actionability movement post-BGI-TWIN shipment.
+
 ## Phase 9 Validation Credibility Fixes - COMPLETE
 
 Responding to external review feedback (four concrete gaps):

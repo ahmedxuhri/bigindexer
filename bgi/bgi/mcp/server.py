@@ -74,6 +74,31 @@ def create_mcp_server(
         return service.guided_arch_context(prompt=prompt, max_items=max_items)
 
     @mcp.tool()
+    def task_fingerprint(task: str, max_tokens: int = 8):
+        """Translate natural-language task text into COV tokens."""
+        return service.task_fingerprint(task=task, max_tokens=max_tokens)
+
+    @mcp.tool()
+    def behavioral_twins(task: str, limit: int = 3, min_score: float = 0.25, include_source: bool = True):
+        """Return top behavioral twin candidates ranked by COV overlap."""
+        return service.behavioral_twins(
+            task=task,
+            limit=limit,
+            min_score=min_score,
+            include_source=include_source,
+        )
+
+    @mcp.tool()
+    def twin_context(task: str, limit: int = 3, include_source: bool = True, min_score: float = 0.25):
+        """Return task COV + top twins + seam + rubric for implementation guidance."""
+        return service.twin_context(
+            task=task,
+            limit=limit,
+            include_source=include_source,
+            min_score=min_score,
+        )
+
+    @mcp.tool()
     def reload_artifacts():
         """Reload graph and fuse artifacts from disk."""
         return service.reload()

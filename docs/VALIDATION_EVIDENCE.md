@@ -16,6 +16,10 @@ and safe implementation path.
 
 Current scored set: **40 scored runs** (invalid MCP-invocation runs excluded from scoring).
 
+> **Shipment update (2026-05-11):** BGI-TWIN context tools are now shipped in MCP:
+> `task_fingerprint`, `behavioral_twins`, and `twin_context` (top-3 twins + seam + rubric + confidence gate).
+> The metrics below are pre-refresh A/B metrics; a rerun on the same protocol is the next validation step.
+
 ---
 
 ## Results at a Glance
@@ -123,6 +127,23 @@ opencode  # MCP context auto-injected
 ```
 
 See [docs/MCP_SETUP.md](../docs/MCP_SETUP.md) for full setup instructions.
+
+---
+
+## Post-validation shipment reflected in repo
+
+The repository now includes an implementation-specific MCP context package intended to address the "actionability flat" finding:
+
+1. `task_fingerprint(task)` — NL task → COV token interpretation.
+2. `behavioral_twins(task)` — top behavioral matches from existing repo units (Jaccard on COV token sets).
+3. `twin_context(task)` — combined output with:
+   - task COV
+   - top twin candidates (optional source excerpts)
+   - seam suggestion
+   - explicit 5-point actionability rubric
+   - confidence-gated escalation when no reliable twin exists
+
+This is designed as a deterministic context compiler layer; BGI still does not generate code.
 
 ---
 

@@ -27,6 +27,26 @@ def _normalize_path(path: str) -> str:
     return path.replace("\\", "/").lstrip("./")
 
 
+def _normalize_cov_token(token: str) -> str:
+    norm = token.strip().upper()
+    if norm.startswith("COV."):
+        norm = norm[4:]
+    return norm
+
+
+def _parse_line_range(raw: Any) -> tuple[int, int] | None:
+    if not isinstance(raw, (list, tuple)) or len(raw) != 2:
+        return None
+    try:
+        start = int(raw[0])
+        end = int(raw[1])
+    except (TypeError, ValueError):
+        return None
+    if start <= 0 or end < start:
+        return None
+    return (start, end)
+
+
 @dataclass(frozen=True)
 class PromptClass:
     scope: str
@@ -90,6 +110,45 @@ class ArchitectureContextService:
         "entire codebase",
     )
     _MODULE_TERMS = ("across packages", "cross-package", "module", "boundary", "architecture", "blast radius")
+    _IMPLEMENTATION_RUBRIC = [
+        "exact function body",
+        "no TODOs",
+        "exact imports",
+        "explicit error handling",
+        "test case included",
+    ]
+    _VAGUE_TASK_TERMS = ("fix", "bug", "issue", "problem", "improve", "optimize", "refactor", "clean up")
+    _TASK_TOKEN_TERMS: dict[str, tuple[str, ...]] = {
+        "INTAKE": ("input", "request", "payload", "parameter", "param", "args", "ingest", "receive"),
+        "OUTPUT": ("output", "response", "return", "render", "reply"),
+        "TRANSFORM": ("transform", "map", "convert", "normalize", "format"),
+        "MUTATE": ("mutate", "update", "modify", "change state"),
+        "SANITIZE": ("sanitize", "escape", "clean", "scrub"),
+        "CONDITIONAL": ("if", "condition", "branch", "switch"),
+        "LOOP": ("loop", "iterate", "for each", "batch"),
+        "GUARD": ("guard", "check", "prevent", "reject"),
+        "ROUTE": ("route", "endpoint", "handler", "controller", "api"),
+        "SCOPE": ("scope", "local", "global", "nested"),
+        "FETCH": ("fetch", "read", "load", "query", "get"),
+        "PERSIST": ("persist", "save", "store", "write", "commit", "insert"),
+        "EMIT": ("emit", "publish", "notify", "send event", "dispatch"),
+        "SUBSCRIBE": ("subscribe", "listener", "consumer", "watch"),
+        "DELEGATE": ("delegate", "forward", "proxy", "handoff"),
+        "CONTRACT": ("interface", "protocol", "contract", "schema"),
+        "COMPOSE": ("compose", "assemble", "aggregate", "combine"),
+        "INIT": ("init", "initialize", "setup", "boot"),
+        "TEARDOWN": ("teardown", "cleanup", "shutdown", "close"),
+        "RAISE": ("raise", "throw", "fail", "error"),
+        "RECOVER": ("recover", "retry", "fallback", "handle error"),
+        "DEFER": ("defer", "finally", "after", "ensure"),
+        "AUTHENTICATE": ("authenticate", "login", "sign in", "identity"),
+        "AUTHORIZE": ("authorize", "permission", "access control", "policy"),
+        "VALIDATE": ("validate", "verify", "check input", "assert"),
+        "LOG": ("log", "audit", "trace"),
+        "MEASURE": ("measure", "metric", "latency", "timing", "telemetry"),
+        "ASYNC": ("async", "await", "goroutine", "concurrent", "background"),
+        "TEST": ("test", "assertion", "unit test", "integration test"),
+    }
 
     def _load_graph(self) -> dict[str, Any]:
         if not self.graph_path.exists():
@@ -106,6 +165,7 @@ class ArchitectureContextService:
         self.graph = self._load_graph()
         self.fuse_graph = self._load_fuse_graph()
         self._response_cache.clear()
+        self.repo_root = self.graph_path.parent.resolve()
 
         self.units: list[dict[str, Any]] = self.graph.get("units", [])
         self.edges: list[dict[str, Any]] = self.graph.get("edges", [])
@@ -117,6 +177,10 @@ class ArchitectureContextService:
 
         self.units_by_file: dict[str, list[str]] = defaultdict(list)
         self.cluster_ids_by_file: dict[str, set[str]] = defaultdict(set)
+        self.units_by_cluster: dict[str, list[str]] = defaultdict(list)
+        self.unit_tokens: dict[str, set[str]] = {}
+        self.unit_line_ranges: dict[str, tuple[int, int] | None] = {}
+        self.unit_confidence: dict[str, float] = {}
         for u in self.units:
             uid = u.get("id")
             if not uid:
@@ -126,6 +190,10 @@ class ArchitectureContextService:
             cid = u.get("cluster")
             if cid:
                 self.cluster_ids_by_file[file_path].add(cid)
+                self.units_by_cluster[cid].append(uid)
+            self.unit_tokens[uid] = self._extract_cov_tokens(u)
+            self.unit_line_ranges[uid] = _parse_line_range(u.get("line_range"))
+            self.unit_confidence[uid] = float(u.get("confidence", 0.0) or 0.0)
 
         self.out_neighbors: dict[str, list[str]] = defaultdict(list)
         self.in_neighbors: dict[str, list[str]] = defaultdict(list)
@@ -363,6 +431,316 @@ class ArchitectureContextService:
             parent = _normalize_path(str(p.parent))
             return "" if parent == "." else parent
         return prompt_class.get("package_hint", "")
+
+    @staticmethod
+    def _extract_cov_tokens(unit: dict[str, Any]) -> set[str]:
+        tokens: set[str] = set()
+        for key in ("tokens", "class_context"):
+            for raw in unit.get(key, []) or []:
+                if isinstance(raw, str):
+                    norm = _normalize_cov_token(raw)
+                    if norm:
+                        tokens.add(norm)
+        return tokens
+
+    @staticmethod
+    def _symbol_from_unit_id(unit_id: str) -> str:
+        parts = unit_id.split("::")
+        return parts[-1] if parts else unit_id
+
+    def _read_unit_source(self, unit_id: str, max_lines: int = 160) -> str:
+        rel_file = _normalize_path(unit_id.split("::", 1)[0])
+        source_path = (self.repo_root / rel_file).resolve()
+        if self.repo_root not in source_path.parents and source_path != self.repo_root:
+            return ""
+        if not source_path.exists() or not source_path.is_file():
+            return ""
+        try:
+            lines = source_path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            return ""
+        line_range = self.unit_line_ranges.get(unit_id)
+        if not line_range:
+            return ""
+        start, end = line_range
+        end = min(end, start + max_lines - 1)
+        if start <= 0 or start > len(lines):
+            return ""
+        snippet = lines[start - 1:end]
+        return "\n".join(snippet).strip()
+
+    @staticmethod
+    def _gate_twin_confidence(task_confidence: float, best_score: float, candidate_count: int) -> dict[str, Any]:
+        if candidate_count <= 0 or task_confidence < 0.25 or best_score < 0.25:
+            return {
+                "status": "no_confident_twin",
+                "allow_output": False,
+                "recommended_action": "provide a more specific task description or give one example function",
+            }
+        if best_score >= 0.7 and task_confidence >= 0.55:
+            status = "high"
+        elif best_score >= 0.5 and task_confidence >= 0.45:
+            status = "medium"
+        elif best_score >= 0.35:
+            status = "low"
+        else:
+            status = "no_confident_twin"
+        return {
+            "status": status,
+            "allow_output": status != "no_confident_twin",
+            "recommended_action": "proceed with top twin" if status in {"high", "medium"} else "review all twin candidates manually",
+        }
+
+    @staticmethod
+    def _match_term(text_lower: str, term: str) -> bool:
+        if " " in term:
+            return term in text_lower
+        return re.search(rf"(?<![\\w]){re.escape(term)}(?![\\w])", text_lower) is not None
+
+    def task_fingerprint(self, task: str, max_tokens: int = 8) -> dict[str, Any]:
+        """Map a natural-language task into a COV token fingerprint."""
+        max_tokens = max(1, min(max_tokens, 16))
+        key = ("task_fingerprint", task, max_tokens)
+
+        def _build() -> dict[str, Any]:
+            text = task.strip()
+            low = text.lower()
+            scored: list[dict[str, Any]] = []
+            evidence_weight = 0
+
+            for token, terms in self._TASK_TOKEN_TERMS.items():
+                matched_terms = [term for term in terms if self._match_term(low, term)]
+                if not matched_terms:
+                    continue
+                evidence_weight += len(matched_terms)
+                score = min(0.98, 0.35 + (0.12 * len(matched_terms)))
+                scored.append(
+                    {
+                        "token": token,
+                        "score": round(score, 3),
+                        "matched_terms": matched_terms,
+                    }
+                )
+
+            scored.sort(key=lambda row: (row["score"], len(row["matched_terms"]), row["token"]), reverse=True)
+            selected = scored[:max_tokens]
+            task_cov = [row["token"] for row in selected]
+
+            vague_hits = [term for term in self._VAGUE_TASK_TERMS if self._match_term(low, term)]
+            confidence = 0.1
+            if selected:
+                confidence = 0.28 + (0.08 * len(selected)) + (0.05 * (evidence_weight / max(1, len(selected))))
+            if vague_hits and len(selected) <= 2:
+                confidence -= 0.12
+            confidence = round(max(0.05, min(0.95, confidence)), 2)
+
+            if not selected or confidence < 0.35:
+                status = "insufficient_signal"
+            elif confidence < 0.55:
+                status = "ambiguous"
+            else:
+                status = "ok"
+
+            return {
+                "task": task,
+                "tokens": task_cov,
+                "scored_tokens": selected,
+                "confidence": confidence,
+                "status": status,
+                "vague_terms_detected": vague_hits,
+                "interpretation": f"interpreted as COV tokens: {task_cov}" if task_cov else "could not infer clear COV tokens",
+            }
+
+        return self._cached(key, _build)
+
+    def behavioral_twins(
+        self,
+        task: str,
+        limit: int = 3,
+        min_score: float = 0.25,
+        include_source: bool = True,
+    ) -> dict[str, Any]:
+        """
+        Find top behavioral twins for a task using Jaccard overlap on COV tokens.
+
+        Returns top-N candidates and confidence-gate status.
+        """
+        max_limit = max(1, min(limit, 10))
+        score_floor = max(0.0, min(min_score, 1.0))
+        key = ("behavioral_twins", task, max_limit, round(score_floor, 3), bool(include_source))
+
+        def _build() -> dict[str, Any]:
+            fingerprint = self.task_fingerprint(task, max_tokens=10)
+            task_cov = fingerprint.get("tokens", [])
+            task_token_set = set(task_cov)
+            if not task_token_set:
+                gate = self._gate_twin_confidence(float(fingerprint.get("confidence", 0.0)), 0.0, 0)
+                return {
+                    "task": task,
+                    "task_cov": [],
+                    "task_fingerprint": fingerprint,
+                    "candidate_pool_size": 0,
+                    "twin_candidates": [],
+                    "confidence_gate": {
+                        **gate,
+                        "task_confidence": float(fingerprint.get("confidence", 0.0)),
+                        "best_score": 0.0,
+                    },
+                }
+
+            scored_rows: list[tuple[str, float, list[str], int]] = []
+            for uid, unit_token_set in self.unit_tokens.items():
+                if not unit_token_set:
+                    continue
+                overlap = task_token_set & unit_token_set
+                if not overlap:
+                    continue
+                union = task_token_set | unit_token_set
+                if not union:
+                    continue
+                score = len(overlap) / len(union)
+                if score < score_floor:
+                    continue
+                scored_rows.append((uid, score, sorted(overlap), len(unit_token_set)))
+
+            scored_rows.sort(
+                key=lambda row: (
+                    row[1],
+                    len(row[2]),
+                    self.unit_confidence.get(row[0], 0.0),
+                    row[0],
+                ),
+                reverse=True,
+            )
+            top = scored_rows[:max_limit]
+            best_score = top[0][1] if top else 0.0
+            gate = self._gate_twin_confidence(float(fingerprint.get("confidence", 0.0)), best_score, len(top))
+
+            candidates: list[dict[str, Any]] = []
+            for uid, score, overlap_tokens, unit_token_count in top:
+                line_range = self.unit_line_ranges.get(uid)
+                file_path = _normalize_path(uid.split("::", 1)[0])
+                source_text = self._read_unit_source(uid) if include_source else ""
+                candidates.append(
+                    {
+                        "unit": uid,
+                        "symbol": self._symbol_from_unit_id(uid),
+                        "file": file_path,
+                        "cluster": self.unit_by_id.get(uid, {}).get("cluster"),
+                        "line_range": list(line_range) if line_range else [],
+                        "score": round(score, 3),
+                        "overlap_tokens": overlap_tokens,
+                        "unit_token_count": unit_token_count,
+                        "unit_confidence": round(self.unit_confidence.get(uid, 0.0), 3),
+                        "source": source_text,
+                        "source_available": bool(source_text),
+                    }
+                )
+
+            return {
+                "task": task,
+                "task_cov": task_cov,
+                "task_fingerprint": fingerprint,
+                "candidate_pool_size": len(scored_rows),
+                "twin_candidates": candidates,
+                "confidence_gate": {
+                    **gate,
+                    "task_confidence": float(fingerprint.get("confidence", 0.0)),
+                    "best_score": round(best_score, 3),
+                },
+            }
+
+        return self._cached(key, _build)
+
+    def _suggest_seam(self, task_cov: set[str], twin_candidates: list[dict[str, Any]]) -> dict[str, Any]:
+        if not twin_candidates:
+            return {}
+        top = twin_candidates[0]
+        top_cluster = top.get("cluster")
+        if not top_cluster or top_cluster not in self.cluster_by_id:
+            return {
+                "anchor_unit": top.get("unit"),
+                "anchor_file": top.get("file"),
+                "anchor_line_range": top.get("line_range", []),
+                "suggestion": f"{top.get('file', '')} — insert near {top.get('symbol', '')}",
+            }
+
+        members = self.units_by_cluster.get(top_cluster, [])
+        ranked_members = []
+        for uid in members:
+            overlap = len(task_cov & self.unit_tokens.get(uid, set()))
+            ranked_members.append((overlap, self.unit_confidence.get(uid, 0.0), uid))
+        ranked_members.sort(reverse=True)
+        anchor_unit = ranked_members[0][2] if ranked_members else top.get("unit")
+        anchor_file = _normalize_path(str(anchor_unit).split("::", 1)[0]) if anchor_unit else top.get("file")
+        anchor_line = self.unit_line_ranges.get(anchor_unit) if anchor_unit else None
+
+        seams = self.high_coupling_seams(top_cluster, limit=3).get("seams", [])
+        related = seams[0] if seams else {}
+        related_cluster = (
+            related.get("target_cluster")
+            if related.get("source_cluster") == top_cluster
+            else related.get("source_cluster")
+        )
+
+        return {
+            "cluster": top_cluster,
+            "anchor_unit": anchor_unit,
+            "anchor_file": anchor_file,
+            "anchor_line_range": list(anchor_line) if anchor_line else [],
+            "related_cluster": related_cluster,
+            "related_seam": related,
+            "suggestion": f"{anchor_file} — insert near {self._symbol_from_unit_id(str(anchor_unit))}",
+        }
+
+    def twin_context(
+        self,
+        task: str,
+        limit: int = 3,
+        include_source: bool = True,
+        min_score: float = 0.25,
+    ) -> dict[str, Any]:
+        """
+        Return implementation-ready context package:
+        task fingerprint + top behavioral twins + seam + actionability rubric.
+        """
+        max_limit = max(1, min(limit, 10))
+        score_floor = max(0.0, min(min_score, 1.0))
+        key = ("twin_context", task, max_limit, bool(include_source), round(score_floor, 3))
+
+        def _build() -> dict[str, Any]:
+            twins = self.behavioral_twins(
+                task=task,
+                limit=max_limit,
+                min_score=score_floor,
+                include_source=include_source,
+            )
+            task_cov = set(twins.get("task_cov", []))
+            candidates = twins.get("twin_candidates", [])
+            gate = twins.get("confidence_gate", {})
+            seam = self._suggest_seam(task_cov, candidates)
+
+            status = "ready_for_delta_generation" if gate.get("allow_output") else "needs_more_context"
+            result = {
+                "task": task,
+                "status": status,
+                "task_cov": list(task_cov),
+                "task_fingerprint": twins.get("task_fingerprint", {}),
+                "twin_candidates": candidates,
+                "seam": seam,
+                "rubric": list(self._IMPLEMENTATION_RUBRIC),
+                "confidence_gate": gate,
+            }
+            if status == "needs_more_context":
+                result["escalation"] = {
+                    "status": "no_confident_twin",
+                    "task_cov": list(task_cov),
+                    "best_partial_match": candidates[0]["unit"] if candidates else "",
+                    "request": gate.get("recommended_action", "provide a more specific task"),
+                }
+            return result
+
+        return self._cached(key, _build)
 
     @staticmethod
     def _confidence_gain(

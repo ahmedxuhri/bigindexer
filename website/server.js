@@ -77,6 +77,12 @@ app.get('/validation', (req, res) => {
 app.get('/api/validation/summary', (req, res) => {
   res.json({
     generated: '2026-05-10',
+    shipment_update: {
+      date: '2026-05-11',
+      name: 'BGI-TWIN MCP context package',
+      tools: ['task_fingerprint', 'behavioral_twins', 'twin_context'],
+      note: 'Validation metrics below are pre-refresh; rerun pending.'
+    },
     repos: ['tiangolo/fastapi', 'django/django', 'pydantic/pydantic-core', 'prometheus/prometheus', 'vercel/next.js'],
     cli: 'opencode 1.14.41',
     model: 'deepseek-v4-flash',
