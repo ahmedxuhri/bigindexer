@@ -41,7 +41,31 @@ We re-ran the full TWIN prompt pack on a different model (`azure/gpt-4o`) across
 | Hallucination flags | 0 | **0** |
 | Median latency | 68.5s | **41.6s** |
 
-Interpretation: actionability, boundary accuracy, and zero-hallucination behavior replicated on GPT-4o, with faster latency. Evidence-tag discipline (`VERIFIED/HYPOTHESIS/UNKNOWN`) was notably weaker in this model slice.
+Interpretation: actionability, boundary accuracy, and zero-hallucination behavior replicated on GPT-4o, with faster latency.
+
+#### Evidence-gap interpretation (explicit)
+
+The evidence-coverage gap is real and should be read directly:
+- deepseek TWIN refresh (20 runs): **278** explicit `VERIFIED/HYPOTHESIS/UNKNOWN` labels (**13.9/run**)
+- GPT-4o TWIN replication (20 runs): **139** labels (**6.95/run**)
+
+On the p04 implementation slice, label density was **10.8/run** (deepseek) vs **5.2/run** (GPT-4o), while actionability remained high (4.8 vs 5.0), boundary remained 1.0 in both, and hallucinations remained 0 in both.
+
+This means the current evidence metric is sensitive to explicit tagging/citation style. GPT-4o often gives usable direction with fewer explicit evidence labels, so this rubric can score it lower on evidence coverage even when other quality signals remain strong. We keep this unnormalized and publish raw outputs for independent re-scoring.
+
+Example from the same prompt (fastapi p03, blast radius of `solve_dependencies`):
+
+```text
+deepseek (validation/runs/fastapi/opencode_mcp_p03_twin_refresh_r2.txt)
+| Definition spans lines 598–735 ... | VERIFIED |
+| get_request_handler ...             | VERIFIED |
+| get_websocket_app ...               | VERIFIED |
+VERIFIED: Only 3 call sites exist in the codebase.
+
+GPT-4o (validation/runs/fastapi/opencode_mcp_p03_twin_refresh_gpt4o_r1.txt)
+1. VERIFIED: Changes to solve_dependencies will directly impact tests.
+2. HYPOTHESIS: Other clusters may have dependent implications.
+```
 
 ---
 
@@ -136,6 +160,8 @@ We publish limitations before readers find them. A reader who discovers a flaw t
 
 **BGI-TWIN refresh is MCP-only.** No updated baseline was run alongside the refresh. We have no reason to believe the baseline changed, but this is a real experimental design limitation.
 
+**Evidence coverage is style-sensitive across models.** The rubric rewards explicit claim-level `VERIFIED/HYPOTHESIS/UNKNOWN` labeling with citations. Models that provide fewer explicit labels can under-score on evidence coverage despite strong actionability and boundary outcomes.
+
 **One invalid MCP run.** One next.js p04 original A/B run had no `CallToolRequest` evidence and is marked explicitly unscored in `runs.csv`. All 20 TWIN refresh runs have invocation evidence.
 
 **We still need external replication.** We now have one independent-model replication (GPT-4o), but we still need external teams to run and publish the protocol on their own repos.
@@ -151,7 +177,7 @@ We publish limitations before readers find them. A reader who discovers a flaw t
 | Model | deepseek-v4-flash + azure/gpt-4o |
 | MCP server | `bgi mcp --graph ... --fuse-graph ...` |
 | TWIN invocation | `twin_context` explicitly required in prompt; `CallToolRequest` confirmed in every TWIN run |
-| Evidence coverage | Recall of architectural facts vs ground-truth checklist |
+| Evidence coverage | Recall of architectural facts vs ground-truth checklist (sensitive to explicit label/citation style) |
 | Boundary accuracy | 0/1 — correct seam identification |
 | Actionability | 1–5 rubric: 5 = immediately actionable (copy-paste), 1 = vague |
 | Hallucination flags | Count of factually incorrect module/file claims |

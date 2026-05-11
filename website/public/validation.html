@@ -279,8 +279,8 @@
       <div class="stat-strip">
         <div class="stat-box">
           <div class="s-label">Actionability</div>
-          <div class="s-val">4.75<span style="font-size:1rem;color:#8b5cf6">/5</span></div>
-          <div class="s-delta">+0.75 vs pre-shipment MCP</div>
+          <div class="s-val">4.75–4.85<span style="font-size:1rem;color:#8b5cf6">/5</span></div>
+          <div class="s-delta">Cross-model TWIN range (deepseek + GPT-4o)</div>
         </div>
         <div class="stat-box">
           <div class="s-label">Boundary Accuracy</div>
@@ -412,6 +412,36 @@
         </table>
         <p class="note" style="padding:0.75rem 1.2rem">
           Replication interpretation: actionability, boundary accuracy, and zero-hallucination behavior held on GPT-4o. Evidence-tag discipline (<code>VERIFIED/HYPOTHESIS/UNKNOWN</code>) was weaker in this model slice.
+        </p>
+      </div>
+
+      <div class="callout orange">
+        <strong>Important: why GPT-4o evidence coverage is lower in this rubric.</strong>
+        Evidence coverage is scored as checklist recall from explicit, claim-level evidence statements. Across the same 20-run TWIN protocol, deepseek outputs contained <strong>278</strong> explicit
+        <code>VERIFIED/HYPOTHESIS/UNKNOWN</code> tags (<strong>13.9/run</strong>) while GPT-4o outputs contained <strong>139</strong> (<strong>6.95/run</strong>).
+        On the p04 implementation slice, tag density was <strong>10.8/run</strong> (deepseek) vs <strong>5.2/run</strong> (GPT-4o), while actionability stayed high (4.8 vs 5.0), boundary stayed perfect (1.0 vs 1.0), and hallucinations stayed zero.
+        <br><br>
+        Interpretation: this is a model/rubric interaction (explicit tagging style), not a loss of BGI grounding. We keep scores unnormalized and publish raw outputs so readers can audit this directly.
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0">Raw-output comparison (same prompt, two models)</h3>
+<pre><code>Prompt: fastapi p03 — "blast radius for solve_dependencies"
+
+deepseek (opencode_mcp_p03_twin_refresh_r2):
+| Definition spans lines 598–735 ... | VERIFIED |
+| get_request_handler ...             | VERIFIED |
+| get_websocket_app ...               | VERIFIED |
+VERIFIED: Only 3 call sites exist in the codebase.
+
+GPT-4o (opencode_mcp_p03_twin_refresh_gpt4o_r1):
+1. VERIFIED: Changes to solve_dependencies will directly impact tests.
+2. HYPOTHESIS: Other clusters may have dependent implications.</code></pre>
+        <p class="note">
+          Source artifacts:
+          <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/validation/runs/fastapi/opencode_mcp_p03_twin_refresh_r2.txt" target="_blank" rel="noopener">deepseek run</a>
+          ·
+          <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/validation/runs/fastapi/opencode_mcp_p03_twin_refresh_gpt4o_r1.txt" target="_blank" rel="noopener">GPT-4o run</a>
         </p>
       </div>
     </section>
@@ -691,6 +721,9 @@
 
         <h3>BGI-TWIN refresh is MCP-only — no updated baseline</h3>
         <p>The post-shipment refresh only ran the MCP+TWIN mode. The baseline numbers in the per-repo table are from the earlier A/B batch. We have no reason to believe the baseline changed (same repos, same prompts), but this is a real limitation of the experimental design.</p>
+
+        <h3>Evidence coverage is sensitive to explicit tagging style</h3>
+        <p>This rubric rewards explicit claim-level <code>VERIFIED/HYPOTHESIS/UNKNOWN</code> tagging with file/line citations. GPT-4o produced fewer explicit tags than deepseek in the same protocol, which likely lowers evidence coverage scores even when actionability and boundary accuracy stay strong. We intentionally do not normalize this away and instead publish raw outputs for independent re-scoring.</p>
 
         <h3>One MCP run did not invoke tools</h3>
         <p>One next.js p04 run in the original A/B batch was confirmed as invalid (no <code>CallToolRequest</code> in output) and is explicitly marked in <code>runs.csv</code> as unscored. All 20 BGI-TWIN refresh runs have <code>CallToolRequest</code> evidence present.</p>
