@@ -1,6 +1,6 @@
 # Big Indexer — Validation Evidence
 
-> **Public evidence record** — 60 scored runs across 5 repos (Python + Go + TypeScript).
+> **Public evidence record** — 80 scored runs across 5 repos (Python + Go + TypeScript).
 > Every raw output is committed. Every claim is traceable to a run artifact.
 
 ## Does Big Indexer actually help AI coding assistants?
@@ -11,7 +11,7 @@ We ran Opencode on 5 production open-source repos in three modes and measured fo
 
 ---
 
-## Three-stage results
+## Three-stage core + GPT-4o replication
 
 Each stage adds a layer. The numbers show what each layer contributed.
 
@@ -28,6 +28,20 @@ Each stage adds a layer. The numbers show what each layer contributed.
 **What each stage fixed:**
 - **BGI MCP** fixed boundary accuracy (0.95 → 1.00) and halved latency (133.8s → 66.2s)
 - **BGI TWIN** fixed actionability (4.00 → 4.75) by surfacing behavioral twins + seam + rubric
+
+### Independent model replication (GPT-4o on Azure OpenAI)
+
+We re-ran the full TWIN prompt pack on a different model (`azure/gpt-4o`) across all 5 repos (20 runs).
+
+| Metric | BGI-TWIN (deepseek-v4-flash) | BGI-TWIN replication (GPT-4o) |
+|---|---|---|
+| Actionability (1–5) | 4.75 | **4.85** |
+| Evidence coverage | 79.9% (96% p04 slice) | **47.9%** (49.3% p04 slice) |
+| Boundary accuracy | 1.00 | **1.00** |
+| Hallucination flags | 0 | **0** |
+| Median latency | 68.5s | **41.6s** |
+
+Interpretation: actionability, boundary accuracy, and zero-hallucination behavior replicated on GPT-4o, with faster latency. Evidence-tag discipline (`VERIFIED/HYPOTHESIS/UNKNOWN`) was notably weaker in this model slice.
 
 ---
 
@@ -47,25 +61,30 @@ BGI-TWIN is a context compiler. It does not generate code, does not call an LLM,
 
 ## Per-repo breakdown
 
-5 repos, 3 stages, 60 scored runs.
+5 repos, 4 slices, 80 scored runs.
 
 | Repo | Mode | Runs | Median Latency | Evidence Cov. | Boundary | Actionability |
 |---|---|---|---|---|---|---|
 | django/django | Baseline | 4 | 99.8s | 73.3% | 1.00 | 4.0 |
 | django/django | BGI MCP | 4 | 73.1s | **84.0%** | 1.00 | 4.0 |
 | django/django | **BGI TWIN** | 4 | 60.9s | 75.3% | 1.00 | **5.0** |
+| django/django | **BGI TWIN (GPT-4o)** | 4 | 48.3s | 47.0% | 1.00 | **5.0** |
 | tiangolo/fastapi | Baseline | 3 | 131.3s | 93.2% | 1.00 | 4.3 |
 | tiangolo/fastapi | BGI MCP | 3 | **54.8s** | 66.7% | 1.00 | 4.3 |
 | tiangolo/fastapi | **BGI TWIN** | 4 | 79.5s | 82.0% | 1.00 | **5.0** |
+| tiangolo/fastapi | **BGI TWIN (GPT-4o)** | 4 | 31.6s | 45.4% | 1.00 | **5.0** |
 | pydantic/pydantic-core | Baseline | 4 | 192.2s | 48.6% | 0.75 | 4.0 |
 | pydantic/pydantic-core | BGI MCP | 4 | 63.3s | **86.7%** | **1.00** | 4.0 |
 | pydantic/pydantic-core | **BGI TWIN** | 4 | **47.5s** | 71.3% | 1.00 | **4.7** |
+| pydantic/pydantic-core | **BGI TWIN (GPT-4o)** | 4 | 40.4s | 43.8% | 1.00 | **4.5** |
 | prometheus/prometheus | Baseline | 6 | **89.9s** | 90.0% | 1.00 | 4.0 |
 | prometheus/prometheus | BGI MCP | 6 | 119.9s | 90.0% | 1.00 | 4.0 |
 | prometheus/prometheus | **BGI TWIN** | 4 | 70.0s | 80.8% | 1.00 | **5.0** |
+| prometheus/prometheus | **BGI TWIN (GPT-4o)** | 4 | 53.4s | 59.6% | 1.00 | **4.8** |
 | vercel/next.js | Baseline | 3 | 291.8s | 89.2% | 1.00 | 3.7 |
 | vercel/next.js | BGI MCP | 3 | **66.4s** | **91.7%** | 1.00 | 3.7 |
 | vercel/next.js | **BGI TWIN** | 4 | 88.9s | 63.4% | 1.00 | **4.0** |
+| vercel/next.js | **BGI TWIN (GPT-4o)** | 4 | 33.6s | 44.0% | 1.00 | **5.0** |
 
 BGI TWIN rows are post-shipment refresh runs (p01–p04, `CallToolRequest` evidence confirmed in every run).
 
@@ -101,7 +120,7 @@ Key insight: MCP accuracy gains are largest when baseline models are architectur
 
 Baseline latency 291.8s — BGI reduces it to 66–89s in all modes. Boundary accuracy perfect across all three modes. Actionability improved from 3.7 to 4.0 with BGI-TWIN.
 
-### Hallucination rate: 0 across 60 scored runs
+### Hallucination rate: 0 across 80 scored runs
 
 No factually incorrect module or file claim in any baseline, MCP, or TWIN run.
 
@@ -113,13 +132,13 @@ We publish limitations before readers find them. A reader who discovers a flaw t
 
 **Self-reported scoring.** Checklists were written by us, scored by us. The checklists were defined before scoring by reading actual source code. The full rubric is at [validation/SCORING_RUBRIC.md](../validation/SCORING_RUBRIC.md). Every raw output is public at [validation/runs/](../validation/runs/). Re-score independently and open an issue if you disagree.
 
-**5 repos is not a large sample.** Python + Go + TypeScript is broader than Python-only, but still limited. The pydantic-core finding stands on its own. The aggregate actionability story needs 3+ more repos and one independent replication before it is statistically robust.
+**5 repos is not a large sample.** Python + Go + TypeScript is broader than Python-only, but still limited. The pydantic-core finding stands on its own. The first independent-model replication (GPT-4o) is now complete, but we still need additional repos and external replications.
 
 **BGI-TWIN refresh is MCP-only.** No updated baseline was run alongside the refresh. We have no reason to believe the baseline changed, but this is a real experimental design limitation.
 
 **One invalid MCP run.** One next.js p04 original A/B run had no `CallToolRequest` evidence and is marked explicitly unscored in `runs.csv`. All 20 TWIN refresh runs have invocation evidence.
 
-**We need one independent replication.** Open an issue if you are willing to run the protocol on your own repo and publish results.
+**We still need external replication.** We now have one independent-model replication (GPT-4o), but we still need external teams to run and publish the protocol on their own repos.
 
 ---
 
@@ -129,14 +148,14 @@ We publish limitations before readers find them. A reader who discovers a flaw t
 |---|---|
 | Repos | tiangolo/fastapi, django/django, pydantic/pydantic-core, prometheus/prometheus, vercel/next.js |
 | CLI | opencode 1.14.41 |
-| Model | deepseek-v4-flash |
+| Model | deepseek-v4-flash + azure/gpt-4o |
 | MCP server | `bgi mcp --graph ... --fuse-graph ...` |
 | TWIN invocation | `twin_context` explicitly required in prompt; `CallToolRequest` confirmed in every TWIN run |
 | Evidence coverage | Recall of architectural facts vs ground-truth checklist |
 | Boundary accuracy | 0/1 — correct seam identification |
 | Actionability | 1–5 rubric: 5 = immediately actionable (copy-paste), 1 = vague |
 | Hallucination flags | Count of factually incorrect module/file claims |
-| Total scored runs | 60 (20 baseline + 20 MCP + 20 TWIN refresh) |
+| Total scored runs | 80 (20 baseline + 20 MCP + 20 TWIN deepseek + 20 TWIN GPT-4o replication) |
 | Full rubric | [validation/SCORING_RUBRIC.md](../validation/SCORING_RUBRIC.md) |
 | All run artifacts | [validation/runs/](../validation/runs/) |
 | Run log | [validation/runs.csv](../validation/runs.csv) |

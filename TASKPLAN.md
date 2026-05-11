@@ -119,6 +119,24 @@ BGI-TWIN post-shipment refresh (MCP, p01–p04 × 5 repos = 20 runs, all scored)
 All 20 refresh runs have `CallToolRequest` + `bigindexer_twin_context` evidence.
 Published to `docs/VALIDATION_EVIDENCE.md`, `website/public/validation.html`, `website/server.js`, `output/validation/mcp-ab/{aggregate,per_repo}.csv`.
 
+## Update (2026-05-11, later) — GPT-4o replication complete ✅
+
+Independent-model replication run completed with `azure/gpt-4o`:
+
+- Scope: 20 runs (p01–p04 × 5 repos), MCP + `twin_context`
+- Invocation evidence: `CallToolRequest` present in all 20 runs
+- Actionability: **4.85/5**
+- Boundary accuracy: **1.0**
+- Hallucinations: **0**
+- Median latency: **41.55s**
+
+Published to:
+- `validation/runs.csv` (20 new scored rows)
+- `output/validation/mcp-ab/{aggregate,per_repo}.csv`
+- `docs/VALIDATION_EVIDENCE.md`
+- `website/public/validation.html`
+- `website/server.js`
+
 ## Phase 9 Validation Credibility Fixes - COMPLETE
 
 Responding to external review feedback (four concrete gaps):

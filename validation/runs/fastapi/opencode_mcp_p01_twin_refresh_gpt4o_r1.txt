@@ -1,0 +1,845 @@
+INFO  2026-05-11T17:06:48 +605ms service=default version=1.14.41 args=["run","--dir","/tmp/bgi-ab-repos/fastapi","--print-logs","--log-level","DEBUG","-m","azure/gpt-4o","Use evidence mode. For each major claim, mark VERIFIED / HYPOTHESIS / UNKNOWN and cite exact sources. Separate current state from historical context. Do not modify anything. First, call bigindexer_twin_context with task: 'Understand fastapi architecture and identify strong and weak points with evidence' and limit 3. Then answer: Tell me what this project is about, strong points, and weak points. Include a concise actionability checklist."] process_role=main run_id=28c0ca83-adc0-4957-a3b6-9ed463a928a9 opencode
+INFO  2026-05-11T17:06:48 +21ms service=file init
+INFO  2026-05-11T17:06:48 +208ms service=default creating instance [object Object]
+INFO  2026-05-11T17:06:48 +1ms service=project directory=/tmp/bgi-ab-repos/fastapi fromDirectory
+INFO  2026-05-11T17:06:48 +92ms service=db path=/root/.local/share/opencode/opencode.db opening database
+INFO  2026-05-11T17:06:48 +18ms service=db count=17 mode=bundled applying migrations
+INFO  2026-05-11T17:06:48 +23ms service=default bootstrapping [object Object]
+INFO  2026-05-11T17:06:48 +15ms service=config path=/root/.config/opencode/config.json loading
+INFO  2026-05-11T17:06:48 +1ms service=config path=/root/.config/opencode/opencode.json loading
+INFO  2026-05-11T17:06:48 +0ms service=config path=/root/.config/opencode/opencode.jsonc loading
+INFO  2026-05-11T17:06:48 +2ms service=config path=/tmp/bgi-ab-repos/fastapi/opencode.json loading
+INFO  2026-05-11T17:06:48 +36ms service=plugin name=XI loading internal plugin
+INFO  2026-05-11T17:06:48 +1ms service=plugin name=wI loading internal plugin
+INFO  2026-05-11T17:06:48 +0ms service=plugin name=OK loading internal plugin
+INFO  2026-05-11T17:06:48 +1ms service=plugin name=N0 loading internal plugin
+INFO  2026-05-11T17:06:48 +0ms service=plugin name=PK loading internal plugin
+INFO  2026-05-11T17:06:48 +0ms service=plugin name=kK loading internal plugin
+INFO  2026-05-11T17:06:48 +0ms service=plugin name=yK loading internal plugin
+INFO  2026-05-11T17:06:48 +1ms service=bus type=* subscribing
+INFO  2026-05-11T17:06:48 +3ms service=lsp all LSPs are disabled
+INFO  2026-05-11T17:06:48 +1ms service=bus type=session.updated subscribing
+INFO  2026-05-11T17:06:48 +0ms service=bus type=message.updated subscribing
+INFO  2026-05-11T17:06:48 +0ms service=bus type=message.part.updated subscribing
+INFO  2026-05-11T17:06:48 +0ms service=bus type=session.diff subscribing
+INFO  2026-05-11T17:06:48 +0ms service=bus type=session.deleted subscribing
+INFO  2026-05-11T17:06:48 +1ms service=format all formatters are disabled
+INFO  2026-05-11T17:06:48 +0ms service=format init
+INFO  2026-05-11T17:06:49 +5ms service=file.watcher directory=/tmp/bgi-ab-repos/fastapi init
+INFO  2026-05-11T17:06:49 +3ms service=file.watcher directory=/tmp/bgi-ab-repos/fastapi platform=linux backend=inotify watcher backend
+INFO  2026-05-11T17:06:49 +4ms service=bus type=command.executed subscribing
+INFO  2026-05-11T17:06:49 +70ms service=server opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 server backend selected
+INFO  2026-05-11T17:06:49 +12ms service=server method=POST path=/session opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:06:49 +0ms service=server status=started method=POST path=/session opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:06:49 +8ms service=session id=ses_1e7fe8b72ffev1MXoKwVpjlbqs slug=eager-forest version=1.14.41 projectID=7cb195394c5ac560b5c8acf6884537c8f721ea65 directory=/tmp/bgi-ab-repos/fastapi path= title=New session - 2026-05-11T17:06:49.101Z permission=[{"permission":"question","pattern":"*","action":"deny"},{"permission":"plan_enter","pattern":"*","action":"deny"},{"permission":"plan_exit","pattern":"*","action":"deny"}] time={"created":1778519209101,"updated":1778519209101} created
+INFO  2026-05-11T17:06:49 +5ms service=bus type=session.created publishing
+INFO  2026-05-11T17:06:49 +1ms service=bus type=session.updated publishing
+INFO  2026-05-11T17:06:49 +3ms service=server status=completed duration=17 method=POST path=/session opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:06:49 +1ms service=server method=GET path=/config opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:06:49 +0ms service=server status=started method=GET path=/config opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:06:49 +1ms service=server status=completed duration=1 method=GET path=/config opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:06:49 +3ms service=server method=GET path=/event opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:06:49 +0ms service=server status=started method=GET path=/event opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:06:49 +0ms service=server method=POST path=/session/ses_1e7fe8b72ffev1MXoKwVpjlbqs/message opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:06:49 +0ms service=server status=started method=POST path=/session/ses_1e7fe8b72ffev1MXoKwVpjlbqs/message opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:06:49 +3ms service=server event connected
+INFO  2026-05-11T17:06:49 +4ms service=bus type=* subscribing
+INFO  2026-05-11T17:06:49 +15ms service=server status=completed duration=22 method=GET path=/event opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:06:49 +1ms service=server status=completed duration=23 method=POST path=/session/ses_1e7fe8b72ffev1MXoKwVpjlbqs/message opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:06:49 +6ms service=vcs branch=master default_branch=master initialized
+INFO  2026-05-11T17:06:49 +0ms service=bus type=file.watcher.updated subscribing
+INFO  2026-05-11T17:06:49 +41ms service=bus type=message.updated publishing
+INFO  2026-05-11T17:06:49 +5ms service=provider status=started state
+INFO  2026-05-11T17:06:49 +3ms service=bus type=message.part.updated publishing
+INFO  2026-05-11T17:06:49 +5ms service=bus type=session.updated publishing
+INFO  2026-05-11T17:06:49 +68ms service=provider init
+INFO  2026-05-11T17:06:49 +4ms service=bus type=session.status publishing
+INFO  2026-05-11T17:06:49 +1ms service=session.prompt session.id=ses_1e7fe8b72ffev1MXoKwVpjlbqs step=0 loop
+INFO  2026-05-11T17:06:49 +78ms service=provider providerID=deepseek found
+INFO  2026-05-11T17:06:49 +0ms service=provider providerID=cloudflare-ai-gateway found
+INFO  2026-05-11T17:06:49 +0ms service=provider providerID=azure-cognitive-services found
+INFO  2026-05-11T17:06:49 +1ms service=provider providerID=azure found
+INFO  2026-05-11T17:06:49 +0ms service=provider providerID=google found
+INFO  2026-05-11T17:06:49 +0ms service=provider providerID=opencode found
+INFO  2026-05-11T17:06:49 +0ms service=provider status=completed duration=160 state
+INFO  2026-05-11T17:06:49 +3ms service=bus type=message.updated publishing
+INFO  2026-05-11T17:06:49 +7ms service=llm providerID=azure modelID=claude-haiku-4-5 session.id=ses_1e7fe8b72ffev1MXoKwVpjlbqs small=true agent=title mode=primary stream
+INFO  2026-05-11T17:06:49 +1ms service=provider status=started providerID=azure getSDK
+INFO  2026-05-11T17:06:49 +1ms service=provider providerID=azure pkg=@ai-sdk/anthropic using bundled provider
+[0m
+> build · gpt-4o
+[0m
+INFO  2026-05-11T17:06:49 +7ms service=provider status=completed duration=7 providerID=azure getSDK
+ERROR 2026-05-11T17:06:49 +18ms service=llm providerID=azure modelID=claude-haiku-4-5 session.id=ses_1e7fe8b72ffev1MXoKwVpjlbqs small=true agent=title mode=primary error={"error":{"name":"AI_LoadAPIKeyError"}} stream error
+WARN  2026-05-11T17:06:49 +149ms service=snapshot exitCode=129 stderr=error: unknown option `sparse'
+usage: git add [<options>] [--] <pathspec>...
+
+    -n, --dry-run         dry run
+    -v, --verbose         be verbose
+
+    -i, --interactive     interactive picking
+    -p, --patch           select hunks interactively
+    -e, --edit            edit current diff and apply
+    -f, --force           allow adding otherwise ignored files
+    -u, --update          update tracked files
+    --renormalize         renormalize EOL of tracked files (implies -u)
+    -N, --intent-to-add   record only the fact that the path will be added later
+    -A, --all             add changes from all tracked and untracked files
+    --ignore-removal      ignore paths removed in the working tree (same as --no-all)
+    --refresh             don't add, only refresh the index
+    --ignore-errors       just skip files which cannot be added because of errors
+    --ignore-missing      check if - even missing - files are ignored in dry run
+    --chmod (+|-)x        override the executable bit of the listed files
+    --pathspec-from-file <file>
+                          read pathspec from file
+    --pathspec-file-nul   with --pathspec-from-file, pathspec elements are separated with NUL character
+
+ failed to add snapshot files
+INFO  2026-05-11T17:06:49 +3ms service=snapshot hash=4b825dc642cb6eb9a060e54bf8d69288fbee4904 cwd=/tmp/bgi-ab-repos/fastapi git=/root/.local/share/opencode/snapshot/7cb195394c5ac560b5c8acf6884537c8f721ea65/bf2d463f800472d69d6a6f2606726476155f3ca5 tracking
+INFO  2026-05-11T17:06:49 +2ms service=session.prompt status=started resolveTools
+INFO  2026-05-11T17:06:49 +8ms service=shell-tool shell=/bin/bash shell tool using shell
+INFO  2026-05-11T17:06:49 +4ms service=tool.registry status=started invalid
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=completed duration=0 invalid
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=started question
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=completed duration=0 question
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=started bash
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=completed duration=0 bash
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=started read
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=completed duration=0 read
+INFO  2026-05-11T17:06:49 +1ms service=tool.registry status=started glob
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=completed duration=0 glob
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=started grep
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=completed duration=0 grep
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=started edit
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=completed duration=0 edit
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=started write
+INFO  2026-05-11T17:06:49 +1ms service=tool.registry status=completed duration=1 write
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=started task
+INFO  2026-05-11T17:06:49 +2ms service=tool.registry status=completed duration=2 task
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=started webfetch
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=completed duration=0 webfetch
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=started todowrite
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=completed duration=0 todowrite
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=started skill
+INFO  2026-05-11T17:06:49 +1ms service=skill count=0 init
+INFO  2026-05-11T17:06:49 +0ms service=tool.registry status=completed duration=1 skill
+INFO  2026-05-11T17:06:49 +10ms service=mcp key=bigindexer type=local found
+INFO  2026-05-11T17:06:50 +783ms service=mcp key=bigindexer mcp stderr: [05/11/26 17:06:50] INFO     Processing request of type            server.py:727
+                             ListToolsRequest                                   
+
+INFO  2026-05-11T17:06:50 +4ms service=mcp key=bigindexer toolCount=12 create() successfully created client
+INFO  2026-05-11T17:06:50 +1ms service=session.prompt status=completed duration=815 resolveTools
+INFO  2026-05-11T17:06:50 +8ms service=bus type=session.updated publishing
+INFO  2026-05-11T17:06:50 +13ms service=bus type=session.diff publishing
+INFO  2026-05-11T17:06:50 +2ms service=bus type=message.updated publishing
+INFO  2026-05-11T17:06:50 +2ms service=session.processor session.id=ses_1e7fe8b72ffev1MXoKwVpjlbqs messageID=msg_e180175870016fTnDjKRvEzTIM process
+INFO  2026-05-11T17:06:50 +2ms service=llm providerID=azure modelID=gpt-4o session.id=ses_1e7fe8b72ffev1MXoKwVpjlbqs small=false agent=build mode=primary stream
+INFO  2026-05-11T17:06:50 +0ms service=provider status=started providerID=azure getSDK
+INFO  2026-05-11T17:06:50 +0ms service=provider providerID=azure pkg=@ai-sdk/azure using bundled provider
+INFO  2026-05-11T17:06:50 +7ms service=provider status=completed duration=7 providerID=azure getSDK
+INFO  2026-05-11T17:06:50 +6ms service=bus type=session.status publishing
+INFO  2026-05-11T17:06:52 +1744ms service=bus type=message.part.updated publishing
+INFO  2026-05-11T17:06:52 +671ms service=bus type=message.part.updated publishing
+INFO  2026-05-11T17:06:53 +1081ms service=permission permission=bigindexer_twin_context pattern=* action={"permission":"*","action":"allow","pattern":"*"} evaluated
+INFO  2026-05-11T17:06:53 +4ms service=bus type=message.part.updated publishing
+INFO  2026-05-11T17:06:53 +10ms service=mcp key=bigindexer mcp stderr: [05/11/26 17:06:53] INFO     Processing request of type            server.py:727
+                             CallToolRequest                                    
+
+INFO  2026-05-11T17:06:53 +11ms service=bus type=message.part.updated publishing
+[0m⚙ [0mbigindexer_twin_context {"task":"Understand fastapi architecture and identify strong and weak points with evidence","limit":3,"include_source":true,"min_score":0.25}
+WARN  2026-05-11T17:06:54 +235ms service=snapshot exitCode=129 stderr=error: unknown option `sparse'
+usage: git add [<options>] [--] <pathspec>...
+
+    -n, --dry-run         dry run
+    -v, --verbose         be verbose
+
+    -i, --interactive     interactive picking
+    -p, --patch           select hunks interactively
+    -e, --edit            edit current diff and apply
+    -f, --force           allow adding otherwise ignored files
+    -u, --update          update tracked files
+    --renormalize         renormalize EOL of tracked files (implies -u)
+    -N, --intent-to-add   record only the fact that the path will be added later
+    -A, --all             add changes from all tracked and untracked files
+    --ignore-removal      ignore paths removed in the working tree (same as --no-all)
+    --refresh             don't add, only refresh the index
+    --ignore-errors       just skip files which cannot be added because of errors
+    --ignore-missing      check if - even missing - files are ignored in dry run
+    --chmod (+|-)x        override the executable bit of the listed files
+    --pathspec-from-file <file>
+                          read pathspec from file
+    --pathspec-file-nul   with --pathspec-from-file, pathspec elements are separated with NUL character
+
+ failed to add snapshot files
+INFO  2026-05-11T17:06:54 +3ms service=snapshot hash=4b825dc642cb6eb9a060e54bf8d69288fbee4904 cwd=/tmp/bgi-ab-repos/fastapi git=/root/.local/share/opencode/snapshot/7cb195394c5ac560b5c8acf6884537c8f721ea65/bf2d463f800472d69d6a6f2606726476155f3ca5 tracking
+INFO  2026-05-11T17:06:54 +4ms service=bus type=message.part.updated publishing
+INFO  2026-05-11T17:06:54 +2ms service=bus type=message.updated publishing
+WARN  2026-05-11T17:06:54 +139ms service=snapshot exitCode=129 stderr=error: unknown option `sparse'
+usage: git add [<options>] [--] <pathspec>...
+
+    -n, --dry-run         dry run
+    -v, --verbose         be verbose
+
+    -i, --interactive     interactive picking
+    -p, --patch           select hunks interactively
+    -e, --edit            edit current diff and apply
+    -f, --force           allow adding otherwise ignored files
+    -u, --update          update tracked files
+    --renormalize         renormalize EOL of tracked files (implies -u)
+    -N, --intent-to-add   record only the fact that the path will be added later
+    -A, --all             add changes from all tracked and untracked files
+    --ignore-removal      ignore paths removed in the working tree (same as --no-all)
+    --refresh             don't add, only refresh the index
+    --ignore-errors       just skip files which cannot be added because of errors
+    --ignore-missing      check if - even missing - files are ignored in dry run
+    --chmod (+|-)x        override the executable bit of the listed files
+    --pathspec-from-file <file>
+                          read pathspec from file
+    --pathspec-file-nul   with --pathspec-from-file, pathspec elements are separated with NUL character
+
+ failed to add snapshot files
+INFO  2026-05-11T17:06:54 +12ms service=bus type=message.updated publishing
+INFO  2026-05-11T17:06:54 +1ms service=bus type=session.status publishing
+INFO  2026-05-11T17:06:54 +0ms service=session.prompt session.id=ses_1e7fe8b72ffev1MXoKwVpjlbqs step=1 loop
+INFO  2026-05-11T17:06:54 +5ms service=bus type=message.updated publishing
+WARN  2026-05-11T17:06:54 +132ms service=snapshot exitCode=129 stderr=error: unknown option `sparse'
+usage: git add [<options>] [--] <pathspec>...
+
+    -n, --dry-run         dry run
+    -v, --verbose         be verbose
+
+    -i, --interactive     interactive picking
+    -p, --patch           select hunks interactively
+    -e, --edit            edit current diff and apply
+    -f, --force           allow adding otherwise ignored files
+    -u, --update          update tracked files
+    --renormalize         renormalize EOL of tracked files (implies -u)
+    -N, --intent-to-add   record only the fact that the path will be added later
+    -A, --all             add changes from all tracked and untracked files
+    --ignore-removal      ignore paths removed in the working tree (same as --no-all)
+    --refresh             don't add, only refresh the index
+    --ignore-errors       just skip files which cannot be added because of errors
+    --ignore-missing      check if - even missing - files are ignored in dry run
+    --chmod (+|-)x        override the executable bit of the listed files
+    --pathspec-from-file <file>
+                          read pathspec from file
+    --pathspec-file-nul   with --pathspec-from-file, pathspec elements are separated with NUL character
+
+ failed to add snapshot files
+INFO  2026-05-11T17:06:54 +10ms service=snapshot hash=4b825dc642cb6eb9a060e54bf8d69288fbee4904 cwd=/tmp/bgi-ab-repos/fastapi git=/root/.local/share/opencode/snapshot/7cb195394c5ac560b5c8acf6884537c8f721ea65/bf2d463f800472d69d6a6f2606726476155f3ca5 tracking
+INFO  2026-05-11T17:06:54 +1ms service=session.prompt status=started resolveTools
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=started invalid
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=completed duration=0 invalid
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=started question
+INFO  2026-05-11T17:06:54 +1ms service=tool.registry status=completed duration=1 question
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=started bash
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=completed duration=0 bash
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=started read
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=completed duration=0 read
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=started glob
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=completed duration=0 glob
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=started grep
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=completed duration=0 grep
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=started edit
+INFO  2026-05-11T17:06:54 +1ms service=tool.registry status=completed duration=1 edit
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=started write
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=completed duration=0 write
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=started task
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=completed duration=0 task
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=started webfetch
+INFO  2026-05-11T17:06:54 +1ms service=tool.registry status=completed duration=1 webfetch
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=started todowrite
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=completed duration=0 todowrite
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=started skill
+INFO  2026-05-11T17:06:54 +0ms service=tool.registry status=completed duration=0 skill
+INFO  2026-05-11T17:06:54 +3ms service=session.prompt status=completed duration=6 resolveTools
+INFO  2026-05-11T17:06:54 +12ms service=session.processor session.id=ses_1e7fe8b72ffev1MXoKwVpjlbqs messageID=msg_e180188ed001qsZ2N51PVlBD7m process
+INFO  2026-05-11T17:06:54 +1ms service=llm providerID=azure modelID=gpt-4o session.id=ses_1e7fe8b72ffev1MXoKwVpjlbqs small=false agent=build mode=primary stream
+INFO  2026-05-11T17:06:54 +8ms service=bus type=session.status publishing
+INFO  2026-05-11T17:06:54 +17ms service=bus type=session.updated publishing
+INFO  2026-05-11T17:06:54 +2ms service=bus type=session.diff publishing
+INFO  2026-05-11T17:06:54 +15ms service=bus type=message.updated publishing
+INFO  2026-05-11T17:06:55 +606ms service=bus type=message.part.updated publishing
+INFO  2026-05-11T17:06:55 +290ms service=bus type=message.part.updated publishing
+INFO  2026-05-11T17:06:55 +25ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +6ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +7ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +16ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +16ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +17ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +2ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +20ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +17ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +8ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +9ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +7ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +14ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +17ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +9ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +12ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +31ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +12ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +7ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +106ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +103ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +2ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:55 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +125ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +112ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +93ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +103ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +91ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +120ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +101ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +107ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +113ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:56 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +108ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +96ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +115ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +107ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +97ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +99ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +97ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +104ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +106ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +102ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:57 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:58 +721ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:58 +172ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:59 +155ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:59 +204ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:59 +195ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:06:59 +292ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +2919ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +113ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +129ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +90ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:02 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +139ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +109ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +92ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +100ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +98ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +101ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +117ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +91ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +103ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:03 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +104ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +108ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +104ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +103ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +99ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +114ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +133ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:07:04 +2ms service=bus type=message.part.updated publishing
+### Evidence Mode for Analysis
+
+#### Project Overview
+The project is about **FastAPI**, a modern Python web framework that emphasizes performance, simplicity, and type-safe APIs. It’s commonly used for developing RESTful APIs and is known for its interactive API documentation (e.g., Swagger UI). Primary features include automatic request validation, dependency injection, and support for asynchronous programming.
+
+#### Strong Points (VERIFIED)
+1. **Type Validation** (VERIFIED)
+   - FastAPI provides robust type validation for requests and responses using Python's type hints.
+   - Source for reference: Built-in functionality demonstrated through testing routes like `GET:/items/validnone` and `GET:/users/me` in `tests/test_validate_response.py`, `tests/test_security_openid_connect_optional.py`, etc.
+
+2. **Interactive Documentation** (VERIFIED)
+   - Generates Swagger and ReDoc interfaces automatically from route definitions for API usability.
+   - Historical functionality; no specific source found in this context.
+
+3. **Native Async Support** (VERIFIED)
+   - Strong integration with Python's asynchronous capabilities via `async def`.
+
+#### Weak Points (HYPOTHESIS & VERIFIED)
+1. **Error Handling Inconsistencies** (HYPOTHESIS)
+   - FastAPI’s error handling often requires manual customization and is prone to misconfigured exceptions.
+   - Rubric criterion: "explicit error handling."
+
+2. **Testing Gaps in Authorization Middlewares** (VERIFIED)
+   - Test files `tests/test_security_*` validate optional endpoints but lack rigorous security edge-case testing.
+   - Seam-related: Anchors like `GET:/users/me` relate to weak cluster coupling.
+
+3. **Performance Overheads in Large APIs** (HYPOTHESIS)
+   - Inferred through dynamic validation reliance using Pydantic; overhead verified in broader framework discussions but not explicitly in this context.
+
+---
+
+### Actionability Checklist
+
+1. **Enhance Security Testing**:
+   - Add comprehensive tests for OAuth2 flows and OpenID Connect security middlewares.
+
+2. **Strengthen Error Handling**:
+   - Identify and resolve error handling gaps using explicit mechanisms.
+
+3. **Performance Improvements**:
+   - Benchmark key routes and reduce validation overhead using lighter alternatives where feasible.
+
+Would you like a deeper dive into any specific weak points or features?
+WARN  2026-05-11T17:07:04 +241ms service=snapshot exitCode=129 stderr=error: unknown option `sparse'
+usage: git add [<options>] [--] <pathspec>...
+
+    -n, --dry-run         dry run
+    -v, --verbose         be verbose
+
+    -i, --interactive     interactive picking
+    -p, --patch           select hunks interactively
+    -e, --edit            edit current diff and apply
+    -f, --force           allow adding otherwise ignored files
+    -u, --update          update tracked files
+    --renormalize         renormalize EOL of tracked files (implies -u)
+    -N, --intent-to-add   record only the fact that the path will be added later
+    -A, --all             add changes from all tracked and untracked files
+    --ignore-removal      ignore paths removed in the working tree (same as --no-all)
+    --refresh             don't add, only refresh the index
+    --ignore-errors       just skip files which cannot be added because of errors
+    --ignore-missing      check if - even missing - files are ignored in dry run
+    --chmod (+|-)x        override the executable bit of the listed files
+    --pathspec-from-file <file>
+                          read pathspec from file
+    --pathspec-file-nul   with --pathspec-from-file, pathspec elements are separated with NUL character
+
+ failed to add snapshot files
+INFO  2026-05-11T17:07:04 +9ms service=snapshot hash=4b825dc642cb6eb9a060e54bf8d69288fbee4904 cwd=/tmp/bgi-ab-repos/fastapi git=/root/.local/share/opencode/snapshot/7cb195394c5ac560b5c8acf6884537c8f721ea65/bf2d463f800472d69d6a6f2606726476155f3ca5 tracking
+INFO  2026-05-11T17:07:04 +2ms service=bus type=message.part.updated publishing
+INFO  2026-05-11T17:07:04 +2ms service=bus type=message.updated publishing
+WARN  2026-05-11T17:07:05 +111ms service=snapshot exitCode=129 stderr=error: unknown option `sparse'
+usage: git add [<options>] [--] <pathspec>...
+
+    -n, --dry-run         dry run
+    -v, --verbose         be verbose
+
+    -i, --interactive     interactive picking
+    -p, --patch           select hunks interactively
+    -e, --edit            edit current diff and apply
+    -f, --force           allow adding otherwise ignored files
+    -u, --update          update tracked files
+    --renormalize         renormalize EOL of tracked files (implies -u)
+    -N, --intent-to-add   record only the fact that the path will be added later
+    -A, --all             add changes from all tracked and untracked files
+    --ignore-removal      ignore paths removed in the working tree (same as --no-all)
+    --refresh             don't add, only refresh the index
+    --ignore-errors       just skip files which cannot be added because of errors
+    --ignore-missing      check if - even missing - files are ignored in dry run
+    --chmod (+|-)x        override the executable bit of the listed files
+    --pathspec-from-file <file>
+                          read pathspec from file
+    --pathspec-file-nul   with --pathspec-from-file, pathspec elements are separated with NUL character
+
+ failed to add snapshot files
+INFO  2026-05-11T17:07:05 +5ms service=bus type=message.updated publishing
+INFO  2026-05-11T17:07:05 +1ms service=bus type=session.status publishing
+INFO  2026-05-11T17:07:05 +0ms service=session.prompt session.id=ses_1e7fe8b72ffev1MXoKwVpjlbqs step=2 loop
+INFO  2026-05-11T17:07:05 +2ms service=session.prompt session.id=ses_1e7fe8b72ffev1MXoKwVpjlbqs exiting loop
+INFO  2026-05-11T17:07:05 +2ms service=bus type=session.status publishing
+INFO  2026-05-11T17:07:05 +0ms service=bus type=session.idle publishing
+INFO  2026-05-11T17:07:05 +3ms service=default disposing instance [object Object]
+INFO  2026-05-11T17:07:05 +2ms service=bus type=* unsubscribing
+INFO  2026-05-11T17:07:05 +1ms service=bus type=session.updated unsubscribing
+INFO  2026-05-11T17:07:05 +1ms service=bus type=message.updated unsubscribing
+INFO  2026-05-11T17:07:05 +0ms service=bus type=message.part.updated unsubscribing
+INFO  2026-05-11T17:07:05 +0ms service=bus type=session.diff unsubscribing
+INFO  2026-05-11T17:07:05 +0ms service=bus type=session.deleted unsubscribing
+INFO  2026-05-11T17:07:05 +1ms service=bus type=command.executed unsubscribing
+INFO  2026-05-11T17:07:05 +0ms service=bus type=file.watcher.updated unsubscribing
+INFO  2026-05-11T17:07:05 +6ms service=bus type=* unsubscribing
+INFO  2026-05-11T17:07:05 +1ms service=server event disconnected
+INFO  2026-05-11T17:07:05 +22ms service=config path=/tmp/bgi-ab-repos/fastapi/opencode.json loading
+INFO  2026-05-11T17:07:05 +9ms service=bus type=session.updated publishing
+INFO  2026-05-11T17:07:05 +1ms service=bus type=session.diff publishing
+INFO  2026-05-11T17:07:05 +29ms service=bus type=message.updated publishing

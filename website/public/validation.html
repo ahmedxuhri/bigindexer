@@ -264,7 +264,7 @@
 
   <!-- ─────────────────────────────── HERO ─────────────────────────────── -->
   <div class="page-hero">
-    <div class="eyebrow">Public Evidence · 60 scored runs</div>
+    <div class="eyebrow">Public Evidence · 80 scored runs</div>
     <h1>Does Big Indexer actually help AI coding assistants?</h1>
     <p>We ran the same architectural prompts on 5 real open-source repos — with and without Big Indexer — and published every raw output, every score, and every methodology decision.</p>
   </div>
@@ -290,7 +290,7 @@
         <div class="stat-box">
           <div class="s-label">Hallucinations</div>
           <div class="s-val green">0</div>
-          <div class="s-delta neutral">Across all 60 scored runs</div>
+          <div class="s-delta neutral">Across all 80 scored runs</div>
         </div>
         <div class="stat-box">
           <div class="s-label">Median Latency</div>
@@ -307,8 +307,8 @@
 
     <!-- ─────────────── THREE-MODE COMPARISON ─────────────── -->
     <section>
-      <div class="section-heading">Three-stage comparison</div>
-      <div class="section-sub">Each stage adds a layer. BGI-MCP fixed boundary &amp; latency. BGI-TWIN fixed actionability.</div>
+      <div class="section-heading">Three-stage core comparison</div>
+      <div class="section-sub">Each stage adds a layer. BGI-MCP fixed boundary &amp; latency. BGI-TWIN fixed actionability. Independent GPT-4o replication is shown in the next section.</div>
 
       <div class="card" style="padding:0;overflow:hidden;">
         <table class="compare-table">
@@ -365,6 +365,54 @@
         that give the AI model a fingerprinted task context, the top-3 behaviorally similar code units from the real repo, 
         the strongest architectural seam for the task, and an explicit 5-point actionability rubric. 
         That is why actionability moved from 4.0 to 4.75 while boundary accuracy and hallucinations stayed perfect.
+      </div>
+    </section>
+
+    <!-- ─────────────── GPT-4o REPLICATION ─────────────── -->
+    <section>
+      <div class="section-heading">Independent model replication (GPT-4o on Azure)</div>
+      <div class="section-sub">We re-ran the full TWIN protocol (p01–p04 × 5 repos) on <code>azure/gpt-4o</code> for model diversity and consistency checking.</div>
+
+      <div class="card" style="padding:0;overflow:hidden;">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th class="label-col" style="padding-left:1.2rem;width:40%">Metric</th>
+              <th class="col-twin">BGI TWIN (deepseek)</th>
+              <th class="col-mcp">BGI TWIN (GPT-4o replication)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="row-label" style="padding-left:1.2rem">Actionability (1–5)</td>
+              <td class="col-twin">4.75</td>
+              <td class="col-mcp"><strong>4.85</strong></td>
+            </tr>
+            <tr>
+              <td class="row-label" style="padding-left:1.2rem">Evidence coverage</td>
+              <td class="col-twin">79.9% (96% p04 slice)</td>
+              <td class="col-mcp">47.9% (49.3% p04 slice)</td>
+            </tr>
+            <tr>
+              <td class="row-label" style="padding-left:1.2rem">Boundary accuracy</td>
+              <td class="col-twin">1.00</td>
+              <td class="col-mcp"><strong>1.00</strong></td>
+            </tr>
+            <tr>
+              <td class="row-label" style="padding-left:1.2rem">Hallucinations</td>
+              <td class="col-twin">0</td>
+              <td class="col-mcp"><strong>0</strong></td>
+            </tr>
+            <tr>
+              <td class="row-label" style="padding-left:1.2rem">Median latency</td>
+              <td class="col-twin">68.5s</td>
+              <td class="col-mcp"><strong>41.6s</strong></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note" style="padding:0.75rem 1.2rem">
+          Replication interpretation: actionability, boundary accuracy, and zero-hallucination behavior held on GPT-4o. Evidence-tag discipline (<code>VERIFIED/HYPOTHESIS/UNKNOWN</code>) was weaker in this model slice.
+        </p>
       </div>
     </section>
 
@@ -452,7 +500,7 @@
     <!-- ─────────────── PER-REPO ─────────────── -->
     <section>
       <div class="section-heading">Per-repo breakdown</div>
-      <div class="section-sub">5 repos across 3 languages. Each repo gets 3 rows: baseline, MCP, and BGI-TWIN refresh.</div>
+      <div class="section-sub">5 repos across 3 languages. Core table shows baseline/MCP/TWIN (deepseek), with GPT-4o replication per repo below.</div>
 
       <div class="card" style="padding:0;overflow:hidden;">
         <table class="repo-table">
@@ -557,6 +605,29 @@
           Boundary accuracy is 0–1 per run (correct seam identification). Actionability is 1–5.
         </p>
       </div>
+
+      <div class="card" style="padding:0;overflow:hidden;">
+        <table class="repo-table">
+          <thead>
+            <tr>
+              <th>Repo</th>
+              <th>Mode</th>
+              <th>Runs</th>
+              <th>Median Latency</th>
+              <th>Evidence Cov.</th>
+              <th>Boundary</th>
+              <th>Actionability</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="twin-row"><td>tiangolo/fastapi</td><td><span class="tag tag-twin">BGI TWIN (GPT-4o)</span></td><td>4</td><td>31.6s</td><td>45.4%</td><td>1.00</td><td>5.0</td></tr>
+            <tr class="twin-row"><td>django/django</td><td><span class="tag tag-twin">BGI TWIN (GPT-4o)</span></td><td>4</td><td>48.3s</td><td>47.0%</td><td>1.00</td><td>5.0</td></tr>
+            <tr class="twin-row"><td>pydantic/pydantic-core</td><td><span class="tag tag-twin">BGI TWIN (GPT-4o)</span></td><td>4</td><td>40.4s</td><td>43.8%</td><td>1.00</td><td>4.5</td></tr>
+            <tr class="twin-row"><td>prometheus/prometheus</td><td><span class="tag tag-twin">BGI TWIN (GPT-4o)</span></td><td>4</td><td>53.4s</td><td>59.6%</td><td>1.00</td><td>4.8</td></tr>
+            <tr class="twin-row"><td>vercel/next.js</td><td><span class="tag tag-twin">BGI TWIN (GPT-4o)</span></td><td>4</td><td>33.6s</td><td>44.0%</td><td>1.00</td><td>5.0</td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <!-- ─────────────── NOTABLE FINDINGS ─────────────── -->
@@ -596,9 +667,9 @@
          This is the most important neutral finding: MCP gains on accuracy are largest when baseline exploration is architecturally blind (pydantic-core: 0→80%). On well-explored Go codebases, the accuracy lift is smaller. BGI-TWIN's actionability gain holds across both cases.</p>
 
       <h3>next.js (TypeScript) — large monorepo signal</h3>
-      <p>Largest baseline latency in the set (291.8s) — BGI reduces it to 66–89s regardless of mode. Evidence coverage is slightly lower in the TWIN refresh batch (63.4%) because p01–p03 are harder for this large repo. Boundary accuracy is perfect (1.0) in all three modes. Actionability improved from 3.7 to 4.0 with BGI-TWIN, with a clear implementation path on p04.</p>
+      <p>Largest baseline latency in the set (291.8s) — BGI reduces it to 33–89s depending on mode/model. Evidence coverage is lower in the GPT-4o replication slice, but boundary accuracy remains perfect (1.0) and actionability improves with TWIN context.</p>
 
-      <h3>Hallucination rate: 0 across all 60 scored runs</h3>
+      <h3>Hallucination rate: 0 across all 80 scored runs</h3>
       <p>Not a single factually incorrect module or file claim appeared in any baseline, MCP, or BGI-TWIN run. MCP and BGI-TWIN ground the model on real indexed artifacts — they do not introduce new errors.</p>
     </section>
 
@@ -615,8 +686,8 @@
            <a href="https://github.com/ahmedxuhri/bigindexer/tree/master/validation/runs" target="_blank" rel="noopener">validation/runs/ on GitHub</a>.
            Anyone can re-score independently. If you score any run differently, open an issue with your reasoning — we will update the record.</p>
 
-        <h3>60 runs across 5 repos is not a large sample</h3>
-        <p>Python + Go + TypeScript is better than Python-only, but 5 repos is still a small sample. The pydantic-core finding (0% → 80% evidence on a Rust/Python hybrid) is strong enough to stand independently. The aggregate actionability story needs at least 3 more repos and one independent replication before it can be called statistically robust.</p>
+        <h3>80 runs across 5 repos is stronger, but still limited</h3>
+        <p>Python + Go + TypeScript is better than Python-only, and we now have an independent-model replication (GPT-4o), but 5 repos is still a small sample. The pydantic-core finding (0% → 80% evidence on a Rust/Python hybrid) is strong enough to stand independently. For stronger statistical confidence, we still need more repos and at least one external team replication.</p>
 
         <h3>BGI-TWIN refresh is MCP-only — no updated baseline</h3>
         <p>The post-shipment refresh only ran the MCP+TWIN mode. The baseline numbers in the per-repo table are from the earlier A/B batch. We have no reason to believe the baseline changed (same repos, same prompts), but this is a real limitation of the experimental design.</p>
@@ -624,8 +695,8 @@
         <h3>One MCP run did not invoke tools</h3>
         <p>One next.js p04 run in the original A/B batch was confirmed as invalid (no <code>CallToolRequest</code> in output) and is explicitly marked in <code>runs.csv</code> as unscored. All 20 BGI-TWIN refresh runs have <code>CallToolRequest</code> evidence present.</p>
 
-        <h3>We need one independent replication</h3>
-        <p>The single thing that would most improve this evidence: one engineer who has never used Big Indexer running these prompts on their own repo and publishing their raw outputs. If you are willing to do this, <a href="https://github.com/ahmedxuhri/bigindexer/issues" target="_blank" rel="noopener">open an issue</a> and we will send you the exact protocol.</p>
+        <h3>We still need external replication</h3>
+        <p>We completed one independent-model replication (GPT-4o). The next credibility jump is an external replication: one engineer who has never used Big Indexer running this protocol on their own repo and publishing raw outputs. If you are willing to do this, <a href="https://github.com/ahmedxuhri/bigindexer/issues" target="_blank" rel="noopener">open an issue</a> and we will send the exact protocol.</p>
       </div>
     </section>
 
@@ -659,7 +730,7 @@
             <h3 style="margin-top:0">Tooling</h3>
             <ul style="list-style:none;font-size:0.88rem;color:var(--gray-600);line-height:2">
               <li>CLI: opencode 1.14.41</li>
-              <li>Model: deepseek-v4-flash</li>
+              <li>Models: deepseek-v4-flash + azure/gpt-4o</li>
               <li>MCP: <code>bgi mcp --graph ... --fuse-graph ...</code></li>
               <li>TWIN: <code>twin_context</code> explicit in prompt</li>
             </ul>
@@ -679,7 +750,7 @@
           &nbsp;·&nbsp;
           <a href="https://github.com/ahmedxuhri/bigindexer/tree/master/validation/runs" target="_blank" rel="noopener">All raw run outputs →</a>
           &nbsp;·&nbsp;
-          <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/validation/runs.csv" target="_blank" rel="noopener">runs.csv (60 rows) →</a>
+          <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/validation/runs.csv" target="_blank" rel="noopener">runs.csv (80 scored runs) →</a>
         </div>
       </div>
     </section>

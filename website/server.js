@@ -77,7 +77,7 @@ app.get('/validation', (req, res) => {
 app.get('/api/validation/summary', (req, res) => {
   res.json({
     generated: '2026-05-11',
-    total_scored_runs: 60,
+    total_scored_runs: 80,
     stages: {
       baseline: {
         runs: 20,
@@ -110,6 +110,18 @@ app.get('/api/validation/summary', (req, res) => {
         delta_vs_bgi_mcp: { actionability: +0.75 },
         tools: ['task_fingerprint', 'behavioral_twins', 'twin_context'],
         mcp_invocation_evidence: 'CallToolRequest confirmed in all 20 runs'
+      },
+      bgi_twin_replication_gpt4o: {
+        runs: 20,
+        repos: 5,
+        evidence_coverage_pct_mean: 47.9,
+        evidence_coverage_pct_p04: 49.3,
+        boundary_accuracy: 1.0,
+        actionability: 4.85,
+        hallucinations: 0,
+        median_latency_s: 41.55,
+        model: 'azure/gpt-4o',
+        notes: 'Independent-model replication of full TWIN refresh (p01-p04 x 5 repos)'
       }
     },
     repos: [
@@ -120,7 +132,7 @@ app.get('/api/validation/summary', (req, res) => {
       'vercel/next.js'
     ],
     cli: 'opencode 1.14.41',
-    model: 'deepseek-v4-flash',
+    model: 'deepseek-v4-flash + azure/gpt-4o',
     rubric: 'https://github.com/ahmedxuhri/bigindexer/blob/master/validation/SCORING_RUBRIC.md',
     raw_outputs: 'https://github.com/ahmedxuhri/bigindexer/tree/master/validation/runs'
   });

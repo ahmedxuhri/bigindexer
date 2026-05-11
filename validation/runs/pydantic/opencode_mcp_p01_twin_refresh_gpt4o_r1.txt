@@ -1,0 +1,514 @@
+INFO  2026-05-11T17:12:13 +641ms service=default version=1.14.41 args=["run","--dir","/tmp/bgi-ab-repos/pydantic","--print-logs","--log-level","DEBUG","-m","azure/gpt-4o","Use evidence mode. For each major claim, mark VERIFIED / HYPOTHESIS / UNKNOWN and cite exact sources. Separate current state from historical context. Do not modify anything. First, call bigindexer_twin_context with task: 'Understand pydantic architecture and identify strong and weak points with evidence' and limit 3. Then answer: Tell me what this project is about, strong points, and weak points. Include a concise actionability checklist."] process_role=main run_id=7afcc3f8-f1ef-44ac-a543-796eacba81f3 opencode
+INFO  2026-05-11T17:12:13 +33ms service=file init
+INFO  2026-05-11T17:12:13 +155ms service=default creating instance [object Object]
+INFO  2026-05-11T17:12:13 +2ms service=project directory=/tmp/bgi-ab-repos/pydantic fromDirectory
+INFO  2026-05-11T17:12:13 +58ms service=db path=/root/.local/share/opencode/opencode.db opening database
+INFO  2026-05-11T17:12:13 +12ms service=db count=17 mode=bundled applying migrations
+INFO  2026-05-11T17:12:13 +15ms service=default bootstrapping [object Object]
+INFO  2026-05-11T17:12:13 +15ms service=config path=/root/.config/opencode/config.json loading
+INFO  2026-05-11T17:12:13 +1ms service=config path=/root/.config/opencode/opencode.json loading
+INFO  2026-05-11T17:12:13 +0ms service=config path=/root/.config/opencode/opencode.jsonc loading
+INFO  2026-05-11T17:12:13 +2ms service=config path=/tmp/bgi-ab-repos/pydantic/opencode.json loading
+INFO  2026-05-11T17:12:13 +41ms service=plugin name=XI loading internal plugin
+INFO  2026-05-11T17:12:13 +0ms service=plugin name=wI loading internal plugin
+INFO  2026-05-11T17:12:13 +1ms service=plugin name=OK loading internal plugin
+INFO  2026-05-11T17:12:13 +0ms service=plugin name=N0 loading internal plugin
+INFO  2026-05-11T17:12:13 +0ms service=plugin name=PK loading internal plugin
+INFO  2026-05-11T17:12:13 +0ms service=plugin name=kK loading internal plugin
+INFO  2026-05-11T17:12:13 +1ms service=plugin name=yK loading internal plugin
+INFO  2026-05-11T17:12:13 +1ms service=bus type=* subscribing
+INFO  2026-05-11T17:12:13 +2ms service=lsp all LSPs are disabled
+INFO  2026-05-11T17:12:13 +1ms service=bus type=session.updated subscribing
+INFO  2026-05-11T17:12:13 +1ms service=bus type=message.updated subscribing
+INFO  2026-05-11T17:12:13 +0ms service=bus type=message.part.updated subscribing
+INFO  2026-05-11T17:12:13 +0ms service=bus type=session.diff subscribing
+INFO  2026-05-11T17:12:13 +0ms service=bus type=session.deleted subscribing
+INFO  2026-05-11T17:12:13 +1ms service=format all formatters are disabled
+INFO  2026-05-11T17:12:13 +0ms service=format init
+INFO  2026-05-11T17:12:13 +5ms service=file.watcher directory=/tmp/bgi-ab-repos/pydantic init
+INFO  2026-05-11T17:12:13 +3ms service=file.watcher directory=/tmp/bgi-ab-repos/pydantic platform=linux backend=inotify watcher backend
+INFO  2026-05-11T17:12:13 +4ms service=bus type=command.executed subscribing
+INFO  2026-05-11T17:12:13 +64ms service=server opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 server backend selected
+INFO  2026-05-11T17:12:13 +12ms service=server method=POST path=/session opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:12:13 +0ms service=server status=started method=POST path=/session opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:12:13 +9ms service=session id=ses_1e7f9972dffes16IS59XgL3elO slug=crisp-lagoon version=1.14.41 projectID=bd8e63eae8b1d91eaafeb6fedcc38a643c070336 directory=/tmp/bgi-ab-repos/pydantic path= title=New session - 2026-05-11T17:12:13.778Z permission=[{"permission":"question","pattern":"*","action":"deny"},{"permission":"plan_enter","pattern":"*","action":"deny"},{"permission":"plan_exit","pattern":"*","action":"deny"}] time={"created":1778519533778,"updated":1778519533778} created
+INFO  2026-05-11T17:12:13 +5ms service=bus type=session.created publishing
+INFO  2026-05-11T17:12:13 +1ms service=bus type=session.updated publishing
+INFO  2026-05-11T17:12:13 +3ms service=server status=completed duration=18 method=POST path=/session opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:12:13 +1ms service=server method=GET path=/config opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:12:13 +0ms service=server status=started method=GET path=/config opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:12:13 +2ms service=server status=completed duration=2 method=GET path=/config opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:12:13 +3ms service=server method=GET path=/event opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:12:13 +0ms service=server status=started method=GET path=/event opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:12:13 +0ms service=server method=POST path=/session/ses_1e7f9972dffes16IS59XgL3elO/message opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:12:13 +0ms service=server status=started method=POST path=/session/ses_1e7f9972dffes16IS59XgL3elO/message opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:12:13 +2ms service=server event connected
+INFO  2026-05-11T17:12:13 +4ms service=bus type=* subscribing
+INFO  2026-05-11T17:12:13 +13ms service=server status=completed duration=19 method=GET path=/event opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:12:13 +2ms service=server status=completed duration=21 method=POST path=/session/ses_1e7f9972dffes16IS59XgL3elO/message opencode.server.backend=hono opencode.server.backend.reason=stable opencode.installation.channel=latest opencode.installation.version=1.14.41 request
+INFO  2026-05-11T17:12:13 +32ms service=vcs branch=main default_branch=main initialized
+INFO  2026-05-11T17:12:13 +0ms service=bus type=file.watcher.updated subscribing
+INFO  2026-05-11T17:12:13 +21ms service=bus type=message.updated publishing
+INFO  2026-05-11T17:12:13 +5ms service=provider status=started state
+INFO  2026-05-11T17:12:13 +3ms service=bus type=message.part.updated publishing
+INFO  2026-05-11T17:12:13 +4ms service=bus type=session.updated publishing
+INFO  2026-05-11T17:12:13 +73ms service=provider init
+INFO  2026-05-11T17:12:13 +5ms service=bus type=session.status publishing
+INFO  2026-05-11T17:12:13 +1ms service=session.prompt session.id=ses_1e7f9972dffes16IS59XgL3elO step=0 loop
+INFO  2026-05-11T17:12:14 +60ms service=provider providerID=deepseek found
+INFO  2026-05-11T17:12:14 +0ms service=provider providerID=cloudflare-ai-gateway found
+INFO  2026-05-11T17:12:14 +0ms service=provider providerID=azure-cognitive-services found
+INFO  2026-05-11T17:12:14 +1ms service=provider providerID=azure found
+INFO  2026-05-11T17:12:14 +0ms service=provider providerID=google found
+INFO  2026-05-11T17:12:14 +0ms service=provider providerID=opencode found
+INFO  2026-05-11T17:12:14 +0ms service=provider status=completed duration=147 state
+INFO  2026-05-11T17:12:14 +3ms service=bus type=message.updated publishing
+INFO  2026-05-11T17:12:14 +7ms service=llm providerID=azure modelID=claude-haiku-4-5 session.id=ses_1e7f9972dffes16IS59XgL3elO small=true agent=title mode=primary stream
+INFO  2026-05-11T17:12:14 +1ms service=provider status=started providerID=azure getSDK
+INFO  2026-05-11T17:12:14 +0ms service=provider providerID=azure pkg=@ai-sdk/anthropic using bundled provider
+[0m
+> build · gpt-4o
+[0m
+INFO  2026-05-11T17:12:14 +7ms service=provider status=completed duration=7 providerID=azure getSDK
+ERROR 2026-05-11T17:12:14 +19ms service=llm providerID=azure modelID=claude-haiku-4-5 session.id=ses_1e7f9972dffes16IS59XgL3elO small=true agent=title mode=primary error={"error":{"name":"AI_LoadAPIKeyError"}} stream error
+WARN  2026-05-11T17:12:14 +71ms service=snapshot exitCode=129 stderr=error: unknown option `sparse'
+usage: git add [<options>] [--] <pathspec>...
+
+    -n, --dry-run         dry run
+    -v, --verbose         be verbose
+
+    -i, --interactive     interactive picking
+    -p, --patch           select hunks interactively
+    -e, --edit            edit current diff and apply
+    -f, --force           allow adding otherwise ignored files
+    -u, --update          update tracked files
+    --renormalize         renormalize EOL of tracked files (implies -u)
+    -N, --intent-to-add   record only the fact that the path will be added later
+    -A, --all             add changes from all tracked and untracked files
+    --ignore-removal      ignore paths removed in the working tree (same as --no-all)
+    --refresh             don't add, only refresh the index
+    --ignore-errors       just skip files which cannot be added because of errors
+    --ignore-missing      check if - even missing - files are ignored in dry run
+    --chmod (+|-)x        override the executable bit of the listed files
+    --pathspec-from-file <file>
+                          read pathspec from file
+    --pathspec-file-nul   with --pathspec-from-file, pathspec elements are separated with NUL character
+
+ failed to add snapshot files
+INFO  2026-05-11T17:12:14 +9ms service=snapshot hash=4b825dc642cb6eb9a060e54bf8d69288fbee4904 cwd=/tmp/bgi-ab-repos/pydantic git=/root/.local/share/opencode/snapshot/bd8e63eae8b1d91eaafeb6fedcc38a643c070336/bc62ecd26a33f35092523eef9fb1f5331bb54007 tracking
+INFO  2026-05-11T17:12:14 +2ms service=session.prompt status=started resolveTools
+INFO  2026-05-11T17:12:14 +9ms service=shell-tool shell=/bin/bash shell tool using shell
+INFO  2026-05-11T17:12:14 +3ms service=tool.registry status=started invalid
+INFO  2026-05-11T17:12:14 +1ms service=tool.registry status=completed duration=1 invalid
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=started question
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=completed duration=0 question
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=started bash
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=completed duration=0 bash
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=started read
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=completed duration=0 read
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=started glob
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=completed duration=0 glob
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=started grep
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=completed duration=0 grep
+INFO  2026-05-11T17:12:14 +1ms service=tool.registry status=started edit
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=completed duration=0 edit
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=started write
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=completed duration=0 write
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=started task
+INFO  2026-05-11T17:12:14 +2ms service=tool.registry status=completed duration=2 task
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=started webfetch
+INFO  2026-05-11T17:12:14 +1ms service=tool.registry status=completed duration=1 webfetch
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=started todowrite
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=completed duration=0 todowrite
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=started skill
+INFO  2026-05-11T17:12:14 +1ms service=skill count=0 init
+INFO  2026-05-11T17:12:14 +0ms service=tool.registry status=completed duration=1 skill
+INFO  2026-05-11T17:12:14 +10ms service=mcp key=bigindexer type=local found
+INFO  2026-05-11T17:12:15 +1494ms service=mcp key=bigindexer mcp stderr: [05/11/26 17:12:15] INFO     Processing request of type            server.py:727
+                             ListToolsRequest                                   
+
+INFO  2026-05-11T17:12:15 +3ms service=mcp key=bigindexer toolCount=12 create() successfully created client
+INFO  2026-05-11T17:12:15 +2ms service=session.prompt status=completed duration=1527 resolveTools
+INFO  2026-05-11T17:12:15 +8ms service=bus type=session.updated publishing
+INFO  2026-05-11T17:12:15 +13ms service=bus type=session.diff publishing
+INFO  2026-05-11T17:12:15 +1ms service=bus type=message.updated publishing
+INFO  2026-05-11T17:12:15 +3ms service=session.processor session.id=ses_1e7f9972dffes16IS59XgL3elO messageID=msg_e180669c40019NnmFv4ZGWakB3 process
+INFO  2026-05-11T17:12:15 +2ms service=llm providerID=azure modelID=gpt-4o session.id=ses_1e7f9972dffes16IS59XgL3elO small=false agent=build mode=primary stream
+INFO  2026-05-11T17:12:15 +0ms service=provider status=started providerID=azure getSDK
+INFO  2026-05-11T17:12:15 +0ms service=provider providerID=azure pkg=@ai-sdk/azure using bundled provider
+INFO  2026-05-11T17:12:15 +7ms service=provider status=completed duration=7 providerID=azure getSDK
+INFO  2026-05-11T17:12:15 +6ms service=bus type=session.status publishing
+INFO  2026-05-11T17:12:16 +1085ms service=bus type=message.part.updated publishing
+ERROR 2026-05-11T17:12:16 +105ms service=llm providerID=azure modelID=gpt-4o session.id=ses_1e7f9972dffes16IS59XgL3elO small=false agent=build mode=primary error={"error":{"type":"error","sequence_number":2,"error":{"type":"too_many_requests","code":"too_many_requests","message":"Too Many Requests","param":null}}} stream error
+INFO  2026-05-11T17:12:16 +3ms service=bus type=session.status publishing
+INFO  2026-05-11T17:12:18 +2006ms service=llm providerID=azure modelID=gpt-4o session.id=ses_1e7f9972dffes16IS59XgL3elO small=false agent=build mode=primary stream
+INFO  2026-05-11T17:12:18 +5ms service=bus type=session.status publishing
+INFO  2026-05-11T17:12:19 +1088ms service=bus type=message.part.updated publishing
+INFO  2026-05-11T17:12:20 +776ms service=bus type=message.part.updated publishing
+INFO  2026-05-11T17:12:21 +469ms service=permission permission=bigindexer_twin_context pattern=* action={"permission":"*","action":"allow","pattern":"*"} evaluated
+INFO  2026-05-11T17:12:21 +4ms service=bus type=message.part.updated publishing
+INFO  2026-05-11T17:12:21 +4ms service=mcp key=bigindexer mcp stderr: [05/11/26 17:12:21] INFO     Processing request of type            server.py:727
+                             CallToolRequest                                    
+
+INFO  2026-05-11T17:12:21 +17ms service=bus type=message.part.updated publishing
+[0m⚙ [0mbigindexer_twin_context {"task":"Understand pydantic architecture and identify strong and weak points with evidence","limit":3,"include_source":true,"min_score":0.25}
+WARN  2026-05-11T17:12:21 +147ms service=snapshot exitCode=129 stderr=error: unknown option `sparse'
+usage: git add [<options>] [--] <pathspec>...
+
+    -n, --dry-run         dry run
+    -v, --verbose         be verbose
+
+    -i, --interactive     interactive picking
+    -p, --patch           select hunks interactively
+    -e, --edit            edit current diff and apply
+    -f, --force           allow adding otherwise ignored files
+    -u, --update          update tracked files
+    --renormalize         renormalize EOL of tracked files (implies -u)
+    -N, --intent-to-add   record only the fact that the path will be added later
+    -A, --all             add changes from all tracked and untracked files
+    --ignore-removal      ignore paths removed in the working tree (same as --no-all)
+    --refresh             don't add, only refresh the index
+    --ignore-errors       just skip files which cannot be added because of errors
+    --ignore-missing      check if - even missing - files are ignored in dry run
+    --chmod (+|-)x        override the executable bit of the listed files
+    --pathspec-from-file <file>
+                          read pathspec from file
+    --pathspec-file-nul   with --pathspec-from-file, pathspec elements are separated with NUL character
+
+ failed to add snapshot files
+INFO  2026-05-11T17:12:21 +8ms service=snapshot hash=4b825dc642cb6eb9a060e54bf8d69288fbee4904 cwd=/tmp/bgi-ab-repos/pydantic git=/root/.local/share/opencode/snapshot/bd8e63eae8b1d91eaafeb6fedcc38a643c070336/bc62ecd26a33f35092523eef9fb1f5331bb54007 tracking
+INFO  2026-05-11T17:12:21 +4ms service=bus type=message.part.updated publishing
+INFO  2026-05-11T17:12:21 +1ms service=bus type=message.updated publishing
+WARN  2026-05-11T17:12:21 +57ms service=snapshot exitCode=129 stderr=error: unknown option `sparse'
+usage: git add [<options>] [--] <pathspec>...
+
+    -n, --dry-run         dry run
+    -v, --verbose         be verbose
+
+    -i, --interactive     interactive picking
+    -p, --patch           select hunks interactively
+    -e, --edit            edit current diff and apply
+    -f, --force           allow adding otherwise ignored files
+    -u, --update          update tracked files
+    --renormalize         renormalize EOL of tracked files (implies -u)
+    -N, --intent-to-add   record only the fact that the path will be added later
+    -A, --all             add changes from all tracked and untracked files
+    --ignore-removal      ignore paths removed in the working tree (same as --no-all)
+    --refresh             don't add, only refresh the index
+    --ignore-errors       just skip files which cannot be added because of errors
+    --ignore-missing      check if - even missing - files are ignored in dry run
+    --chmod (+|-)x        override the executable bit of the listed files
+    --pathspec-from-file <file>
+                          read pathspec from file
+    --pathspec-file-nul   with --pathspec-from-file, pathspec elements are separated with NUL character
+
+ failed to add snapshot files
+INFO  2026-05-11T17:12:21 +12ms service=bus type=message.updated publishing
+INFO  2026-05-11T17:12:21 +0ms service=bus type=session.status publishing
+INFO  2026-05-11T17:12:21 +1ms service=session.prompt session.id=ses_1e7f9972dffes16IS59XgL3elO step=1 loop
+INFO  2026-05-11T17:12:21 +3ms service=bus type=message.updated publishing
+WARN  2026-05-11T17:12:21 +73ms service=snapshot exitCode=129 stderr=error: unknown option `sparse'
+usage: git add [<options>] [--] <pathspec>...
+
+    -n, --dry-run         dry run
+    -v, --verbose         be verbose
+
+    -i, --interactive     interactive picking
+    -p, --patch           select hunks interactively
+    -e, --edit            edit current diff and apply
+    -f, --force           allow adding otherwise ignored files
+    -u, --update          update tracked files
+    --renormalize         renormalize EOL of tracked files (implies -u)
+    -N, --intent-to-add   record only the fact that the path will be added later
+    -A, --all             add changes from all tracked and untracked files
+    --ignore-removal      ignore paths removed in the working tree (same as --no-all)
+    --refresh             don't add, only refresh the index
+    --ignore-errors       just skip files which cannot be added because of errors
+    --ignore-missing      check if - even missing - files are ignored in dry run
+    --chmod (+|-)x        override the executable bit of the listed files
+    --pathspec-from-file <file>
+                          read pathspec from file
+    --pathspec-file-nul   with --pathspec-from-file, pathspec elements are separated with NUL character
+
+ failed to add snapshot files
+INFO  2026-05-11T17:12:21 +9ms service=snapshot hash=4b825dc642cb6eb9a060e54bf8d69288fbee4904 cwd=/tmp/bgi-ab-repos/pydantic git=/root/.local/share/opencode/snapshot/bd8e63eae8b1d91eaafeb6fedcc38a643c070336/bc62ecd26a33f35092523eef9fb1f5331bb54007 tracking
+INFO  2026-05-11T17:12:21 +1ms service=session.prompt status=started resolveTools
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=started invalid
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=completed duration=0 invalid
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=started question
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=completed duration=0 question
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=started bash
+INFO  2026-05-11T17:12:21 +1ms service=tool.registry status=completed duration=0 bash
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=started read
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=completed duration=0 read
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=started glob
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=completed duration=0 glob
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=started grep
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=completed duration=0 grep
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=started edit
+INFO  2026-05-11T17:12:21 +1ms service=tool.registry status=completed duration=0 edit
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=started write
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=completed duration=0 write
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=started task
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=completed duration=0 task
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=started webfetch
+INFO  2026-05-11T17:12:21 +1ms service=tool.registry status=completed duration=1 webfetch
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=started todowrite
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=completed duration=0 todowrite
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=started skill
+INFO  2026-05-11T17:12:21 +0ms service=tool.registry status=completed duration=0 skill
+INFO  2026-05-11T17:12:21 +3ms service=session.prompt status=completed duration=6 resolveTools
+INFO  2026-05-11T17:12:21 +18ms service=session.processor session.id=ses_1e7f9972dffes16IS59XgL3elO messageID=msg_e180686fb001eJ3jCpTzo2ecx5 process
+INFO  2026-05-11T17:12:21 +1ms service=llm providerID=azure modelID=gpt-4o session.id=ses_1e7f9972dffes16IS59XgL3elO small=false agent=build mode=primary stream
+INFO  2026-05-11T17:12:21 +8ms service=bus type=session.status publishing
+INFO  2026-05-11T17:12:21 +8ms service=bus type=session.updated publishing
+INFO  2026-05-11T17:12:21 +10ms service=bus type=session.diff publishing
+INFO  2026-05-11T17:12:21 +9ms service=bus type=message.updated publishing
+INFO  2026-05-11T17:12:22 +628ms service=bus type=message.part.updated publishing
+ERROR 2026-05-11T17:12:22 +1ms service=llm providerID=azure modelID=gpt-4o session.id=ses_1e7f9972dffes16IS59XgL3elO small=false agent=build mode=primary error={"error":{"type":"error","sequence_number":2,"error":{"type":"too_many_requests","code":"too_many_requests","message":"Too Many Requests","param":null}}} stream error
+INFO  2026-05-11T17:12:22 +1ms service=bus type=session.status publishing
+INFO  2026-05-11T17:12:24 +2006ms service=llm providerID=azure modelID=gpt-4o session.id=ses_1e7f9972dffes16IS59XgL3elO small=false agent=build mode=primary stream
+INFO  2026-05-11T17:12:24 +5ms service=bus type=session.status publishing
+INFO  2026-05-11T17:12:25 +1079ms service=bus type=message.part.updated publishing
+ERROR 2026-05-11T17:12:25 +117ms service=llm providerID=azure modelID=gpt-4o session.id=ses_1e7f9972dffes16IS59XgL3elO small=false agent=build mode=primary error={"error":{"type":"error","sequence_number":2,"error":{"type":"too_many_requests","code":"too_many_requests","message":"Too Many Requests","param":null}}} stream error
+INFO  2026-05-11T17:12:25 +1ms service=bus type=session.status publishing
+INFO  2026-05-11T17:12:29 +4002ms service=llm providerID=azure modelID=gpt-4o session.id=ses_1e7f9972dffes16IS59XgL3elO small=false agent=build mode=primary stream
+INFO  2026-05-11T17:12:29 +4ms service=bus type=session.status publishing
+INFO  2026-05-11T17:12:30 +1098ms service=bus type=message.part.updated publishing
+ERROR 2026-05-11T17:12:30 +116ms service=llm providerID=azure modelID=gpt-4o session.id=ses_1e7f9972dffes16IS59XgL3elO small=false agent=build mode=primary error={"error":{"type":"error","sequence_number":2,"error":{"type":"too_many_requests","code":"too_many_requests","message":"Too Many Requests","param":null}}} stream error
+INFO  2026-05-11T17:12:30 +1ms service=bus type=session.status publishing
+INFO  2026-05-11T17:12:38 +8007ms service=llm providerID=azure modelID=gpt-4o session.id=ses_1e7f9972dffes16IS59XgL3elO small=false agent=build mode=primary stream
+INFO  2026-05-11T17:12:38 +4ms service=bus type=session.status publishing
+INFO  2026-05-11T17:12:39 +1141ms service=bus type=message.part.updated publishing
+INFO  2026-05-11T17:12:40 +168ms service=bus type=message.part.updated publishing
+INFO  2026-05-11T17:12:40 +2ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +11ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +16ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +26ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +24ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +32ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +31ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +17ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +11ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +24ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +26ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +17ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +25ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +22ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +23ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +22ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +31ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +21ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +24ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +20ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +2ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +106ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +159ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +2ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +108ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +124ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:40 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +213ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +114ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +125ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +133ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +113ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +102ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +182ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:41 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:42 +182ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:42 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:42 +158ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:42 +197ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:42 +238ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:42 +162ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:43 +151ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:43 +168ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:43 +184ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:43 +202ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:43 +123ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:43 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:43 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:43 +107ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:43 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:43 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:43 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:43 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:43 +103ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:43 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:43 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:43 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:44 +104ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:44 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:44 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:44 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:44 +98ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:44 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:44 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:44 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:44 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:44 +153ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:44 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:44 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:44 +1ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:44 +0ms service=bus type=message.part.delta publishing
+INFO  2026-05-11T17:12:44 +3ms service=bus type=message.part.updated publishing
+### Current State
+#### About the Project
+Pydantic is a Python library designed to validate data using Python type annotations. It provides mechanisms for data serialization, deserialization, and validation with high efficiency and a user-friendly API.
+
+### Key Strong Points (VERIFIED)
+- **Type-driven Validation**: Uses Python's typing to enforce data structures and validate input automatically. Sources suggest powerful integration with type hints (Pydantic library design and tests). ✅ Source: Core library principles (no deviations found so far).
+- **Fast Serialization**: Implements optimizations for transforming data, aligning well with performance-oriented use. No sources indicate contradiction. ✅
+- Legacy/filter-layer `<needs example pick run batch-manage>.` #[Experiment incompletely prepared]])
+WARN  2026-05-11T17:12:44 +168ms service=snapshot exitCode=129 stderr=error: unknown option `sparse'
+usage: git add [<options>] [--] <pathspec>...
+
+    -n, --dry-run         dry run
+    -v, --verbose         be verbose
+
+    -i, --interactive     interactive picking
+    -p, --patch           select hunks interactively
+    -e, --edit            edit current diff and apply
+    -f, --force           allow adding otherwise ignored files
+    -u, --update          update tracked files
+    --renormalize         renormalize EOL of tracked files (implies -u)
+    -N, --intent-to-add   record only the fact that the path will be added later
+    -A, --all             add changes from all tracked and untracked files
+    --ignore-removal      ignore paths removed in the working tree (same as --no-all)
+    --refresh             don't add, only refresh the index
+    --ignore-errors       just skip files which cannot be added because of errors
+    --ignore-missing      check if - even missing - files are ignored in dry run
+    --chmod (+|-)x        override the executable bit of the listed files
+    --pathspec-from-file <file>
+                          read pathspec from file
+    --pathspec-file-nul   with --pathspec-from-file, pathspec elements are separated with NUL character
+
+ failed to add snapshot files
+INFO  2026-05-11T17:12:44 +3ms service=snapshot hash=4b825dc642cb6eb9a060e54bf8d69288fbee4904 cwd=/tmp/bgi-ab-repos/pydantic git=/root/.local/share/opencode/snapshot/bd8e63eae8b1d91eaafeb6fedcc38a643c070336/bc62ecd26a33f35092523eef9fb1f5331bb54007 tracking
+INFO  2026-05-11T17:12:44 +2ms service=bus type=message.part.updated publishing
+INFO  2026-05-11T17:12:44 +2ms service=bus type=message.updated publishing
+WARN  2026-05-11T17:12:44 +70ms service=snapshot exitCode=129 stderr=error: unknown option `sparse'
+usage: git add [<options>] [--] <pathspec>...
+
+    -n, --dry-run         dry run
+    -v, --verbose         be verbose
+
+    -i, --interactive     interactive picking
+    -p, --patch           select hunks interactively
+    -e, --edit            edit current diff and apply
+    -f, --force           allow adding otherwise ignored files
+    -u, --update          update tracked files
+    --renormalize         renormalize EOL of tracked files (implies -u)
+    -N, --intent-to-add   record only the fact that the path will be added later
+    -A, --all             add changes from all tracked and untracked files
+    --ignore-removal      ignore paths removed in the working tree (same as --no-all)
+    --refresh             don't add, only refresh the index
+    --ignore-errors       just skip files which cannot be added because of errors
+    --ignore-missing      check if - even missing - files are ignored in dry run
+    --chmod (+|-)x        override the executable bit of the listed files
+    --pathspec-from-file <file>
+                          read pathspec from file
+    --pathspec-file-nul   with --pathspec-from-file, pathspec elements are separated with NUL character
+
+ failed to add snapshot files
+INFO  2026-05-11T17:12:44 +5ms service=bus type=message.updated publishing
+INFO  2026-05-11T17:12:44 +1ms service=bus type=session.status publishing
+INFO  2026-05-11T17:12:44 +0ms service=session.prompt session.id=ses_1e7f9972dffes16IS59XgL3elO step=2 loop
+INFO  2026-05-11T17:12:44 +1ms service=session.prompt session.id=ses_1e7f9972dffes16IS59XgL3elO exiting loop
+INFO  2026-05-11T17:12:44 +3ms service=bus type=session.status publishing
+INFO  2026-05-11T17:12:44 +0ms service=bus type=session.idle publishing
+INFO  2026-05-11T17:12:44 +3ms service=default disposing instance [object Object]
+INFO  2026-05-11T17:12:44 +2ms service=bus type=* unsubscribing
+INFO  2026-05-11T17:12:44 +1ms service=bus type=session.updated unsubscribing
+INFO  2026-05-11T17:12:44 +0ms service=bus type=message.updated unsubscribing
+INFO  2026-05-11T17:12:44 +0ms service=bus type=message.part.updated unsubscribing
+INFO  2026-05-11T17:12:44 +0ms service=bus type=session.diff unsubscribing
+INFO  2026-05-11T17:12:44 +1ms service=bus type=session.deleted unsubscribing
+INFO  2026-05-11T17:12:44 +0ms service=bus type=command.executed unsubscribing
+INFO  2026-05-11T17:12:44 +0ms service=bus type=file.watcher.updated unsubscribing
+INFO  2026-05-11T17:12:44 +7ms service=bus type=* unsubscribing
+INFO  2026-05-11T17:12:44 +1ms service=server event disconnected
+INFO  2026-05-11T17:12:44 +22ms service=config path=/tmp/bgi-ab-repos/pydantic/opencode.json loading
+INFO  2026-05-11T17:12:44 +10ms service=bus type=session.updated publishing
+INFO  2026-05-11T17:12:44 +3ms service=bus type=session.diff publishing
+INFO  2026-05-11T17:12:44 +24ms service=bus type=message.updated publishing
