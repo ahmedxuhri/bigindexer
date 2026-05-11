@@ -119,6 +119,7 @@ BGI-TWIN post-shipment refresh (MCP, p04 only, 5 repos):
 Operational notes:
 - Pydantic MCP startup required running BGI MCP command from `/root/mad/sessions/bgi` (to avoid local repo `pydantic` package shadowing installed runtime deps).
 - Full 40-run protocol refresh remains open; p04 slice is now evidence-backed.
+- Remaining p01-p03 MCP twin-refresh runs across all 5 repos have now been executed and recorded in `validation/runs.csv` with invocation-evidence notes; rubric scoring/public aggregate recompute is the open step.
 
 ## Phase 9 Validation Credibility Fixes - COMPLETE
 
