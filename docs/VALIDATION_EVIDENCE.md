@@ -37,11 +37,16 @@ We re-ran the full TWIN prompt pack on a different model (`azure/gpt-4o`) across
 |---|---|---|
 | Actionability (1–5) | 4.75 | **4.85** |
 | Evidence coverage | 79.9% (96% p04 slice) | **47.9%** (49.3% p04 slice) |
+| Evidence (tag-relaxed, second score)\* | **94.8%** (100% p04) | **59.5%** (62.7% p04) |
 | Boundary accuracy | 1.00 | **1.00** |
 | Hallucination flags | 0 | **0** |
 | Median latency | 68.5s | **41.6s** |
 
 Interpretation: actionability, boundary accuracy, and zero-hallucination behavior replicated on GPT-4o, with faster latency.
+
+\* Tag-relaxed evidence score formula:  
+`min(100, evidence_coverage_pct + min(25, (unlabeled_repo_anchor_lines / checklist_items) * 100 * 0.15))`  
+Repo-anchor lines are non-log lines mentioning concrete repo files/modules (e.g. `*.py`, `*.go`, `*.ts`) without explicit `VERIFIED/HYPOTHESIS/UNKNOWN` tags.
 
 #### Evidence-gap interpretation (explicit)
 
@@ -178,6 +183,7 @@ We publish limitations before readers find them. A reader who discovers a flaw t
 | MCP server | `bgi mcp --graph ... --fuse-graph ...` |
 | TWIN invocation | `twin_context` explicitly required in prompt; `CallToolRequest` confirmed in every TWIN run |
 | Evidence coverage | Recall of architectural facts vs ground-truth checklist (sensitive to explicit label/citation style) |
+| Evidence (tag-relaxed, second score) | Primary evidence score + capped credit for unlabeled repo-anchor lines (no reruns required) |
 | Boundary accuracy | 0/1 — correct seam identification |
 | Actionability | 1–5 rubric: 5 = immediately actionable (copy-paste), 1 = vague |
 | Hallucination flags | Count of factually incorrect module/file claims |

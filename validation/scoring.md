@@ -8,6 +8,7 @@ Score each prompt response in both modes (`baseline`, `mcp`).
 |---|---|---|
 | latency_sec | numeric | from time file |
 | evidence_coverage_pct | 0-100 | VERIFIED claims / total major claims |
+| evidence_tag_relaxed_pct | 0-100 | primary evidence + capped credit for unlabeled repo-anchor lines |
 | boundary_accuracy | 0/1 | 1 if no obvious wrong-boundary guidance |
 | actionability | 1-5 | 5 means immediately executable |
 | hallucination_flags | integer | contradicted claims count |

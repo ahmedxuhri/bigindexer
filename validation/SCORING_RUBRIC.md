@@ -29,6 +29,19 @@ The checklist is defined per prompt (see below). The checklist was written **bef
 - Items the response marks as "UNKNOWN" or "HYPOTHESIS" without verification count as 0.
 - False claims (factually wrong) count as 0 and trigger a hallucination flag.
 
+### 1b. Evidence (Tag-Relaxed, second score) (0–100%)
+
+**Definition:** Secondary evidence score that adds conservative credit for grounded repo anchors even when explicit labels are missing.
+
+**Formula:**
+`min(100, evidence_coverage_pct + min(25, (unlabeled_repo_anchor_lines / checklist_items) × 100 × 0.15))`
+
+Where:
+- `unlabeled_repo_anchor_lines` = non-log response lines that include concrete repo anchors (`*.py`, `*.go`, `*.ts`, etc.) and do **not** contain `VERIFIED/HYPOTHESIS/UNKNOWN`.
+- `checklist_items` = prompt+repo checklist size in this rubric.
+
+**Purpose:** Reduce sensitivity to label style differences across models while keeping the strict primary evidence score as the canonical metric.
+
 ### 2. Boundary Accuracy (0 or 1)
 
 **Definition:** Did the response correctly identify the architectural seam(s) relevant to the prompt?
@@ -306,5 +319,5 @@ The `runs.csv` schema:
 ```
 run_id, timestamp_utc, repo_slug, repo_dir, cli, model, mcp_mode, prompt_id,
 latency_sec, output_file, time_file, evidence_coverage_pct, boundary_accuracy,
-actionability, hallucination_flags, rework_needed, executor, notes
+actionability, hallucination_flags, rework_needed, executor, notes, evidence_tag_relaxed_pct
 ```

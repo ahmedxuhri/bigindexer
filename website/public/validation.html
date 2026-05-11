@@ -394,6 +394,11 @@
               <td class="col-mcp">47.9% (49.3% p04 slice)</td>
             </tr>
             <tr>
+              <td class="row-label" style="padding-left:1.2rem">Evidence (tag-relaxed, second score)</td>
+              <td class="col-twin">94.8% (100% p04)</td>
+              <td class="col-mcp">59.5% (62.7% p04)</td>
+            </tr>
+            <tr>
               <td class="row-label" style="padding-left:1.2rem">Boundary accuracy</td>
               <td class="col-twin">1.00</td>
               <td class="col-mcp"><strong>1.00</strong></td>
@@ -423,6 +428,11 @@
         <br><br>
         Interpretation: this is a model/rubric interaction (explicit tagging style), not a loss of BGI grounding. We keep scores unnormalized and publish raw outputs so readers can audit this directly.
       </div>
+
+      <p class="note">
+        Second evidence score formula (tag-relaxed): <code>min(100, evidence_coverage_pct + min(25, (unlabeled_repo_anchor_lines / checklist_items) * 100 * 0.15))</code>.
+        This adds conservative credit for non-log lines that include concrete repo anchors (<code>*.py</code>, <code>*.go</code>, <code>*.ts</code>, etc.) without explicit evidence tags.
+      </p>
 
       <div class="card">
         <h3 style="margin-top:0">Raw-output comparison (same prompt, two models)</h3>
@@ -772,6 +782,7 @@ GPT-4o (opencode_mcp_p03_twin_refresh_gpt4o_r1):
             <h3 style="margin-top:0">Scoring rubric</h3>
             <ul style="list-style:none;font-size:0.88rem;color:var(--gray-600);line-height:2">
               <li>Evidence coverage: recall vs ground-truth checklist</li>
+              <li>Evidence (2nd): tag-relaxed coverage with capped anchor credit</li>
               <li>Boundary accuracy: 0/1 correct seam identification</li>
               <li>Actionability: 1–5 (5 = copy-paste ready)</li>
               <li>Hallucination flags: count of incorrect claims</li>
