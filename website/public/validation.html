@@ -172,10 +172,11 @@
         </div>
       </div>
       <div class="callout" style="margin-top:0.75rem">
-        <strong>Post-shipment refresh (2026-05-11, p04 slice):</strong>
-        5 MCP runs with explicit <code>twin_context</code> and valid MCP invocation evidence improved
-        actionability to <strong>4.8/5</strong> (from 4.0 aggregate), with
-        <strong>96.0%</strong> evidence coverage and <strong>0</strong> hallucinations.
+        <strong>Post-shipment full refresh (2026-05-11, p01–p04, all 5 repos):</strong>
+        20 MCP runs with explicit <code>twin_context</code> and valid MCP invocation evidence:
+        actionability <strong>4.75/5</strong> (from 4.0 aggregate), boundary accuracy <strong>1.00</strong>,
+        <strong>0</strong> hallucinations, median latency 68.5s.
+        p04-only slice (easiest prompts): <strong>4.8/5</strong> actionability, <strong>96.0%</strong> evidence coverage.
       </div>
     </div>
 
@@ -322,19 +323,19 @@
          If you score any run differently, open an issue with your reasoning.</p>
 
       <h3>Sample size is still limited</h3>
-      <p>40 scored runs across 5 repos (Python + Go + TypeScript) is stronger than the initial batch, but still not conclusive.
+      <p>60 scored runs across 5 repos (Python + Go + TypeScript) is stronger than the initial batch, but still not conclusive.
          The pydantic-core finding is strong enough to stand on its own, but the aggregate story still needs more language diversity (especially large Java/C# monorepos and independent replications).</p>
 
-      <h3>Actionability improved in the post-shipment refresh slice</h3>
-      <p>Before BGI-TWIN shipment, aggregate actionability was flat around 4.0/5. After shipment, a p04 refresh slice
-         (5 repos, MCP mode, explicit <code>twin_context</code>) raised actionability to <strong>4.8/5</strong>.
-         This is directional evidence that actionability improved, but a full 40-run rerun is still needed before replacing
-         the global A/B table above.</p>
+      <h3>Actionability improved in the full post-shipment refresh</h3>
+      <p>Before BGI-TWIN shipment, aggregate actionability was flat around 4.0/5. After shipment, the full 20-run refresh
+         (p01–p04 × 5 repos, MCP mode, explicit <code>twin_context</code>) raised actionability to <strong>4.75/5</strong>.
+         The p04-only slice (easiest prompts) reached <strong>4.8/5</strong> with <strong>96.0%</strong> evidence coverage.
+         Boundary accuracy remained perfect (1.0) and hallucinations remained zero across all 20 refresh runs.</p>
       <div class="callout" style="margin-top:0.75rem">
         <strong>Shipped after this validation batch (2026-05-11):</strong>
         BGI-TWIN MCP context package:
         <code>task_fingerprint</code>, <code>behavioral_twins</code>, and <code>twin_context</code>
-        (top-3 twins + seam + rubric + confidence gate). The p04 refresh is complete; full-batch rerun is next.
+        (top-3 twins + seam + rubric + confidence gate). Full post-shipment refresh complete (20 runs, all scored).
       </div>
 
       <h3>We need one independent replication</h3>

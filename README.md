@@ -131,7 +131,7 @@ Artifact: `output/validation/kubernetes-optionb-controlled-median-v21.json`
 
 - Labeled precision/recall benchmark on external corpus.
 - Head-to-head quantitative benchmark vs external tools on the same labeled dataset.
-- Full 40-run post-shipment benchmark refresh for BGI-TWIN context (`task → COV → top-3 twins + seam + rubric`) is still pending (p04 5-repo refresh slice is complete).
+- Full 20-run post-shipment benchmark refresh for BGI-TWIN context (`task → COV → top-3 twins + seam + rubric`) is complete: actionability **4.75/5** (p04 slice: **4.8/5**), boundary **1.0**, hallucinations **0**.
 
 ---
 
@@ -201,7 +201,7 @@ Return top twin candidate, seam suggestion, and rubric checklist.
 - Phase 5 Water-Clock: complete
 - Phase 6 interactive index/search: complete
 - Phase 7 Option B (Gate 2 performance tuning): in progress
-- Phase 8 MCP + BGI-TWIN context packaging: shipped (p04 refresh complete; full 40-run refresh pending)
+- Phase 8 MCP + BGI-TWIN context packaging: shipped (full 20-run post-shipment refresh complete)
 
 Roadmap details: `TASKPLAN.md`
 

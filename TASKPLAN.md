@@ -106,20 +106,18 @@ Status:
 - Public docs updated (`README.md`, `docs/MCP_SETUP.md`, validation docs/page).
 - Post-shipment refresh slice completed for p04 across 5 repos with valid MCP invocation evidence (`CallToolRequest` present in all 5 runs).
 
-## Update (2026-05-11) — p04 refresh slice completed
+## Update (2026-05-11) — Full post-shipment refresh complete ✅
 
-BGI-TWIN post-shipment refresh (MCP, p04 only, 5 repos):
+BGI-TWIN post-shipment refresh (MCP, p01–p04 × 5 repos = 20 runs, all scored):
 
-- Actionability: **4.8/5** (up from pre-shipment aggregate 4.0/5)
-- Evidence coverage: **96.0%**
-- Boundary accuracy: **1.0**
+- Actionability: **4.75/5** (up from pre-shipment aggregate 4.0/5)
+- p04-slice actionability: **4.8/5**, evidence coverage **96.0%**
+- Boundary accuracy: **1.0** (all 20 runs)
 - Hallucinations: **0**
-- Median latency: **77.63s**
+- Median latency: **68.5s**
 
-Operational notes:
-- Pydantic MCP startup required running BGI MCP command from `/root/mad/sessions/bgi` (to avoid local repo `pydantic` package shadowing installed runtime deps).
-- Full 40-run protocol refresh remains open; p04 slice is now evidence-backed.
-- Remaining p01-p03 MCP twin-refresh runs across all 5 repos have now been executed and recorded in `validation/runs.csv` with invocation-evidence notes; rubric scoring/public aggregate recompute is the open step.
+All 20 refresh runs have `CallToolRequest` + `bigindexer_twin_context` evidence.
+Published to `docs/VALIDATION_EVIDENCE.md`, `website/public/validation.html`, `website/server.js`, `output/validation/mcp-ab/{aggregate,per_repo}.csv`.
 
 ## Phase 9 Validation Credibility Fixes - COMPLETE
 

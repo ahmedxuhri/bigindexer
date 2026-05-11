@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "bigindexer": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "bgi.cli",
+        "mcp",
+        "--graph",
+        "/root/mad/sessions/bgi/output/validation/mcp-ab/fastapi/bgi-graph.json",
+        "--fuse-graph",
+        "/root/mad/sessions/bgi/output/validation/mcp-ab/fastapi/fuse-graph.json"
+      ]
+    }
+  }
+}

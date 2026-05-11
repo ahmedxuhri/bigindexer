@@ -35,17 +35,29 @@ Current scored set: **40 scored runs** (invalid MCP-invocation runs excluded fro
 
 ---
 
-## Post-shipment BGI-TWIN refresh (p04 only)
+## Post-shipment BGI-TWIN refresh — full batch (p01–p04, all 5 repos)
 
-MCP-only refresh slice (5 repos, p04 prompt, `twin_context` explicitly required, `CallToolRequest` evidence present in every run):
+Complete MCP-only refresh batch (20 runs: all 4 prompts × 5 repos, `twin_context` explicitly required, `CallToolRequest` evidence present in every run):
 
-| Metric | MCP pre-shipment (scored set) | MCP post-shipment p04 refresh | Δ |
+| Metric | MCP pre-shipment (scored set) | MCP post-shipment full refresh | Δ |
 |---|---|---|---|
-| Actionability (1–5) | 4.00 | **4.80** | +0.80 |
-| Evidence coverage | 84.9% (all prompts) | **96.0%** (p04 refresh slice) | +11.1 pp |
+| Actionability (1–5) | 4.00 | **4.75** | +0.75 |
+| Evidence coverage (mean) | 84.9% | **79.9%** | −5.0 pp† |
 | Boundary accuracy | 1.00 | **1.00** | flat |
 | Hallucination flags | 0 | **0** | flat |
-| Median latency | 66.2s (all prompts) | 77.6s (p04 refresh slice) | +11.4s |
+| Median latency | 66.2s | 68.5s | +2.3s |
+
+† Evidence coverage mean is pulled down by the harder p01–p03 prompts; p04-only refresh slice showed 96.0% (see below).
+
+### p04 slice (safe implementation path)
+
+| Metric | MCP pre-shipment | MCP post-shipment p04 refresh | Δ |
+|---|---|---|---|
+| Actionability (1–5) | 4.00 | **4.80** | +0.80 |
+| Evidence coverage | 84.9% | **96.0%** | +11.1 pp |
+| Boundary accuracy | 1.00 | **1.00** | flat |
+| Hallucination flags | 0 | **0** | flat |
+| Median latency | 66.2s | 77.6s | +11.4s |
 
 Repo-level p04 refresh actionability:
 

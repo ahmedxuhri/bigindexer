@@ -85,10 +85,17 @@ app.get('/api/validation/summary', (req, res) => {
     },
     refresh_update: {
       date: '2026-05-11',
-      scope: 'p04 only, 5 repos, MCP mode, explicit twin_context usage',
-      prompts: 5,
+      scope: 'full refresh p01-p04, 5 repos, MCP mode, explicit twin_context usage',
+      prompts: 20,
       mcp_invocation_evidence: 'CallToolRequest present in all runs',
       metrics: {
+        evidence_coverage_pct: 79.9,
+        boundary_accuracy: 1.0,
+        actionability: 4.75,
+        hallucinations: 0,
+        median_latency_s: 68.53
+      },
+      p04_slice: {
         evidence_coverage_pct: 96.0,
         boundary_accuracy: 1.0,
         actionability: 4.8,
@@ -99,7 +106,7 @@ app.get('/api/validation/summary', (req, res) => {
     repos: ['tiangolo/fastapi', 'django/django', 'pydantic/pydantic-core', 'prometheus/prometheus', 'vercel/next.js'],
     cli: 'opencode 1.14.41',
     model: 'deepseek-v4-flash',
-    total_scored_runs: 40,
+    total_scored_runs: 60,
     global: {
       baseline: { evidence_coverage_pct: 78.7, boundary_accuracy: 0.95, actionability: 4.0, hallucinations: 0, median_latency_s: 133.8 },
       mcp:      { evidence_coverage_pct: 84.9, boundary_accuracy: 1.0,  actionability: 4.0, hallucinations: 0, median_latency_s: 66.2 }
