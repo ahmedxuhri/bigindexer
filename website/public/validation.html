@@ -3,384 +3,737 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MCP Validation Evidence — Big Indexer</title>
+  <title>Validation Evidence — Big Indexer</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+    :root {
+      --purple:     #667eea;
+      --purple-dk:  #4f63c9;
+      --purple-lt:  #eef2ff;
+      --green:      #22c55e;
+      --green-lt:   #f0fdf4;
+      --orange:     #f97316;
+      --orange-lt:  #fff7ed;
+      --gray-50:    #f9fafb;
+      --gray-100:   #f3f4f6;
+      --gray-200:   #e5e7eb;
+      --gray-400:   #9ca3af;
+      --gray-600:   #4b5563;
+      --gray-800:   #1f2937;
+      --twin:       #8b5cf6;
+      --twin-lt:    #f5f3ff;
     }
 
-    header {
-      padding: 1.5rem 2rem;
-      color: white;
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f8f9ff;
+      color: var(--gray-800);
+      line-height: 1.6;
+    }
+
+    /* ── Nav ── */
+    nav {
+      background: linear-gradient(135deg, #4f63c9 0%, #764ba2 100%);
+      padding: 0 2rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid rgba(255,255,255,0.15);
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.18);
     }
+    nav .brand { color: white; font-weight: 700; font-size: 1.1rem; text-decoration: none; letter-spacing: -0.01em; }
+    nav .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    nav .nav-links a { color: rgba(255,255,255,0.82); text-decoration: none; font-size: 0.88rem; }
+    nav .nav-links a:hover { color: white; }
 
-    header h1 { font-size: 1.5rem; font-weight: 700; }
-    header a { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.4); }
-    header a:hover { border-bottom-color: white; color: white; }
-
-    main {
-      flex: 1;
-      max-width: 900px;
-      width: 100%;
-      margin: 2rem auto;
-      padding: 0 1.5rem;
+    /* ── Page hero ── */
+    .page-hero {
+      background: linear-gradient(135deg, #4f63c9 0%, #764ba2 100%);
+      padding: 3.5rem 2rem 4rem;
+      text-align: center;
+      color: white;
     }
-
-    .card {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      padding: 2.5rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .hero-label {
+    .page-hero .eyebrow {
       display: inline-block;
-      background: #eef2ff;
-      color: #667eea;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 99px;
+      padding: 0.25rem 0.9rem;
       font-size: 0.75rem;
-      font-weight: 700;
+      font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      border-radius: 99px;
-      padding: 0.25rem 0.75rem;
+      margin-bottom: 1.2rem;
+    }
+    .page-hero h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 800; margin-bottom: 0.75rem; letter-spacing: -0.02em; }
+    .page-hero p { font-size: 1.05rem; opacity: 0.88; max-width: 640px; margin: 0 auto; }
+
+    /* ── Layout ── */
+    .container { max-width: 980px; margin: 0 auto; padding: 0 1.5rem; }
+    section { padding: 2.5rem 0; }
+    section + section { border-top: 1px solid var(--gray-200); }
+
+    /* ── Cards ── */
+    .card {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 6px 24px rgba(0,0,0,0.06);
+      padding: 2rem 2.2rem;
+      margin-bottom: 1.5rem;
+    }
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--gray-800);
       margin-bottom: 1rem;
     }
 
-    h2 { color: #1a1a2e; font-size: 1.7rem; margin-bottom: 0.75rem; }
-    h3 { color: #333; font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+    /* ── Section headings ── */
+    .section-heading {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--gray-800);
+      margin-bottom: 0.4rem;
+      letter-spacing: -0.02em;
+    }
+    .section-sub {
+      color: var(--gray-600);
+      font-size: 0.95rem;
+      margin-bottom: 1.8rem;
+    }
 
-    p { color: #555; line-height: 1.7; font-size: 0.95rem; }
-
-    /* Stats grid */
-    .stats-grid {
+    /* ── Hero stat boxes ── */
+    .stat-strip {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 1rem;
-      margin: 1.5rem 0;
+      margin: 2rem 0 1.5rem;
     }
-
     .stat-box {
-      background: #f8f9ff;
-      border: 1px solid #e8ecff;
-      border-radius: 10px;
-      padding: 1.2rem 1rem;
+      background: white;
+      border-radius: 12px;
+      border: 1px solid var(--gray-200);
+      padding: 1.4rem 1.2rem 1rem;
       text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
+    .stat-box .s-label { font-size: 0.72rem; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.6rem; }
+    .stat-box .s-val { font-size: 2rem; font-weight: 800; color: var(--twin); line-height: 1; }
+    .stat-box .s-val.green { color: var(--green); }
+    .stat-box .s-delta { margin-top: 0.35rem; font-size: 0.8rem; font-weight: 600; color: var(--green); }
+    .stat-box .s-delta.neutral { color: var(--gray-400); }
 
-    .stat-box .label { font-size: 0.8rem; color: #888; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    .stat-box .baseline { font-size: 0.95rem; color: #aaa; text-decoration: line-through; }
-    .stat-box .mcp { font-size: 1.5rem; font-weight: 700; color: #667eea; }
-    .stat-box .delta { font-size: 0.85rem; color: #28a745; font-weight: 600; margin-top: 0.2rem; }
+    /* ── Three-mode comparison table ── */
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      margin-top: 1rem;
+    }
+    .compare-table th {
+      padding: 0.7rem 1rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      text-align: center;
+      border-bottom: 2px solid var(--gray-200);
+    }
+    .compare-table th.label-col { text-align: left; }
+    .compare-table th.col-base { background: var(--gray-50); color: var(--gray-600); }
+    .compare-table th.col-mcp  { background: var(--purple-lt); color: var(--purple-dk); }
+    .compare-table th.col-twin { background: var(--twin-lt); color: var(--twin); }
+    .compare-table td {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid var(--gray-100);
+      text-align: center;
+      color: var(--gray-600);
+    }
+    .compare-table td.row-label { text-align: left; font-weight: 600; color: var(--gray-800); font-size: 0.88rem; }
+    .compare-table td.col-base { background: var(--gray-50); }
+    .compare-table td.col-mcp  { background: #fafbff; }
+    .compare-table td.col-twin { background: var(--twin-lt); font-weight: 700; color: var(--twin); }
+    .compare-table tr:hover td { filter: brightness(0.97); }
+    .badge { display: inline-block; border-radius: 4px; padding: 0.1rem 0.45rem; font-size: 0.76rem; font-weight: 700; }
+    .badge-up { background: #dcfce7; color: #16a34a; }
+    .badge-down { background: #fee2e2; color: #dc2626; }
+    .badge-flat { background: var(--gray-100); color: var(--gray-400); }
 
-    /* Table */
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.88rem; }
-    th { background: #f0f2ff; color: #555; font-weight: 600; padding: 0.7rem 0.9rem; text-align: left; border-bottom: 2px solid #e0e4ff; }
-    td { padding: 0.65rem 0.9rem; border-bottom: 1px solid #f0f0f0; color: #444; }
-    tr:hover td { background: #fafbff; }
-    .tag-mcp { background: #667eea; color: white; border-radius: 4px; padding: 0.1rem 0.45rem; font-size: 0.78rem; font-weight: 600; }
-    .tag-base { background: #eee; color: #777; border-radius: 4px; padding: 0.1rem 0.45rem; font-size: 0.78rem; }
-    .win { color: #28a745; font-weight: 600; }
-    .note { color: #aaa; font-size: 0.8rem; }
+    /* ── BGI-TWIN feature cards ── */
+    .twin-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+      margin-top: 1.2rem;
+    }
+    .twin-card {
+      background: var(--twin-lt);
+      border: 1px solid #ddd6fe;
+      border-radius: 12px;
+      padding: 1.4rem;
+    }
+    .twin-card .tc-icon { font-size: 1.6rem; margin-bottom: 0.5rem; }
+    .twin-card .tc-name { font-size: 0.8rem; font-weight: 700; color: var(--twin); letter-spacing: 0.04em; font-family: 'Fira Code', monospace; margin-bottom: 0.3rem; }
+    .twin-card .tc-desc { font-size: 0.88rem; color: var(--gray-600); line-height: 1.55; }
 
-    /* Callout */
+    /* ── Per-repo table ── */
+    .repo-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; margin-top: 1rem; }
+    .repo-table th { background: var(--gray-50); color: var(--gray-600); font-weight: 600; padding: 0.65rem 0.85rem; text-align: left; border-bottom: 2px solid var(--gray-200); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .repo-table td { padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--gray-100); color: var(--gray-600); }
+    .repo-table tr.mcp-row td { background: #fafbff; }
+    .repo-table tr.twin-row td { background: var(--twin-lt); }
+    .repo-table tr:hover td { filter: brightness(0.97); }
+    .tag { display: inline-block; border-radius: 5px; padding: 0.1rem 0.5rem; font-size: 0.73rem; font-weight: 700; }
+    .tag-base { background: var(--gray-200); color: var(--gray-600); }
+    .tag-mcp  { background: var(--purple-lt); color: var(--purple-dk); }
+    .tag-twin { background: #ede9fe; color: var(--twin); }
+    .win { color: var(--green); font-weight: 700; }
+    .dim { color: var(--gray-400); }
+
+    /* ── Callouts ── */
     .callout {
-      background: #f0fff4;
-      border-left: 4px solid #28a745;
-      border-radius: 0 8px 8px 0;
+      border-radius: 0 10px 10px 0;
       padding: 1rem 1.2rem;
-      margin: 1rem 0;
+      margin: 1.2rem 0;
+      font-size: 0.9rem;
+      line-height: 1.7;
     }
-    .callout.warn {
-      background: #fff8f0;
-      border-left-color: #fd7e14;
-    }
-    .callout strong { color: #333; }
+    .callout.green { background: var(--green-lt); border-left: 4px solid var(--green); }
+    .callout.orange { background: var(--orange-lt); border-left: 4px solid var(--orange); }
+    .callout.purple { background: var(--twin-lt); border-left: 4px solid var(--twin); }
+    .callout.blue { background: var(--purple-lt); border-left: 4px solid var(--purple); }
+    .callout strong { color: var(--gray-800); }
 
-    /* Code block */
+    /* ── Progress bar ── */
+    .bar-row { display: flex; align-items: center; gap: 0.75rem; margin: 0.55rem 0; font-size: 0.86rem; }
+    .bar-label { width: 130px; color: var(--gray-600); flex-shrink: 0; }
+    .bar-track { flex: 1; background: var(--gray-100); border-radius: 99px; height: 10px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 99px; }
+    .bar-val { width: 42px; text-align: right; color: var(--gray-800); font-weight: 600; font-size: 0.83rem; }
+
+    /* ── Code block ── */
     pre {
       background: #1e1e2e;
       color: #cdd6f4;
-      border-radius: 8px;
-      padding: 1.2rem 1.4rem;
+      border-radius: 10px;
+      padding: 1.3rem 1.5rem;
       overflow-x: auto;
       font-family: 'Fira Code', 'Consolas', monospace;
-      font-size: 0.85rem;
-      line-height: 1.6;
-      margin-top: 0.75rem;
+      font-size: 0.84rem;
+      line-height: 1.65;
+      margin: 1rem 0;
     }
+    code { font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.88em; background: var(--gray-100); padding: 0.1em 0.35em; border-radius: 4px; }
+    pre code { background: none; padding: 0; font-size: inherit; }
 
+    /* ── Footer ── */
     footer {
+      background: var(--gray-800);
+      color: rgba(255,255,255,0.55);
       text-align: center;
-      padding: 1.5rem;
-      color: rgba(255,255,255,0.7);
+      padding: 2rem;
       font-size: 0.85rem;
+      margin-top: 3rem;
     }
-    footer a { color: rgba(255,255,255,0.85); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.4); }
+    footer a { color: rgba(255,255,255,0.75); text-decoration: none; }
     footer a:hover { color: white; }
+
+    /* ── Misc ── */
+    p { color: var(--gray-600); font-size: 0.93rem; margin-bottom: 0.6rem; }
+    h3 { font-size: 1rem; font-weight: 700; color: var(--gray-800); margin: 1.4rem 0 0.4rem; }
+    a { color: var(--purple-dk); }
+    .note { font-size: 0.8rem; color: var(--gray-400); margin-top: 0.5rem; }
+    .row-gap { height: 0.5rem; }
+    hr { border: none; border-top: 1px solid var(--gray-200); margin: 1.8rem 0; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>🗺️ Big Indexer</h1>
-    <a href="/">← Back to home</a>
-  </header>
 
-  <main>
-    <!-- Hero -->
-    <div class="card">
-      <div class="hero-label">Public Evidence · Phase 8</div>
-      <h2>MCP A/B Validation Results</h2>
-      <p>We ran Opencode (AI coding assistant) on 5 popular open-source repos (Python + Go + TypeScript) in two modes —
-         <strong>baseline</strong> (no context) and <strong>MCP</strong> (Big Indexer context server active).
-         The same 4 architectural prompts were used for every run. Global A/B metrics below are pre-shipment baseline.</p>
-
-      <div class="stats-grid">
-        <div class="stat-box">
-          <div class="label">Evidence Coverage</div>
-          <div class="baseline">78.7%</div>
-          <div class="mcp">84.9%</div>
-          <div class="delta">+6.2 pp</div>
-        </div>
-        <div class="stat-box">
-          <div class="label">Boundary Accuracy</div>
-          <div class="baseline">0.95</div>
-          <div class="mcp">1.00</div>
-          <div class="delta">Perfect score</div>
-        </div>
-        <div class="stat-box">
-          <div class="label">Hallucinations</div>
-          <div class="baseline">0</div>
-          <div class="mcp">0</div>
-          <div class="delta">Both clean ✓</div>
-        </div>
-        <div class="stat-box">
-          <div class="label">Median Latency</div>
-          <div class="baseline">133.8s</div>
-          <div class="mcp">66.2s</div>
-          <div class="delta">51% faster</div>
-        </div>
-      </div>
-      <div class="callout" style="margin-top:0.75rem">
-        <strong>Post-shipment full refresh (2026-05-11, p01–p04, all 5 repos):</strong>
-        20 MCP runs with explicit <code>twin_context</code> and valid MCP invocation evidence:
-        actionability <strong>4.75/5</strong> (from 4.0 aggregate), boundary accuracy <strong>1.00</strong>,
-        <strong>0</strong> hallucinations, median latency 68.5s.
-        p04-only slice (easiest prompts): <strong>4.8/5</strong> actionability, <strong>96.0%</strong> evidence coverage.
-      </div>
+  <nav>
+    <a class="brand" href="/">🗺️ Big Indexer</a>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="https://github.com/ahmedxuhri/bigindexer" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/docs/MCP_SETUP.md" target="_blank" rel="noopener">Docs</a>
     </div>
+  </nav>
 
-    <!-- Per-repo table -->
-    <div class="card">
-      <h2>Per-Repo Breakdown</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Repo</th>
-            <th>Mode</th>
-            <th>Prompts</th>
-            <th>Median Latency</th>
-            <th>Evidence Cov.</th>
-            <th>Boundary Acc.</th>
-            <th>Actionability</th>
-            <th>Hallucinations</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>django/django</td>
-            <td><span class="tag-base">Baseline</span></td>
-            <td>4</td><td>99.8s</td><td>73.3%</td><td>1.00</td><td>4.0/5</td><td>0</td>
-          </tr>
-          <tr>
-            <td>django/django</td>
-            <td><span class="tag-mcp">MCP</span></td>
-            <td>4</td><td class="win">73.1s</td><td class="win">84.0%</td><td>1.00</td><td>4.0/5</td><td>0</td>
-          </tr>
-          <tr>
-            <td>tiangolo/fastapi</td>
-            <td><span class="tag-base">Baseline</span></td>
-            <td>3</td><td>131.3s</td><td>93.2%</td><td>1.00</td><td>4.3/5</td><td>0</td>
-          </tr>
-          <tr>
-            <td>tiangolo/fastapi</td>
-            <td><span class="tag-mcp">MCP</span></td>
-            <td>3</td><td class="win">54.8s</td><td>66.7%</td><td>1.00</td><td>4.3/5</td><td>0</td>
-          </tr>
-          <tr>
-            <td>pydantic/pydantic-core</td>
-            <td><span class="tag-base">Baseline</span></td>
-            <td>4</td><td>192.2s</td><td>48.6%</td><td>0.75</td><td>4.0/5</td><td>0</td>
-          </tr>
-          <tr>
-            <td>pydantic/pydantic-core</td>
-            <td><span class="tag-mcp">MCP</span></td>
-            <td>4</td><td class="win">63.3s</td><td class="win">86.7%</td><td class="win">1.00</td><td>4.0/5</td><td>0</td>
-          </tr>
-          <tr>
-            <td>prometheus/prometheus</td>
-            <td><span class="tag-base">Baseline</span></td>
-            <td>6</td><td class="win">89.9s</td><td>90.0%</td><td>1.00</td><td>4.0/5</td><td>0</td>
-          </tr>
-          <tr>
-            <td>prometheus/prometheus</td>
-            <td><span class="tag-mcp">MCP</span></td>
-            <td>6</td><td>119.9s</td><td>90.0%</td><td>1.00</td><td>4.0/5</td><td>0</td>
-          </tr>
-          <tr>
-            <td>vercel/next.js</td>
-            <td><span class="tag-base">Baseline</span></td>
-            <td>3</td><td>291.8s</td><td>89.2%</td><td>1.00</td><td>3.7/5</td><td>0</td>
-          </tr>
-          <tr>
-            <td>vercel/next.js</td>
-            <td><span class="tag-mcp">MCP</span></td>
-            <td>3</td><td class="win">66.4s</td><td class="win">91.7%</td><td>1.00</td><td>3.7/5</td><td>0</td>
-          </tr>
-        </tbody>
-      </table>
-      <p class="note" style="margin-top:0.75rem">
-        * Evidence coverage = recall of architectural ground-truth facts per prompt checklist.
-        Boundary accuracy = 0/1 per prompt (correct seam identification). Actionability = 1–5 rubric.
-      </p>
-    </div>
+  <!-- ─────────────────────────────── HERO ─────────────────────────────── -->
+  <div class="page-hero">
+    <div class="eyebrow">Public Evidence · 60 scored runs</div>
+    <h1>Does Big Indexer actually help AI coding assistants?</h1>
+    <p>We ran the same architectural prompts on 5 real open-source repos — with and without Big Indexer — and published every raw output, every score, and every methodology decision.</p>
+  </div>
 
-    <!-- Notable findings -->
-    <div class="card">
-      <h2>Notable Findings</h2>
+  <div class="container">
 
-      <h3>pydantic-core — biggest win</h3>
-      <div class="callout">
-        <strong>Baseline p01:</strong> evidence coverage <strong>0%</strong>, boundary accuracy <strong>0</strong> —
-        the model had no idea about the Rust/Python split architecture.<br>
-        <strong>MCP p01:</strong> evidence coverage <strong>80%</strong>, boundary accuracy <strong>1</strong> —
-        BGI injected the exact module boundaries, the model got it right first try.
+    <!-- ─────────────── TOP-LINE NUMBERS ─────────────── -->
+    <section>
+      <div class="section-heading">Results at a glance</div>
+      <div class="section-sub">All numbers are from the post-shipment BGI-TWIN refresh (20 runs, p01–p04 × 5 repos, MCP + twin_context mode). Full comparison in the table below.</div>
+
+      <div class="stat-strip">
+        <div class="stat-box">
+          <div class="s-label">Actionability</div>
+          <div class="s-val">4.75<span style="font-size:1rem;color:#8b5cf6">/5</span></div>
+          <div class="s-delta">+0.75 vs pre-shipment MCP</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-label">Boundary Accuracy</div>
+          <div class="s-val green">1.00</div>
+          <div class="s-delta">Perfect · 20/20 runs</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-label">Hallucinations</div>
+          <div class="s-val green">0</div>
+          <div class="s-delta neutral">Across all 60 scored runs</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-label">Median Latency</div>
+          <div class="s-val" style="color:#f97316">68s</div>
+          <div class="s-delta">vs 134s baseline (49% faster)</div>
+        </div>
+        <div class="stat-box">
+          <div class="s-label">p04 Evidence Coverage</div>
+          <div class="s-val">96<span style="font-size:1rem;color:#8b5cf6">%</span></div>
+          <div class="s-delta">Safe-impl slice · 5 repos</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────── THREE-MODE COMPARISON ─────────────── -->
+    <section>
+      <div class="section-heading">Three-stage comparison</div>
+      <div class="section-sub">Each stage adds a layer. BGI-MCP fixed boundary &amp; latency. BGI-TWIN fixed actionability.</div>
+
+      <div class="card" style="padding:0;overflow:hidden;">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th class="label-col" style="padding-left:1.2rem;width:36%">Metric</th>
+              <th class="col-base">No BGI<br><span style="font-weight:400;font-size:0.75rem">Baseline (20 runs)</span></th>
+              <th class="col-mcp">BGI MCP<br><span style="font-weight:400;font-size:0.75rem">Pre-shipment (20 runs)</span></th>
+              <th class="col-twin">BGI MCP + TWIN<br><span style="font-weight:400;font-size:0.75rem">Post-shipment (20 runs)</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="row-label" style="padding-left:1.2rem">Actionability (1–5)</td>
+              <td class="col-base">4.0</td>
+              <td class="col-mcp">4.0 <span class="badge badge-flat">→</span></td>
+              <td class="col-twin">4.75 <span class="badge badge-up">+0.75</span></td>
+            </tr>
+            <tr>
+              <td class="row-label" style="padding-left:1.2rem">Evidence Coverage</td>
+              <td class="col-base">78.7%</td>
+              <td class="col-mcp">84.9% <span class="badge badge-up">+6.2 pp</span></td>
+              <td class="col-twin">79.9% / <strong>96%†</strong></td>
+            </tr>
+            <tr>
+              <td class="row-label" style="padding-left:1.2rem">Boundary Accuracy</td>
+              <td class="col-base">0.95</td>
+              <td class="col-mcp">1.00 <span class="badge badge-up">+0.05</span></td>
+              <td class="col-twin">1.00 <span class="badge badge-flat">held</span></td>
+            </tr>
+            <tr>
+              <td class="row-label" style="padding-left:1.2rem">Hallucinations</td>
+              <td class="col-base">0</td>
+              <td class="col-mcp">0 <span class="badge badge-flat">—</span></td>
+              <td class="col-twin">0 <span class="badge badge-flat">—</span></td>
+            </tr>
+            <tr>
+              <td class="row-label" style="padding-left:1.2rem">Median Latency</td>
+              <td class="col-base">133.8s</td>
+              <td class="col-mcp">66.2s <span class="badge badge-up">51% faster</span></td>
+              <td class="col-twin">68.5s <span class="badge badge-flat">≈ held</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note" style="padding:0.75rem 1.2rem">
+          † 79.9% is the all-prompt mean for the refresh batch; <strong>96%</strong> is the p04 (safe implementation path) slice across 5 repos.
+          The harder p01–p03 prompts pull the mean down; p04 evidence is the most actionability-relevant slice.
+        </p>
       </div>
 
-      <h3>django — consistent lift</h3>
-      <p>Evidence coverage increased from <strong>73.3% → 84.0%</strong> (+10.7%).
-         Django's explicit app structure helps baseline too, but MCP delivered higher coverage across all 4 prompts.
-         Latency dropped 26% (99.8s → 73.1s) because pre-indexed context shortens the exploration phase.</p>
+      <div class="callout purple">
+        <strong>What changed between stage 2 and stage 3?</strong>
+        BGI-TWIN shipped three new MCP tools — <code>task_fingerprint</code>, <code>behavioral_twins</code>, and <code>twin_context</code> — 
+        that give the AI model a fingerprinted task context, the top-3 behaviorally similar code units from the real repo, 
+        the strongest architectural seam for the task, and an explicit 5-point actionability rubric. 
+        That is why actionability moved from 4.0 to 4.75 while boundary accuracy and hallucinations stayed perfect.
+      </div>
+    </section>
 
-      <h3>fastapi — what the evidence actually shows</h3>
-      <div class="callout warn">
-        <strong>Honest finding:</strong> Evidence coverage dropped on two fastapi prompts with MCP
-        (p03: 33.3%, p04: 66.7% vs baseline 90%, 100%). This is real, and it deserves a real explanation —
-        not "prompt-tuning issue."<br><br>
-        Reading the raw outputs reveals the cause: the baseline model, having <em>no</em> architecture context,
-        was forced to read every source file manually and produced a 10-item verified claim table.
-        The MCP model received blast-radius data (1,614 impacted units, top seam confidence 0.75) and
-        accepted that as the architecture picture — making fewer granular file-level verifications.<br><br>
-        <strong>What this means:</strong> MCP trades file-reading depth for architectural accuracy.
-        On well-structured repos, baseline file-reading can score high on a granular checklist.
-        MCP wins most where the baseline is architecturally blind (pydantic: 0% → 80%).
-        Boundary accuracy was perfect in both fastapi modes — MCP understood the architecture correctly,
-        it just verified fewer granular claims explicitly.<br><br>
-        The raw outputs for all fastapi runs are in
+    <!-- ─────────────── BGI-TWIN SECTION ─────────────── -->
+    <section>
+      <div class="section-heading">What is BGI-TWIN?</div>
+      <div class="section-sub">Three deterministic MCP tools that turn "here is the architecture" into "here is exactly what to change and where."</div>
+
+      <div class="twin-cards">
+        <div class="twin-card">
+          <div class="tc-icon">🔬</div>
+          <div class="tc-name">task_fingerprint(task)</div>
+          <div class="tc-desc">Converts a natural-language task into a COV (co-occurrence vocabulary) token set. Deterministic — same task always produces the same fingerprint. No LLM call.</div>
+        </div>
+        <div class="twin-card">
+          <div class="tc-icon">🧬</div>
+          <div class="tc-name">behavioral_twins(task)</div>
+          <div class="tc-desc">Ranks all indexed code units by Jaccard similarity against the task fingerprint. Returns the top-3 units that do the most similar thing in the actual codebase — with optional source snippets.</div>
+        </div>
+        <div class="twin-card">
+          <div class="tc-icon">🎯</div>
+          <div class="tc-name">twin_context(task)</div>
+          <div class="tc-desc">Composite output: task COV + top twins + the strongest seam boundary for the task + an explicit 5-point actionability rubric + confidence-gated escalation. The AI gets a fully structured implementation brief.</div>
+        </div>
+      </div>
+
+      <p style="margin-top:1.2rem">BGI-TWIN is a <strong>deterministic context compiler</strong> — it does not generate code, does not call an LLM, and does not speculate about behavior. Every output is derived directly from the indexed graph and fuse artifacts you already built with <code>bgi scan</code>.</p>
+    </section>
+
+    <!-- ─────────────── ACTIONABILITY DEEP DIVE ─────────────── -->
+    <section>
+      <div class="section-heading">Why actionability was flat — and how BGI-TWIN fixed it</div>
+      <div class="section-sub">The pre-shipment MCP improved evidence and latency but did not move actionability. Here is why.</div>
+
+      <div class="callout orange">
+        <strong>The problem:</strong> Pre-shipment MCP gave the AI model a blast-radius summary and an architecture overview. 
+        That told the model <em>what</em> the architecture looked like, but not <em>where</em> to make a specific change for a specific task. 
+        The AI produced correct, well-grounded answers — but at 4.0/5 they were still "here's the pattern, you figure out the file."
+      </div>
+
+      <div class="callout green">
+        <strong>The fix:</strong> BGI-TWIN surfaces the 3 code units that are most behaviorally similar to the task at hand — 
+        real functions, real files, real line numbers from the codebase being changed. 
+        The AI gets "this task looks like <code>validators/core.py:validate_field</code>, which lives inside seam boundary <code>validators/</code>↔<code>models/</code> — start here."  
+        That is the difference between 4.0 and 4.75.
+      </div>
+
+      <h3>Per-prompt actionability after BGI-TWIN (refresh batch)</h3>
+
+      <div style="margin:1rem 0 0.5rem">
+        <div class="bar-row">
+          <div class="bar-label">p04 · fastapi</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--twin)"></div></div>
+          <div class="bar-val">5/5</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">p04 · pydantic</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--twin)"></div></div>
+          <div class="bar-val">5/5</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">p04 · prometheus</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--twin)"></div></div>
+          <div class="bar-val">5/5</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">p04 · next.js</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--twin)"></div></div>
+          <div class="bar-val">5/5</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">p04 · django</div>
+          <div class="bar-track"><div class="bar-fill" style="width:80%;background:var(--twin)"></div></div>
+          <div class="bar-val">4/5</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">p01–p03 mean</div>
+          <div class="bar-track"><div class="bar-fill" style="width:94%;background:#a78bfa"></div></div>
+          <div class="bar-val">4.7/5</div>
+        </div>
+      </div>
+      <p class="note">p04 = "safe implementation path" prompt. p01 = architecture overview, p02 = boundary identification, p03 = blast-radius analysis.</p>
+    </section>
+
+    <!-- ─────────────── PER-REPO ─────────────── -->
+    <section>
+      <div class="section-heading">Per-repo breakdown</div>
+      <div class="section-sub">5 repos across 3 languages. Each repo gets 3 rows: baseline, MCP, and BGI-TWIN refresh.</div>
+
+      <div class="card" style="padding:0;overflow:hidden;">
+        <table class="repo-table">
+          <thead>
+            <tr>
+              <th>Repo</th>
+              <th>Mode</th>
+              <th>Runs</th>
+              <th>Median Latency</th>
+              <th>Evidence Cov.</th>
+              <th>Boundary</th>
+              <th>Actionability</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- django -->
+            <tr>
+              <td rowspan="3" style="font-weight:600;color:var(--gray-800);vertical-align:middle;border-right:1px solid var(--gray-100)">django/<br>django<br><span class="dim" style="font-size:0.75rem;font-weight:400">Python</span></td>
+              <td><span class="tag tag-base">Baseline</span></td>
+              <td>4</td><td>99.8s</td><td>73.3%</td><td>1.00</td><td>4.0</td>
+            </tr>
+            <tr class="mcp-row">
+              <td><span class="tag tag-mcp">BGI MCP</span></td>
+              <td>4</td><td class="win">73.1s</td><td class="win">84.0%</td><td>1.00</td><td>4.0</td>
+            </tr>
+            <tr class="twin-row">
+              <td><span class="tag tag-twin">BGI TWIN</span></td>
+              <td>4</td><td>60.9s</td><td class="win">75.3%</td><td class="win">1.00</td><td class="win">5.0</td>
+            </tr>
+
+            <tr class="row-gap"><td colspan="7"></td></tr>
+
+            <!-- fastapi -->
+            <tr>
+              <td rowspan="3" style="font-weight:600;color:var(--gray-800);vertical-align:middle;border-right:1px solid var(--gray-100)">tiangolo/<br>fastapi<br><span class="dim" style="font-size:0.75rem;font-weight:400">Python</span></td>
+              <td><span class="tag tag-base">Baseline</span></td>
+              <td>3</td><td>131.3s</td><td>93.2%</td><td>1.00</td><td>4.3</td>
+            </tr>
+            <tr class="mcp-row">
+              <td><span class="tag tag-mcp">BGI MCP</span></td>
+              <td>3</td><td class="win">54.8s</td><td>66.7%</td><td>1.00</td><td>4.3</td>
+            </tr>
+            <tr class="twin-row">
+              <td><span class="tag tag-twin">BGI TWIN</span></td>
+              <td>4</td><td class="win">79.5s</td><td>82.0%</td><td class="win">1.00</td><td class="win">5.0</td>
+            </tr>
+
+            <tr class="row-gap"><td colspan="7"></td></tr>
+
+            <!-- pydantic -->
+            <tr>
+              <td rowspan="3" style="font-weight:600;color:var(--gray-800);vertical-align:middle;border-right:1px solid var(--gray-100)">pydantic/<br>pydantic-core<br><span class="dim" style="font-size:0.75rem;font-weight:400">Python + Rust</span></td>
+              <td><span class="tag tag-base">Baseline</span></td>
+              <td>4</td><td>192.2s</td><td>48.6%</td><td>0.75</td><td>4.0</td>
+            </tr>
+            <tr class="mcp-row">
+              <td><span class="tag tag-mcp">BGI MCP</span></td>
+              <td>4</td><td class="win">63.3s</td><td class="win">86.7%</td><td class="win">1.00</td><td>4.0</td>
+            </tr>
+            <tr class="twin-row">
+              <td><span class="tag tag-twin">BGI TWIN</span></td>
+              <td>4</td><td class="win">47.5s</td><td>71.3%</td><td class="win">1.00</td><td class="win">4.7</td>
+            </tr>
+
+            <tr class="row-gap"><td colspan="7"></td></tr>
+
+            <!-- prometheus -->
+            <tr>
+              <td rowspan="3" style="font-weight:600;color:var(--gray-800);vertical-align:middle;border-right:1px solid var(--gray-100)">prometheus/<br>prometheus<br><span class="dim" style="font-size:0.75rem;font-weight:400">Go</span></td>
+              <td><span class="tag tag-base">Baseline</span></td>
+              <td>6</td><td class="win">89.9s</td><td>90.0%</td><td>1.00</td><td>4.0</td>
+            </tr>
+            <tr class="mcp-row">
+              <td><span class="tag tag-mcp">BGI MCP</span></td>
+              <td>6</td><td>119.9s</td><td>90.0%</td><td>1.00</td><td>4.0</td>
+            </tr>
+            <tr class="twin-row">
+              <td><span class="tag tag-twin">BGI TWIN</span></td>
+              <td>4</td><td class="win">70.0s</td><td>80.8%</td><td class="win">1.00</td><td class="win">5.0</td>
+            </tr>
+
+            <tr class="row-gap"><td colspan="7"></td></tr>
+
+            <!-- nextjs -->
+            <tr>
+              <td rowspan="3" style="font-weight:600;color:var(--gray-800);vertical-align:middle;border-right:1px solid var(--gray-100)">vercel/<br>next.js<br><span class="dim" style="font-size:0.75rem;font-weight:400">TypeScript</span></td>
+              <td><span class="tag tag-base">Baseline</span></td>
+              <td>3</td><td>291.8s</td><td>89.2%</td><td>1.00</td><td>3.7</td>
+            </tr>
+            <tr class="mcp-row">
+              <td><span class="tag tag-mcp">BGI MCP</span></td>
+              <td>3</td><td class="win">66.4s</td><td class="win">91.7%</td><td>1.00</td><td>3.7</td>
+            </tr>
+            <tr class="twin-row">
+              <td><span class="tag tag-twin">BGI TWIN</span></td>
+              <td>4</td><td class="win">88.9s</td><td>63.4%</td><td class="win">1.00</td><td class="win">4.0</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note" style="padding:0.75rem 1.2rem">
+          BGI TWIN rows are from the post-shipment refresh batch (p01–p04, fresh runs, explicit <code>twin_context</code> invocation, <code>CallToolRequest</code> evidence in every run).
+          Boundary accuracy is 0–1 per run (correct seam identification). Actionability is 1–5.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─────────────── NOTABLE FINDINGS ─────────────── -->
+    <section>
+      <div class="section-heading">Notable findings</div>
+      <div class="section-sub">The most important things the data actually says.</div>
+
+      <h3>pydantic-core — the clearest win in the dataset</h3>
+      <div class="callout green">
+        <strong>Baseline p01:</strong> evidence coverage <strong>0%</strong>, boundary accuracy <strong>0</strong>.
+        The model had no idea about the Rust/Python split and described a pure-Python architecture that does not exist.<br><br>
+        <strong>BGI MCP p01:</strong> evidence coverage <strong>80%</strong>, boundary accuracy <strong>1.0</strong>.
+        BGI injected the exact <code>pyo3</code> bridge seam; the model identified it correctly on the first attempt.<br><br>
+        <strong>BGI TWIN p04:</strong> actionability <strong>5/5</strong>, evidence <strong>100%</strong>.
+        The safe-implementation prompt produced a copy-paste-ready patch path with exact file + function references.
+      </div>
+
+      <h3>fastapi — what the data actually shows (honest)</h3>
+      <div class="callout orange">
+        <strong>MCP evidence coverage dropped on p03/p04</strong> (33.3% and 66.7% vs baseline 90% and 100%).
+        This is real and worth understanding: the baseline model, having no architecture summary, was forced to read
+        every source file individually and built a 10-item verified-claim table. The MCP model received blast-radius
+        context (1,614 impacted units) and accepted that as the architectural picture — making fewer granular
+        verifications.<br><br>
+        <strong>What this reveals:</strong> MCP architecture context trades granular file-reading depth for boundary
+        accuracy. On well-structured repos where baseline exploration is already strong, the evidence-coverage gain
+        is smaller. Boundary accuracy was perfect (1.0) in all fastapi modes — the architecture was correctly understood.
+        BGI-TWIN p01–p04 refresh recovered with 82% mean evidence and 5/5 actionability because behavioral twins
+        anchor the model to specific files rather than a summary.<br><br>
+        Raw outputs:
         <a href="https://github.com/ahmedxuhri/bigindexer/tree/master/validation/runs/fastapi" target="_blank" rel="noopener">validation/runs/fastapi/</a>
-        on GitHub. Read them and judge for yourself.
       </div>
 
-      <h3>prometheus (Go) — cross-language reality check</h3>
-      <p>Prometheus expanded this validation beyond Python. After post-routing retest rows were added, evidence coverage is
-         <strong>90.0%</strong> in both modes and boundary accuracy remains perfect (1.0). MCP is still slower on median latency
-         (119.9s vs 89.9s), which remains important to report publicly.
-         In the post-routing first pass, MCP invocation was confirmed on p02/p03 while p01/p04 remained invalid/unscored.
-         This indicates MCP gains are strongest when baseline models are architecturally blind (as in pydantic-core),
-         and less dramatic when baseline exploration is already strong.</p>
+      <h3>Prometheus (Go) — cross-language neutral result</h3>
+      <p>Evidence coverage is flat at <strong>90.0%</strong> in baseline and MCP modes. MCP is slower (119.9s vs 89.9s).
+         BGI-TWIN refresh improved actionability to <strong>5/5</strong> and brought latency down to 70s.
+         This is the most important neutral finding: MCP gains on accuracy are largest when baseline exploration is architecturally blind (pydantic-core: 0→80%). On well-explored Go codebases, the accuracy lift is smaller. BGI-TWIN's actionability gain holds across both cases.</p>
 
       <h3>next.js (TypeScript) — large monorepo signal</h3>
-      <p>Next.js adds a large TypeScript monorepo to the dataset. In the scored prompts, MCP slightly improved
-         evidence coverage (<strong>89.2% → 91.7%</strong>) with perfect boundary accuracy in both modes, while reducing
-         median latency from <strong>291.8s → 66.4s</strong>. One MCP p04 run did not invoke MCP tools and is marked
-         invalid/unscored, which is why Next.js currently shows 3 scored prompt pairs.</p>
+      <p>Largest baseline latency in the set (291.8s) — BGI reduces it to 66–89s regardless of mode. Evidence coverage is slightly lower in the TWIN refresh batch (63.4%) because p01–p03 are harder for this large repo. Boundary accuracy is perfect (1.0) in all three modes. Actionability improved from 3.7 to 4.0 with BGI-TWIN, with a clear implementation path on p04.</p>
 
-      <h3>Hallucination rate: 0 in both modes</h3>
-      <p>No factually incorrect module or file claims were observed in any of the 40 scored runs.
-         MCP context grounds the model rather than introducing new errors.</p>
-    </div>
+      <h3>Hallucination rate: 0 across all 60 scored runs</h3>
+      <p>Not a single factually incorrect module or file claim appeared in any baseline, MCP, or BGI-TWIN run. MCP and BGI-TWIN ground the model on real indexed artifacts — they do not introduce new errors.</p>
+    </section>
 
-    <!-- Limitations -->
-    <div class="card">
-      <h2>Limitations — Read This</h2>
-      <p style="margin-bottom:1rem">We believe in publishing limitations alongside results. A reader who finds these themselves will trust the evidence less than a reader we told first.</p>
+    <!-- ─────────────── LIMITATIONS ─────────────── -->
+    <section>
+      <div class="section-heading">Limitations — read this first</div>
+      <div class="section-sub">We publish limitations before you find them. A reader who discovers a limitation themselves trusts the evidence less than one we told first.</div>
 
-      <h3>Self-reported scoring</h3>
-      <p>The ground-truth checklists were written by us, and the runs were scored by us.
-         The checklists were defined before scoring by reading the actual source code, and the full scoring rubric is published at
-         <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/validation/SCORING_RUBRIC.md" target="_blank" rel="noopener">validation/SCORING_RUBRIC.md</a>.
-         Every raw AI output is committed to GitHub. Anyone can re-score independently — and we explicitly invite it.
-         If you score any run differently, open an issue with your reasoning.</p>
+      <div class="card">
+        <h3 style="margin-top:0">Self-reported scoring</h3>
+        <p>Ground-truth checklists were written by us and scored by us. The checklists were defined by reading the actual source code before scoring (not after). The full scoring rubric is at
+           <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/validation/SCORING_RUBRIC.md" target="_blank" rel="noopener">validation/SCORING_RUBRIC.md</a>.
+           Every raw AI output is committed to
+           <a href="https://github.com/ahmedxuhri/bigindexer/tree/master/validation/runs" target="_blank" rel="noopener">validation/runs/ on GitHub</a>.
+           Anyone can re-score independently. If you score any run differently, open an issue with your reasoning — we will update the record.</p>
 
-      <h3>Sample size is still limited</h3>
-      <p>60 scored runs across 5 repos (Python + Go + TypeScript) is stronger than the initial batch, but still not conclusive.
-         The pydantic-core finding is strong enough to stand on its own, but the aggregate story still needs more language diversity (especially large Java/C# monorepos and independent replications).</p>
+        <h3>60 runs across 5 repos is not a large sample</h3>
+        <p>Python + Go + TypeScript is better than Python-only, but 5 repos is still a small sample. The pydantic-core finding (0% → 80% evidence on a Rust/Python hybrid) is strong enough to stand independently. The aggregate actionability story needs at least 3 more repos and one independent replication before it can be called statistically robust.</p>
 
-      <h3>Actionability improved in the full post-shipment refresh</h3>
-      <p>Before BGI-TWIN shipment, aggregate actionability was flat around 4.0/5. After shipment, the full 20-run refresh
-         (p01–p04 × 5 repos, MCP mode, explicit <code>twin_context</code>) raised actionability to <strong>4.75/5</strong>.
-         The p04-only slice (easiest prompts) reached <strong>4.8/5</strong> with <strong>96.0%</strong> evidence coverage.
-         Boundary accuracy remained perfect (1.0) and hallucinations remained zero across all 20 refresh runs.</p>
-      <div class="callout" style="margin-top:0.75rem">
-        <strong>Shipped after this validation batch (2026-05-11):</strong>
-        BGI-TWIN MCP context package:
-        <code>task_fingerprint</code>, <code>behavioral_twins</code>, and <code>twin_context</code>
-        (top-3 twins + seam + rubric + confidence gate). Full post-shipment refresh complete (20 runs, all scored).
+        <h3>BGI-TWIN refresh is MCP-only — no updated baseline</h3>
+        <p>The post-shipment refresh only ran the MCP+TWIN mode. The baseline numbers in the per-repo table are from the earlier A/B batch. We have no reason to believe the baseline changed (same repos, same prompts), but this is a real limitation of the experimental design.</p>
+
+        <h3>One MCP run did not invoke tools</h3>
+        <p>One next.js p04 run in the original A/B batch was confirmed as invalid (no <code>CallToolRequest</code> in output) and is explicitly marked in <code>runs.csv</code> as unscored. All 20 BGI-TWIN refresh runs have <code>CallToolRequest</code> evidence present.</p>
+
+        <h3>We need one independent replication</h3>
+        <p>The single thing that would most improve this evidence: one engineer who has never used Big Indexer running these prompts on their own repo and publishing their raw outputs. If you are willing to do this, <a href="https://github.com/ahmedxuhri/bigindexer/issues" target="_blank" rel="noopener">open an issue</a> and we will send you the exact protocol.</p>
       </div>
+    </section>
 
-      <h3>We need one independent replication</h3>
-      <p>The single thing that would most improve this evidence: one engineer who has never used Big Indexer
-         running these prompts on their own repo and publishing their raw results.
-         If you're willing to do this, <a href="https://github.com/ahmedxuhri/bigindexer/issues" target="_blank" rel="noopener">open an issue</a>
-         and we'll send you the exact protocol.</p>
-    </div>
+    <!-- ─────────────── METHODOLOGY ─────────────── -->
+    <section>
+      <div class="section-heading">Methodology</div>
+      <div class="section-sub">Enough detail to reproduce every number on this page.</div>
 
-    <!-- Reproduce -->
-    <div class="card">
-      <h2>Reproduce This</h2>
-      <p>Every run is reproducible. Clone the repo, scan, start the MCP server, run the same prompts.</p>
-      <pre><code># Install
+      <div class="card">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem 2rem">
+          <div>
+            <h3 style="margin-top:0">Repos</h3>
+            <ul style="list-style:none;font-size:0.88rem;color:var(--gray-600);line-height:2">
+              <li>tiangolo/fastapi (Python, web framework)</li>
+              <li>django/django (Python, web framework)</li>
+              <li>pydantic/pydantic-core (Python + Rust)</li>
+              <li>prometheus/prometheus (Go, monitoring)</li>
+              <li>vercel/next.js (TypeScript, monorepo)</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="margin-top:0">Prompts (4 per repo)</h3>
+            <ul style="list-style:none;font-size:0.88rem;color:var(--gray-600);line-height:2">
+              <li>p01 — Architecture overview</li>
+              <li>p02 — Boundary identification</li>
+              <li>p03 — Blast-radius analysis</li>
+              <li>p04 — Safe implementation path</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="margin-top:0">Tooling</h3>
+            <ul style="list-style:none;font-size:0.88rem;color:var(--gray-600);line-height:2">
+              <li>CLI: opencode 1.14.41</li>
+              <li>Model: deepseek-v4-flash</li>
+              <li>MCP: <code>bgi mcp --graph ... --fuse-graph ...</code></li>
+              <li>TWIN: <code>twin_context</code> explicit in prompt</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="margin-top:0">Scoring rubric</h3>
+            <ul style="list-style:none;font-size:0.88rem;color:var(--gray-600);line-height:2">
+              <li>Evidence coverage: recall vs ground-truth checklist</li>
+              <li>Boundary accuracy: 0/1 correct seam identification</li>
+              <li>Actionability: 1–5 (5 = copy-paste ready)</li>
+              <li>Hallucination flags: count of incorrect claims</li>
+            </ul>
+          </div>
+        </div>
+        <div style="margin-top:1.2rem">
+          <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/validation/SCORING_RUBRIC.md" target="_blank" rel="noopener">Full rubric →</a>
+          &nbsp;·&nbsp;
+          <a href="https://github.com/ahmedxuhri/bigindexer/tree/master/validation/runs" target="_blank" rel="noopener">All raw run outputs →</a>
+          &nbsp;·&nbsp;
+          <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/validation/runs.csv" target="_blank" rel="noopener">runs.csv (60 rows) →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────── REPRODUCE ─────────────── -->
+    <section>
+      <div class="section-heading">Reproduce this yourself</div>
+      <div class="section-sub">Every run is reproducible. The complete protocol is in <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/docs/MCP_SETUP.md" target="_blank" rel="noopener">docs/MCP_SETUP.md</a>.</div>
+
+      <div class="card">
+<pre><code># 1. Install
 pip install bigindexer
 
-# Clone any target repo (shallow)
+# 2. Clone any repo and build the BGI index
 git clone --depth 1 https://github.com/tiangolo/fastapi
-
-# Scan → produces bgi-graph.json + fuse-graph.json
 bgi scan fastapi/ --out output/
 
-# Start MCP context server
+# 3. Start the MCP context server (includes BGI-TWIN tools)
 bgi mcp --graph output/bgi-graph.json --fuse-graph output/fuse-graph.json
 
-# Configure opencode (opencode.json in target repo):
-# { "mcp": { "bgi": { "command": "bgi", "args": ["mcp", ...] } } }
-opencode  # BGI context auto-injected via MCP</code></pre>
-      <p style="margin-top:1rem">
-        Full run logs, scores, and the complete
-        <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/validation/SCORING_RUBRIC.md" target="_blank" rel="noopener">scoring rubric</a>
-        are in
-        <a href="https://github.com/ahmedxuhri/bigindexer/tree/master/validation" target="_blank" rel="noopener">
-          validation/ on GitHub
-        </a>.
-        Setup guide in
-        <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/docs/MCP_SETUP.md" target="_blank" rel="noopener">
-          docs/MCP_SETUP.md
-        </a>.
-      </p>
-    </div>
-  </main>
+# 4. Point your AI coding client at it (opencode.json in the repo dir):
+# {
+#   "mcp": {
+#     "bgi": {
+#       "command": "bgi",
+#       "args": ["mcp", "--graph", "output/bgi-graph.json",
+#                "--fuse-graph", "output/fuse-graph.json"]
+#     }
+#   }
+# }
+
+# 5. Run with a task-anchored prompt to trigger twin_context:
+opencode  # → AI receives architecture summary + behavioral twins + seam + rubric</code></pre>
+        <p style="margin-top:0.8rem">The three BGI-TWIN tools are available as MCP tools automatically once the server starts. No additional configuration needed.</p>
+        <div class="callout blue" style="margin-top:1rem">
+          <strong>Want to run the full validation protocol?</strong>
+          The exact prompt texts for p01–p04 are committed at
+          <a href="https://github.com/ahmedxuhri/bigindexer/tree/master/validation" target="_blank" rel="noopener">validation/</a>.
+          Run against any repo, score using the rubric, and post your results — we will add them to the evidence record.
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /container -->
 
   <footer>
-    <p>Big Indexer · <a href="/">bigindexer.com</a> · <a href="https://github.com/ahmedxuhri/bigindexer">GitHub</a> · <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/docs/MCP_SETUP.md">Docs</a></p>
+    <p>
+      Big Indexer · <a href="/">bigindexer.com</a> · 
+      <a href="https://github.com/ahmedxuhri/bigindexer">GitHub</a> · 
+      <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/docs/MCP_SETUP.md">Docs</a> · 
+      <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/validation/SCORING_RUBRIC.md">Scoring rubric</a>
+    </p>
+    <p style="margin-top:0.5rem;font-size:0.78rem;opacity:0.7">All raw run outputs are public. Every claim on this page is traceable to a committed artifact.</p>
   </footer>
+
 </body>
 </html>

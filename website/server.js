@@ -77,40 +77,52 @@ app.get('/validation', (req, res) => {
 app.get('/api/validation/summary', (req, res) => {
   res.json({
     generated: '2026-05-11',
-    shipment_update: {
-      date: '2026-05-11',
-      name: 'BGI-TWIN MCP context package',
-      tools: ['task_fingerprint', 'behavioral_twins', 'twin_context'],
-      note: 'Global A/B metrics below are pre-refresh baseline. A post-shipment p04 refresh slice has now been added.'
-    },
-    refresh_update: {
-      date: '2026-05-11',
-      scope: 'full refresh p01-p04, 5 repos, MCP mode, explicit twin_context usage',
-      prompts: 20,
-      mcp_invocation_evidence: 'CallToolRequest present in all runs',
-      metrics: {
-        evidence_coverage_pct: 79.9,
+    total_scored_runs: 60,
+    stages: {
+      baseline: {
+        runs: 20,
+        repos: 5,
+        evidence_coverage_pct: 78.7,
+        boundary_accuracy: 0.95,
+        actionability: 4.0,
+        hallucinations: 0,
+        median_latency_s: 133.8
+      },
+      bgi_mcp: {
+        runs: 20,
+        repos: 5,
+        evidence_coverage_pct: 84.9,
+        boundary_accuracy: 1.0,
+        actionability: 4.0,
+        hallucinations: 0,
+        median_latency_s: 66.2,
+        delta_vs_baseline: { evidence_pp: +6.2, boundary: +0.05, latency_pct: -51 }
+      },
+      bgi_twin: {
+        runs: 20,
+        repos: 5,
+        evidence_coverage_pct_mean: 79.9,
+        evidence_coverage_pct_p04: 96.0,
         boundary_accuracy: 1.0,
         actionability: 4.75,
         hallucinations: 0,
-        median_latency_s: 68.53
-      },
-      p04_slice: {
-        evidence_coverage_pct: 96.0,
-        boundary_accuracy: 1.0,
-        actionability: 4.8,
-        hallucinations: 0,
-        median_latency_s: 77.63
+        median_latency_s: 68.5,
+        delta_vs_bgi_mcp: { actionability: +0.75 },
+        tools: ['task_fingerprint', 'behavioral_twins', 'twin_context'],
+        mcp_invocation_evidence: 'CallToolRequest confirmed in all 20 runs'
       }
     },
-    repos: ['tiangolo/fastapi', 'django/django', 'pydantic/pydantic-core', 'prometheus/prometheus', 'vercel/next.js'],
+    repos: [
+      'tiangolo/fastapi',
+      'django/django',
+      'pydantic/pydantic-core',
+      'prometheus/prometheus',
+      'vercel/next.js'
+    ],
     cli: 'opencode 1.14.41',
     model: 'deepseek-v4-flash',
-    total_scored_runs: 60,
-    global: {
-      baseline: { evidence_coverage_pct: 78.7, boundary_accuracy: 0.95, actionability: 4.0, hallucinations: 0, median_latency_s: 133.8 },
-      mcp:      { evidence_coverage_pct: 84.9, boundary_accuracy: 1.0,  actionability: 4.0, hallucinations: 0, median_latency_s: 66.2 }
-    }
+    rubric: 'https://github.com/ahmedxuhri/bigindexer/blob/master/validation/SCORING_RUBRIC.md',
+    raw_outputs: 'https://github.com/ahmedxuhri/bigindexer/tree/master/validation/runs'
   });
 });
 
