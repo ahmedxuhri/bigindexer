@@ -1,4 +1,4 @@
-# Big Indexer MCP Validation Plan (Historical A/B on 10 Public Repos)
+# Big Indexer MCP Validation Plan (Archived A/B on 10 Public Repos)
 
 > Operational workspace now lives in `validation/`.
 > Use `validation/README.md` as the primary entry point.
