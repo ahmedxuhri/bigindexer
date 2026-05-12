@@ -40,11 +40,11 @@ bgi scan <REPO_PATH> --lang <LANG> \
 
 ## C) Run baseline (MCP OFF)
 
-Temporarily disable project MCP config:
+Temporarily disable the local project MCP config:
 
 ```bash
 cd /root/mad/sessions/bgi
-mv opencode.json opencode.off.json
+mv local-mcp-config.json local-mcp-config.off.json
 ```
 
 Run prompts with `opencode run`, capture output + time:
@@ -57,14 +57,14 @@ Run prompts with `opencode run`, capture output + time:
 
 ## D) Run MCP mode (MCP ON)
 
-Restore MCP config:
+Restore the local MCP config:
 
 ```bash
 cd /root/mad/sessions/bgi
-mv opencode.off.json opencode.json
+mv local-mcp-config.off.json local-mcp-config.json
 ```
 
-Point MCP command to this repo’s artifacts (edit `opencode.json` command args to use):
+Point the local MCP config at this repo’s artifacts:
 
 - `output/validation/mcp-ab/<SLUG>/bgi-graph.json`
 - `output/validation/mcp-ab/<SLUG>/fuse-graph.json`

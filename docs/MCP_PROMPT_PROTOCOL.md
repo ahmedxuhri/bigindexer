@@ -16,7 +16,7 @@ Current status source priority:
 1) TASKPLAN.md
 2) README.md current status section
 3) latest benchmark artifacts under output/validation/
-4) historical docs (problem.md) only as background
+4) historical docs only as background
 ```
 
 ## Copy-paste user prompt template

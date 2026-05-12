@@ -42,6 +42,13 @@ sessions/
 shared.md
 sudolaps/
 
+# ── Local-only strategy / sync-break docs ──────────────────────────────────────
+masterplan.md
+owners_concerns.md
+problem.md
+bgi2.md
+opencode.json
+
 # ── Rsync duplicates (dual-package structure artefact) ────────────────────────
 # The BGI Python package lives in bgi/bgi/ (the pip-installable package).
 # Running `rsync bgi/bgi/*.py bgi/` creates duplicates at bgi/ and repo root.

@@ -1,7 +1,7 @@
 # Phase 9 — Public Launch Plan
 
 > Execution route from private repo → public MCP product → revenue.
-> Read `owners_concerns.md` first for the strategic rationale.
+> Read the local-only strategy notes first for the strategic rationale.
 
 ---
 
@@ -56,9 +56,9 @@ Before making public:
 - [ ] Search for any hardcoded paths, API keys, emails, internal hostnames
 - [ ] Review `.gitignore` — make sure no sensitive output files are tracked
 - [ ] Remove or sanitize any internal planning files that shouldn't be public
-  - `owners_concerns.md` — OK to keep (explains strategy, no secrets)
-  - `masterplan.md` — OK to keep (good for transparency)
-  - `session.md`, `opencode.json` — review, likely remove or gitignore
+  - strategy notes — keep local-only
+  - commercialization notes — keep local-only
+  - workspace config — keep local-only or gitignore
 
 ### 1.4 Confirm pip package works cleanly
 
@@ -112,7 +112,7 @@ Submit to each with a one-liner description and link.
 [![MCP Compatible](https://img.shields.io/badge/MCP-compatible-blue)](https://modelcontextprotocol.io)
 ```
 
-Add a `## Use with MCP` section near the top of README with the opencode.json / Claude Desktop config block.
+Add a `## Use with MCP` section near the top of README with a local MCP config block.
 
 ---
 

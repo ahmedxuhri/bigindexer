@@ -16,7 +16,7 @@ Speed work is important, but it must not degrade edge/cluster quality.
 
 ### Core architecture status: ON TRACK
 
-The adopted Spectral-Fuse design from `bgi2.md` is implemented and active:
+The adopted Spectral-Fuse design from the local convergence notes is implemented and active:
 
 1. TOKEN-CENSUS (adaptive token frequency bands)
 2. SPECTRAL-MASKS in Gate 2 (scoped matching)
@@ -54,7 +54,7 @@ Deliverable: `README.md` now serves as onboarding doc for new readers instead of
 
 ## Commercialization track (new)
 
-Business and launch execution now has a dedicated plan in `masterplan.md`.
+Business and launch execution now has a dedicated plan in the local-only commercialization notes.
 That plan covers:
 
 1. MCP server build and public launch.
@@ -366,7 +366,7 @@ Option B currently targets **Gate 2 latency**, not full-pipeline `<60s` on kuber
 
 ## Decision log
 
-- Quality-first priority remains unchanged from convergence in `bgi2.md`.
+- Quality-first priority remains unchanged from the local convergence notes.
 - Option A (interactive search) is complete and retained as an additive capability.
 - Option B is complete for this iteration; latest 5-run comparable median is `37.244s` with quality intact and thread-default executor locked.
 
@@ -423,4 +423,4 @@ python3 -m pytest tests/test_gate3.py -q
 - Use `README.md` for onboarding and conceptual overview.
 - Use this file for active execution state and decision boundaries.
 - Keep benchmark claims explicitly tied to run mode (auto vs go-only comparable) to avoid false comparisons.
-- Treat `problem.md` as historical context; do not report it as current state without cross-checking this file and latest artifacts.
+- Treat the historical benchmark archive as historical context; do not report it as current state without cross-checking this file and latest artifacts.

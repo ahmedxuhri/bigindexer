@@ -214,7 +214,7 @@ bgi scan fastapi/ --out output/
 # Start MCP server (includes BGI-TWIN tools)
 bgi mcp --graph output/bgi-graph.json --fuse-graph output/fuse-graph.json
 
-# Run with opencode (opencode.json in the repo dir):
+# Run with OpenCode and a local config in the repo dir:
 # { "mcp": { "bgi": { "command": "bgi", "args": ["mcp", ...] } } }
 opencode  # AI receives architecture summary + behavioral twins + seam + rubric
 ```

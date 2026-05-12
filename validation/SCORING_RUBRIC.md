@@ -309,9 +309,9 @@ We explicitly invite independent scoring: if you re-score any run and disagree, 
 
 1. Clone target repo to `/tmp/bgi-ab-repos/<slug>` (`--depth 1`)
 2. `bgi scan <repo_dir> --out output/validation/mcp-ab/<slug>/`
-3. Update `opencode.json` to point to `<slug>` graph artifacts (MCP runs only)
-4. Baseline run: `mv opencode.json opencode.json.off && opencode [prompt]`
-5. MCP run: `mv opencode.json.off opencode.json && opencode [prompt]`
+3. Update the local OpenCode config to point to `<slug>` graph artifacts (MCP runs only)
+4. Baseline run: switch to the local baseline config, then run `opencode [prompt]`
+5. MCP run: switch back to the local MCP config, then run `opencode [prompt]`
 6. Save output to `validation/runs/<slug>/opencode_{baseline|mcp}_p{XX}.txt`
 7. Score against checklist → record in `validation/runs.csv`
 

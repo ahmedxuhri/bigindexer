@@ -212,13 +212,10 @@ Roadmap details: `TASKPLAN.md`
 
 - `TASKPLAN.md` - active roadmap and execution status
 - `MEMORANDUM.md` - design contracts and invariants
-- `bgi2.md` - architecture convergence history
-- `problem.md` - historical benchmark baseline and root-cause archive (not current status)
 - `docs/LANGUAGE_SUPPORT.md` - language implementation details
 - `docs/CONTRIBUTING_LANGUAGES.md` - language contribution guide
 - `docs/INDEX_SCHEMA.md` - interactive index schema
 - `docs/QUERY_PLANNER.md` - query planner scoring
-- `masterplan.md` - MCP product and monetization execution plan
 - `docs/MCP_SETUP.md` - MCP server setup and usage
 - `docs/MCP_QUICKSTART_DEMO.md` - 5-minute demo walkthrough
 - `docs/MCP_EXAMPLE_TRANSCRIPTS.md` - real-world MCP tool invocation examples
