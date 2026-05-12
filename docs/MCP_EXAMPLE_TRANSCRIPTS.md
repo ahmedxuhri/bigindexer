@@ -1,8 +1,8 @@
 # Big Indexer MCP - Example Transcripts
 
-These are real MCP tool invocations from the BigIndexer `architecture_summary` service.
-
 > Historical transcript set. Current public validation evidence is in `docs/VALIDATION_EVIDENCE.md` and includes BGI-TWIN plus three-model replication.
+
+These are real MCP tool invocations from the BigIndexer `architecture_summary` service.
 
 ---
 

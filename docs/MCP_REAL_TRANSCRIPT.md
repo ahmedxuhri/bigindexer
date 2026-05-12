@@ -1,8 +1,8 @@
 # MCP Real-World Demo Transcript
 
-This is a real, unedited transcript from running Big Indexer's MCP `architecture_summary` tool on the FastAPI repository using GitHub Copilot CLI.
-
 > Historical transcript. Current evidence lives in `docs/VALIDATION_EVIDENCE.md` and the three-model validation surfaces.
+
+This is a real, unedited transcript from running Big Indexer's MCP `architecture_summary` tool on the FastAPI repository using GitHub Copilot CLI.
 
 ## Setup
 
