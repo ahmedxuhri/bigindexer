@@ -2,6 +2,8 @@
 
 Use this protocol when you want fewer hallucinations and more verifiable answers.
 
+> Current state: validate against `README.md` and `docs/VALIDATION_EVIDENCE.md` first; the published evidence set is 100 scored runs across deepseek, GPT-4o, and Gemini auto.
+
 ## Copy-paste system instruction
 
 ```text

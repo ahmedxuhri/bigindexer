@@ -2,7 +2,7 @@
 
 Get MCP architecture analysis working in under 5 minutes.
 
-> Current-state note: this quick start should be treated as a demo flow; the published validation evidence now includes BGI-TWIN and three-model replication.
+> Current-state note: the published validation evidence now includes BGI-TWIN and three-model replication (`docs/VALIDATION_EVIDENCE.md`). For real work, use `twin_context` first.
 
 ## Prerequisites
 
@@ -47,12 +47,14 @@ opencode run --agent build --dir /tmp/demo-repo \
 
 **Expected output**: The tool invokes BigIndexer's MCP server, retrieves the architecture summary, and synthesizes a response.
 
-## Current-recommendation test: BGI-TWIN
+## 2-Minute Test: BGI-TWIN (recommended)
 
 ```bash
 opencode run --dir /tmp/demo-repo \
   "Use MCP tool twin_context for this change and return the top twin candidate, seam suggestion, and rubric checklist."
 ```
+
+**Expected output**: The tool invokes `twin_context`, returns behavioral twins, a seam suggestion, and an actionability rubric that maps directly to the current validation workflow.
 
 ## 2-Minute Test: GitHub Copilot CLI
 

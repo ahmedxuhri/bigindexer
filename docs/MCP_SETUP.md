@@ -2,6 +2,8 @@
 
 This guide explains how to run the Big Indexer MCP server and connect it to MCP-capable clients.
 
+> Current state: the public validation set is 100 scored runs across deepseek, GPT-4o, and Gemini auto (`docs/VALIDATION_EVIDENCE.md`). For implementation tasks, prefer `twin_context` first, then `behavioral_twins` and `task_fingerprint`.
+
 ## 1) Generate architecture artifacts
 
 Run a scan first so MCP tools have data:
@@ -41,6 +43,12 @@ If you do not use index DB, omit `--index-db`.
 10. `behavioral_twins(task, limit=3, min_score=0.25, include_source=true)`
 11. `twin_context(task, limit=3, include_source=true, min_score=0.25)`
 12. `reload_artifacts()`
+
+Current recommended path for AI assistance:
+
+1. `task_fingerprint` for deterministic task normalization
+2. `behavioral_twins` for concrete in-repo analogs
+3. `twin_context` for the full implementation brief with seam and rubric
 
 ## 4) Client configuration pattern
 
