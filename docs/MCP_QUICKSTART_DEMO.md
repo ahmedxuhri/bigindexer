@@ -2,6 +2,8 @@
 
 Get MCP architecture analysis working in under 5 minutes.
 
+> Current-state note: this quick start should be treated as a demo flow; the published validation evidence now includes BGI-TWIN and three-model replication.
+
 ## Prerequisites
 
 - `bgi` installed (via `pip install bigindexer`)
@@ -19,7 +21,7 @@ cd /tmp/demo-repo
 bgi scan . --lang auto --out bgi-graph.json --fuse-graph fuse-graph.json
 
 # Create MCP config (copy-paste this into your CLI directory or use --additional-mcp-config)
-cat > mcp-config.json << 'EOF'
+cat > mcp-config.json << EOF
 {
   "mcpServers": {
     "bigindexer": {
@@ -44,6 +46,13 @@ opencode run --agent build --dir /tmp/demo-repo \
 ```
 
 **Expected output**: The tool invokes BigIndexer's MCP server, retrieves the architecture summary, and synthesizes a response.
+
+## Current-recommendation test: BGI-TWIN
+
+```bash
+opencode run --dir /tmp/demo-repo \
+  "Use MCP tool twin_context for this change and return the top twin candidate, seam suggestion, and rubric checklist."
+```
 
 ## 2-Minute Test: GitHub Copilot CLI
 
@@ -173,4 +182,3 @@ opencode run --dir /tmp/demo-repo \
 ```
 
 See `docs/MCP_SETUP.md` for full tool documentation.
-

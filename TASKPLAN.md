@@ -29,6 +29,10 @@ Quality guardrails remain stable in large validation runs:
 - max cluster around `1.113%` (well under 3% cap)
 - fuse events can remain `0` in healthy runs
 
+### Current launch status: PUBLIC LAUNCH PREP
+
+Validation is published and the public/local doc split is in place. The next external step is MCP registry submission followed by the public launch flow in `PHASE9_PLAN.md`.
+
 ---
 
 ## Documentation mini-plan (2026-05-09) - COMPLETE
@@ -129,6 +133,24 @@ Independent-model replication run completed with `azure/gpt-4o`:
 - Boundary accuracy: **1.0**
 - Hallucinations: **0**
 - Median latency: **41.55s**
+
+Published to:
+- `validation/runs.csv` (20 new scored rows)
+- `output/validation/mcp-ab/{aggregate,per_repo}.csv`
+- `docs/VALIDATION_EVIDENCE.md`
+- `website/public/validation.html`
+- `website/server.js`
+
+## Update (2026-05-12) — Gemini auto replication complete ✅
+
+Independent-model replication run completed with Gemini CLI auto mode:
+
+- Scope: 20 runs (p01–p04 × 5 repos), MCP + `twin_context`
+- Invocation evidence: `tool_use: mcp_bigindexer_twin_context` present in all 20 runs
+- Actionability: **4.25/5**
+- Boundary accuracy: **0.95**
+- Hallucinations: **0**
+- Median latency: **65.75s**
 
 Published to:
 - `validation/runs.csv` (20 new scored rows)

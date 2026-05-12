@@ -2,13 +2,15 @@
 
 These are real MCP tool invocations from the BigIndexer `architecture_summary` service.
 
+> Historical transcript set. Current public validation evidence is in `docs/VALIDATION_EVIDENCE.md` and includes BGI-TWIN plus three-model replication.
+
 ---
 
 ## Example 1: FastAPI Repository Architecture (OpenCode CLI)
 
 **Repository**: FastAPI
 **Files**: 2,511 units across 14,370 source files  
-**Client**: OpenCode with deepseek-v4-flash  
+**Client**: OpenCode CLI  
 **Query**: "Use only MCP tool bigindexer_get_architecture_summary, then summarize in 3 bullets."
 
 ### MCP Tool Call
@@ -200,7 +202,7 @@ is the intended design pattern. The secondary coupling between middleware and OR
 ## Example 3: Copilot CLI with Real-time Reasoning
 
 **Repository**: FastAPI  
-**Client**: GitHub Copilot CLI (gpt-5.3-codex)  
+**Client**: GitHub Copilot CLI  
 **Query**: "Use MCP tool bigindexer_get_architecture_summary to answer: What are the main architectural clusters in this repo?"
 
 ### CLI Output
@@ -295,4 +297,3 @@ Explicit tool references in prompts improve invocation rates to 95%+.
 2. **Integration**: Add this demo to your CI/CD to generate architecture summaries on every push
 3. **Queries**: Explore the other MCP tools: `boundary_edges`, `high_coupling_seams`, `impact_neighbors`
 4. **Feedback**: Report issues or feature requests to the Big Indexer community
-

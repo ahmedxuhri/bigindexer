@@ -2,6 +2,8 @@
 
 This directory is the operational workspace for MCP A/B validation runs.
 
+> Current published evidence is in `docs/VALIDATION_EVIDENCE.md`: 100 scored runs across deepseek, GPT-4o, and Gemini auto.
+
 ## Objective
 
 Measure whether MCP context improves answer quality and speed across public repos.
@@ -47,6 +49,8 @@ validation/
 5. Save outputs into `validation/runs/<repo_slug>/`.
 6. Record metadata in `validation/runs.csv`.
 7. Score with rubric in `validation/scoring.md`.
+
+The published refresh set now includes BGI-TWIN p01–p04 across 5 repos and three-model replication. Use this workspace for future runs, not as the source of truth for current results.
 
 ## Run validity gates
 

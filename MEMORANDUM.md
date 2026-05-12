@@ -5,6 +5,8 @@
 **Status:** Ratified  
 **Scope:** All design decisions, vocabulary contracts, gate contracts, and invariants for the Big Indexer system.
 
+**Current status note:** this is the design-contract memo. For current project state, use `README.md`, `TASKPLAN.md`, and `docs/VALIDATION_EVIDENCE.md`. The public repo now reflects the 100-run, 3-model validation set; commercialization notes remain local-only.
+
 ---
 
 ## 1. System Statement

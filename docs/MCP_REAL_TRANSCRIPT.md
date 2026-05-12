@@ -2,11 +2,13 @@
 
 This is a real, unedited transcript from running Big Indexer's MCP `architecture_summary` tool on the FastAPI repository using GitHub Copilot CLI.
 
+> Historical transcript. Current evidence lives in `docs/VALIDATION_EVIDENCE.md` and the three-model validation surfaces.
+
 ## Setup
 
 ```bash
 # Repository: FastAPI (https://github.com/pallets/fastapi)
-# Client: GitHub Copilot CLI (gpt-5.3-codex)
+# Client: GitHub Copilot CLI
 # MCP Server: Big Indexer (bgi mcp --graph ... --fuse-graph ...)
 # Timestamp: 2026-05-09T19:52:56Z
 
@@ -122,4 +124,3 @@ See `docs/MCP_EXAMPLE_TRANSCRIPTS.md` for additional transcripts:
 - Multi-client latency comparison
 - Impact analysis and coupling seams
 - Symbol search integration
-

@@ -2,6 +2,8 @@
 
 Landing page and waitlist for the Big Indexer MCP public launch.
 
+> Current public validation lives at `https://bigindexer.com/validation`.
+
 ## Features
 
 - 🎨 Beautiful responsive landing page

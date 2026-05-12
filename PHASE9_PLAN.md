@@ -2,6 +2,7 @@
 
 > Execution route from private repo → public MCP product → revenue.
 > Read the local-only strategy notes first for the strategic rationale.
+> Current state: validation is published; the public/local doc split is complete; Stage 2 registry submission is next.
 
 ---
 

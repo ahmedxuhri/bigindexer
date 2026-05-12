@@ -1,5 +1,7 @@
 # Phase 2 — Benchmark Report
 
+> Historical benchmark record. Current state lives in `README.md`, `TASKPLAN.md`, and `docs/VALIDATION_EVIDENCE.md`.
+
 ## Summary
 
 Phase 2 speed optimization implementation is **complete** with comprehensive validation. This report documents the benchmark results for the four key optimizations:

@@ -127,12 +127,12 @@ Artifact: `output/validation/kubernetes-optionb-controlled-median-v21.json`
 - Gate 3 tests verify no legacy namespace over-merge without import evidence (see `tests/test_gate3.py`).
 - Current full suite status: `python3 -m pytest tests/ -x -q` (project baseline target remains passing).
 
-### Still missing (explicitly)
+### Evidence summary
 
-- Labeled precision/recall benchmark on external corpus.
-- Head-to-head quantitative benchmark vs external tools on the same labeled dataset.
+- Current published validation set: **100 scored runs** across 5 repos and 3 models.
 - Full 20-run post-shipment benchmark refresh for BGI-TWIN context (`task → COV → top-3 twins + seam + rubric`) is complete: actionability **4.75/5** (p04 slice: **4.8/5**), boundary **1.0**, hallucinations **0**.
-- Independent-model replication complete on **azure/gpt-4o** (20 runs): actionability **4.85/5**, boundary **1.0**, hallucinations **0**, median latency **41.6s**.
+- Independent-model replication is now complete on **azure/gpt-4o** (20 runs) and **gemini/auto** (20 runs): GPT-4o actionability **4.85/5**, Gemini actionability **4.25/5**, both with zero hallucinations; Gemini boundary **0.95** reflects one genuine `django/p02` miss.
+- Still missing: labeled precision/recall benchmark on an external corpus and head-to-head quantitative benchmark vs external tools on the same labeled dataset.
 
 ---
 
@@ -201,8 +201,9 @@ Return top twin candidate, seam suggestion, and rubric checklist.
 - Phase 1 quality architecture: complete
 - Phase 5 Water-Clock: complete
 - Phase 6 interactive index/search: complete
-- Phase 7 Option B (Gate 2 performance tuning): in progress
-- Phase 8 MCP + BGI-TWIN context packaging: shipped (full 20-run post-shipment refresh + GPT-4o replication complete)
+- Phase 7 Option B (Gate 2 performance tuning): complete
+- Phase 8 MCP + BGI-TWIN context packaging: shipped (full 20-run post-shipment refresh + GPT-4o + Gemini replication complete)
+- Phase 9 public launch: in progress (local/public doc split complete; registry submission next)
 
 Roadmap details: `TASKPLAN.md`
 
@@ -217,6 +218,7 @@ Roadmap details: `TASKPLAN.md`
 - `docs/INDEX_SCHEMA.md` - interactive index schema
 - `docs/QUERY_PLANNER.md` - query planner scoring
 - `docs/MCP_SETUP.md` - MCP server setup and usage
+- `https://bigindexer.com/validation` - public validation evidence
 - `docs/MCP_QUICKSTART_DEMO.md` - 5-minute demo walkthrough
 - `docs/MCP_EXAMPLE_TRANSCRIPTS.md` - real-world MCP tool invocation examples
 - `docs/MCP_REAL_TRANSCRIPT.md` - unedited transcript from FastAPI analysis

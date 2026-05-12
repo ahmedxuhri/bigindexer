@@ -1,7 +1,8 @@
-# Big Indexer MCP Validation Plan (A/B on 10 Public Repos)
+# Big Indexer MCP Validation Plan (Historical A/B on 10 Public Repos)
 
 > Operational workspace now lives in `validation/`.
 > Use `validation/README.md` as the primary entry point.
+> Current published evidence is in `docs/VALIDATION_EVIDENCE.md` (100 scored runs, deepseek + GPT-4o + Gemini auto).
 
 This file defines a reproducible validation protocol for **manual + publishable** evidence.
 

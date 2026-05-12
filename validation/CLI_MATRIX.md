@@ -49,7 +49,7 @@ Two different tools may be called "copilot":
 
 For architecture Q/A validation, use **this coding-agent CLI** as `copilot-cli`.
 
-- Model in this session: `gpt-5.3-codex`
+- Model in this session: current coding-agent model
 - Timing: manual stopwatch or shell timing around CLI invocation path if available
 - MCP capability: handled through this agent session and configured MCP tools
 
