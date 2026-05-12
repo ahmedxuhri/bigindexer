@@ -1,6 +1,6 @@
 # Phase 2 — Speed Optimization (Complete)
 
-> Historical phase summary. Current state lives in `README.md`, `TASKPLAN.md`, and `docs/VALIDATION_EVIDENCE.md`.
+> Historical phase summary. Current state lives in `README.md` and `docs/VALIDATION_EVIDENCE.md`.
 
 ## Overview
 Successfully implemented 4 major speed optimization components for BGI, reducing estimated Gate 1 scanning time from 34s to 5–10s on large repositories (75K+ units).

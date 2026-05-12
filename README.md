@@ -205,13 +205,10 @@ Return top twin candidate, seam suggestion, and rubric checklist.
 - Phase 8 MCP + BGI-TWIN context packaging: shipped (full 20-run post-shipment refresh + GPT-4o + Gemini replication complete)
 - Phase 9 public launch: in progress (local/public doc split complete; registry submission next)
 
-Roadmap details: `TASKPLAN.md`
-
 ---
 
 ## Documentation map
 
-- `TASKPLAN.md` - active roadmap and execution status
 - `MEMORANDUM.md` - design contracts and invariants
 - `docs/LANGUAGE_SUPPORT.md` - language implementation details
 - `docs/CONTRIBUTING_LANGUAGES.md` - language contribution guide

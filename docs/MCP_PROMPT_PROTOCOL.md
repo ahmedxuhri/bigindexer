@@ -13,8 +13,8 @@ For every major claim:
 
 Do not treat historical documents as current status unless explicitly confirmed.
 Current status source priority:
-1) TASKPLAN.md
-2) README.md current status section
+1) README.md current status section
+2) latest validation evidence under `docs/VALIDATION_EVIDENCE.md`
 3) latest benchmark artifacts under output/validation/
 4) historical docs only as background
 ```
@@ -36,7 +36,7 @@ Constraints:
 
 | claim | status | evidence |
 |---|---|---|
-| <statement> | VERIFIED | `TASKPLAN.md`, `output/validation/...json`, `cluster_of_file(...)` |
+| <statement> | VERIFIED | `README.md`, `docs/VALIDATION_EVIDENCE.md`, `output/validation/...json`, `cluster_of_file(...)` |
 | <statement> | HYPOTHESIS | inferred from partial signals |
 | <statement> | UNKNOWN | no direct artifact evidence |
 

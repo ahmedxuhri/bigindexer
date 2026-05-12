@@ -48,6 +48,7 @@ owners_concerns.md
 problem.md
 bgi2.md
 opencode.json
+TASKPLAN.md
 
 # ── Rsync duplicates (dual-package structure artefact) ────────────────────────
 # The BGI Python package lives in bgi/bgi/ (the pip-installable package).

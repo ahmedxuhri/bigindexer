@@ -1,6 +1,6 @@
 # Phase 2 — Benchmark Report
 
-> Historical benchmark record. Current state lives in `README.md`, `TASKPLAN.md`, and `docs/VALIDATION_EVIDENCE.md`.
+> Historical benchmark record. Current state lives in `README.md` and `docs/VALIDATION_EVIDENCE.md`.
 
 ## Summary
 
