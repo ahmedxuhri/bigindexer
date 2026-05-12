@@ -128,6 +128,18 @@ app.get('/api/validation/summary', (req, res) => {
         median_latency_s: 41.55,
         model: 'azure/gpt-4o',
         notes: 'Independent-model replication of full TWIN refresh (p01-p04 x 5 repos)'
+      },
+      bgi_twin_replication_gemini_auto: {
+        runs: 20,
+        repos: 5,
+        evidence_coverage_pct_mean: 62.36,
+        evidence_tag_relaxed_pct_mean: 83.41,
+        boundary_accuracy: 0.95,
+        actionability: 4.25,
+        hallucinations: 0,
+        median_latency_s: 65.75,
+        model: 'gemini/auto',
+        notes: 'Independent-model replication on Gemini CLI auto mode; django/p02 is one genuine architectural miss (depth-first on query.py), all others correct'
       }
     },
     repos: [
@@ -137,8 +149,8 @@ app.get('/api/validation/summary', (req, res) => {
       'prometheus/prometheus',
       'vercel/next.js'
     ],
-    cli: 'opencode 1.14.41',
-    model: 'deepseek-v4-flash + azure/gpt-4o',
+    cli: 'opencode 1.14.41 / gemini CLI (auto)',
+    model: 'deepseek-v4-flash + azure/gpt-4o + gemini/auto',
     rubric: 'https://github.com/ahmedxuhri/bigindexer/blob/master/validation/SCORING_RUBRIC.md',
     raw_outputs: 'https://github.com/ahmedxuhri/bigindexer/tree/master/validation/runs'
   });
