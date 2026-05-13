@@ -37,15 +37,16 @@ BGI is built to keep both under control, so the output remains usable on large r
 
 ---
 
-## 5-minute example
+## 30-second demo
 
 Run BGI on the included fixture repo:
 
 ```bash
-python3 - <<'PY'
-from pipeline import run_scan
-run_scan("tests/fixtures", language="python", output="/tmp/bgi-example.json")
-PY
+git clone https://github.com/ahmedxuhri/bigindexer
+cd bigindexer
+pip install -e .
+bgi scan tests/fixtures --lang python --out /tmp/bgi-example.json
+head -50 /tmp/bgi-example.json
 ```
 
 Observed result on this repository:
