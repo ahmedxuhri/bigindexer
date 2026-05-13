@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.ahmedxuhri/bigindexer",
+  "title": "Big Indexer",
+  "description": "Architecture-aware MCP context with boundaries, seams, impact scope, and BGI-TWIN guidance.",
+  "repository": {
+    "url": "https://github.com/ahmedxuhri/bigindexer",
+    "source": "github"
+  },
+  "version": "0.1.1",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "bigindexer",
+      "version": "0.1.1",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

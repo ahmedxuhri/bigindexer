@@ -3,10 +3,11 @@ requires = ["setuptools>=42"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "bgi"
-version = "0.1.0"
+name = "bigindexer"
+version = "0.1.1"
 description = "Big Indexer — language-agnostic hierarchical code intelligence"
 requires-python = ">=3.10"
+readme = {file = "README.md", content-type = "text/markdown"}
 dependencies = [
     "tree-sitter>=0.23",
     "tree-sitter-python>=0.23",
