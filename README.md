@@ -2,7 +2,7 @@
 
 <!-- mcp-name: io.github.ahmedxuhri/bigindexer -->
 
-> Copyright (c) 2026 bigindexer.com — Licensed under Apache-2.0.
+> Copyright (c) 2026 Ahmed Xuhri — Licensed under Apache-2.0.
 
 BGI is a static architecture analysis tool for large codebases.
 It groups code units by **behavioral role** and emits explicit architectural boundaries.
