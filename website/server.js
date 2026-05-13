@@ -130,7 +130,11 @@ app.get('/validation', (req, res) => {
 });
 
 // Records page
-app.get('/records', (req, res) => {
+app.get(['/records', '/records/'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'records.html'));
+});
+
+app.get('/records.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'records.html'));
 });
 
