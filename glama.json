@@ -1,0 +1,20 @@
+{
+  "name": "Big Indexer",
+  "version": "0.1.1",
+  "description": "Language-agnostic hierarchical code intelligence for AI agents",
+  "dockerBuildSteps": [
+    "pip install --no-cache-dir --upgrade pip",
+    "pip install --no-cache-dir bigindexer==0.1.1",
+    "echo '{\"units\":[],\"edges\":[],\"clusters\":[]}' > bgi-graph.json",
+    "echo '{\"edges\":[]}' > fuse-graph.json"
+  ],
+  "dockerCmd": [
+    "bgi",
+    "mcp",
+    "--graph",
+    "bgi-graph.json",
+    "--fuse-graph",
+    "fuse-graph.json"
+  ],
+  "baseImage": "python:3.11-slim"
+}
