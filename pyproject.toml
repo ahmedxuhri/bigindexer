@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bigindexer"
-version = "0.1.1"
+version = "0.1.2"
 description = "Big Indexer — language-agnostic hierarchical code intelligence"
 requires-python = ">=3.10"
 readme = {file = "README.md", content-type = "text/markdown"}
@@ -25,6 +25,7 @@ dependencies = [
     "tree-sitter-lua==0.2.0",
     "tree-sitter-elixir==0.3.5",
     "openai>=1.0",                  # OpenAI-compatible client — used for DeepSeek and others
+    "mcp>=1.0",                     # MCP server framework (required for bgi mcp)
 ]
 
 [project.scripts]
