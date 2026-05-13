@@ -4,6 +4,8 @@
 [![ahmedxuhri/bigindexer MCP server](https://glama.ai/mcp/servers/ahmedxuhri/bigindexer/badges/score.svg)](https://glama.ai/mcp/servers/ahmedxuhri/bigindexer)
 [![PyPI version](https://img.shields.io/pypi/v/bigindexer.svg)](https://pypi.org/project/bigindexer/)
 [![License](https://img.shields.io/github/license/ahmedxuhri/bigindexer.svg)](https://github.com/ahmedxuhri/bigindexer/blob/master/LICENSE)
+[![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen)](https://bigindexer.com/validation)
+[![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue)](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.ahmedxuhri/bigindexer)
 
 <!-- mcp-name: io.github.ahmedxuhri/bigindexer -->
 
