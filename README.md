@@ -8,6 +8,17 @@ BGI is a static architecture analysis tool for large codebases.
 It groups code units by **behavioral role** and emits explicit architectural boundaries.
 Project domain: `bigindexer.com`
 
+## Use via MCP Registry
+
+Big Indexer is published in the MCP Registry as `io.github.ahmedxuhri/bigindexer`.
+
+```bash
+pip install bigindexer==0.1.2
+bgi mcp --graph bgi-graph.json --fuse-graph fuse-graph.json
+```
+
+Validation: https://bigindexer.com/validation
+
 ## What problem this solves
 
 Most architecture graphs fail at scale in two ways:
