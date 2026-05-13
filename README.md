@@ -2,6 +2,8 @@
 
 [![Validation](https://img.shields.io/badge/Validation-Page-blue)](https://bigindexer.com/validation)
 [![ahmedxuhri/bigindexer MCP server](https://glama.ai/mcp/servers/ahmedxuhri/bigindexer/badges/score.svg)](https://glama.ai/mcp/servers/ahmedxuhri/bigindexer)
+[![PyPI version](https://img.shields.io/pypi/v/bigindexer.svg)](https://pypi.org/project/bigindexer/)
+[![License](https://img.shields.io/github/license/ahmedxuhri/bigindexer.svg)](https://github.com/ahmedxuhri/bigindexer/blob/master/LICENSE)
 
 <!-- mcp-name: io.github.ahmedxuhri/bigindexer -->
 
