@@ -926,10 +926,41 @@ opencode  # → AI receives architecture summary + behavioral twins + seam + rub
       Big Indexer · <a href="/">bigindexer.com</a> · 
       <a href="https://github.com/ahmedxuhri/bigindexer">GitHub</a> · 
       <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/docs/MCP_SETUP.md">Docs</a> · 
-      <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/validation/SCORING_RUBRIC.md">Scoring rubric</a>
+      <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/validation/SCORING_RUBRIC.md">Scoring rubric</a> ·
+      <a href="/records">Records</a>
     </p>
     <p style="margin-top:0.65rem;font-size:0.95rem;line-height:1.6;color:rgba(255,255,255,0.92)">All raw run outputs are public. Every claim on this page is traceable to a committed artifact.</p>
   </footer>
+
+  <script>
+    async function trackPageview() {
+      const payload = {
+        path: window.location.pathname,
+        title: document.title,
+        referrer: document.referrer || '',
+      };
+
+      const body = JSON.stringify(payload);
+
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/analytics/pageview', new Blob([body], { type: 'application/json' }));
+        return;
+      }
+
+      try {
+        await fetch('/api/analytics/pageview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+          keepalive: true,
+        });
+      } catch (error) {
+        console.error('Failed to send analytics event:', error);
+      }
+    }
+
+    trackPageview();
+  </script>
 
 </body>
 </html>

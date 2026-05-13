@@ -7,6 +7,39 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
+const analytics = {
+  totalPageviews: 0,
+  byPath: new Map(),
+  recent: [],
+};
+
+function recordPageview({ path: pagePath, title = '', referrer = '', userAgent = '' }) {
+  const entry = {
+    path: pagePath,
+    title,
+    referrer,
+    userAgent,
+    at: new Date().toISOString(),
+  };
+
+  analytics.totalPageviews += 1;
+  analytics.byPath.set(pagePath, (analytics.byPath.get(pagePath) || 0) + 1);
+  analytics.recent.unshift(entry);
+  analytics.recent = analytics.recent.slice(0, 50);
+}
+
+function getAnalyticsSummary() {
+  const byPath = Array.from(analytics.byPath.entries())
+    .map(([path, count]) => ({ path, count }))
+    .sort((a, b) => b.count - a.count || a.path.localeCompare(b.path));
+
+  return {
+    total_pageviews: analytics.totalPageviews,
+    unique_paths: analytics.byPath.size,
+    by_path: byPath,
+    recent: analytics.recent,
+  };
+}
 
 // Middleware
 app.use(cors());
@@ -53,6 +86,29 @@ app.get('/api/waitlist/status', (req, res) => {
   });
 });
 
+// API: Pageview analytics
+app.post('/api/analytics/pageview', (req, res) => {
+  const { path: pagePath, title = '', referrer = '' } = req.body || {};
+
+  if (typeof pagePath !== 'string' || !pagePath.startsWith('/')) {
+    return res.status(400).json({ error: 'Invalid path' });
+  }
+
+  recordPageview({
+    path: pagePath,
+    title: typeof title === 'string' ? title : '',
+    referrer: typeof referrer === 'string' ? referrer : '',
+    userAgent: req.get('user-agent') || '',
+  });
+
+  return res.status(204).end();
+});
+
+// API: Analytics summary
+app.get('/api/analytics/summary', (req, res) => {
+  res.json(getAnalyticsSummary());
+});
+
 // API: Get waitlist (admin endpoint - in production, require auth)
 app.get('/api/admin/waitlist', (req, res) => {
   const adminKey = req.query.key;
@@ -71,6 +127,11 @@ app.get('/api/admin/waitlist', (req, res) => {
 // Validation evidence page
 app.get('/validation', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'validation.html'));
+});
+
+// Records page
+app.get('/records', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'records.html'));
 });
 
 // API: validation summary (JSON)

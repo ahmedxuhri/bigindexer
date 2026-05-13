@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Records — Big Indexer</title>
+  <meta name="description" content="Big Indexer records page with live pageview analytics and recent site activity.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="shortcut icon" href="/favicon.svg">
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --bg: #f7f8ff;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #5b6472;
+      --purple: #667eea;
+      --purple-dk: #4f63c9;
+      --purple-lt: #eef2ff;
+      --line: #e5e7eb;
+      --shadow: 0 18px 50px rgba(31, 41, 55, 0.14);
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(102, 126, 234, 0.16), transparent 30%),
+        linear-gradient(135deg, #f8f9ff 0%, #f4f6ff 100%);
+      min-height: 100vh;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 1.25rem 3rem;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(18px);
+      background: rgba(255,255,255,0.72);
+      border-bottom: 1px solid rgba(229,231,235,0.7);
+      z-index: 20;
+    }
+    .topbar {
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .brand {
+      text-decoration: none;
+      color: var(--text);
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--purple) 0%, #764ba2 100%);
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.28);
+    }
+    nav { display: flex; gap: 1rem; flex-wrap: wrap; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 0.92rem; }
+    nav a:hover { color: var(--purple-dk); }
+    main { padding: 3rem 0 4rem; }
+    .hero {
+      background: var(--panel);
+      border: 1px solid rgba(229, 231, 235, 0.9);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 2rem;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      background: var(--purple-lt);
+      color: var(--purple-dk);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    h1 { margin: 1rem 0 0.5rem; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.05; letter-spacing: -0.04em; }
+    p { color: var(--muted); line-height: 1.7; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 1.25rem;
+    }
+    .label {
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+    .value {
+      margin-top: 0.35rem;
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--purple-dk);
+      line-height: 1;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    th, td {
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      font-size: 0.92rem;
+      vertical-align: top;
+    }
+    th {
+      background: #fafbff;
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    footer {
+      margin-top: 2rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+      text-align: center;
+    }
+    footer a { color: var(--purple-dk); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+      nav { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap topbar">
+      <a class="brand" href="/">
+        <span class="brand-mark">B</span>
+        <span>Big Indexer</span>
+      </a>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/validation">Validation</a>
+        <a href="https://github.com/ahmedxuhri/bigindexer" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <section class="hero">
+        <div class="eyebrow">Records</div>
+        <h1>Live site analytics</h1>
+        <p>This page shows the current runtime’s pageview records for the home page, validation page, and other tracked views.</p>
+      </section>
+
+      <div class="grid" id="summary-grid" aria-live="polite">
+        <div class="card">
+          <div class="label">Total pageviews</div>
+          <div class="value" id="total-pageviews">0</div>
+        </div>
+        <div class="card">
+          <div class="label">Unique paths</div>
+          <div class="value" id="unique-paths">0</div>
+        </div>
+        <div class="card">
+          <div class="label">Tracked paths</div>
+          <div class="value" id="tracked-paths">0</div>
+        </div>
+      </div>
+
+      <table aria-label="Recent pageview records">
+        <thead>
+          <tr>
+            <th style="width:18%">When</th>
+            <th style="width:18%">Path</th>
+            <th style="width:30%">Title</th>
+            <th>Referrer</th>
+          </tr>
+        </thead>
+        <tbody id="recent-records">
+          <tr><td colspan="4">Loading records…</td></tr>
+        </tbody>
+      </table>
+
+      <footer>
+        Big Indexer · <a href="/">Home</a> · <a href="/validation">Validation</a>
+      </footer>
+    </div>
+  </main>
+
+  <script>
+    async function trackPageview() {
+      const payload = {
+        path: window.location.pathname,
+        title: document.title,
+        referrer: document.referrer || '',
+      };
+
+      const body = JSON.stringify(payload);
+
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/analytics/pageview', new Blob([body], { type: 'application/json' }));
+        return;
+      }
+
+      try {
+        await fetch('/api/analytics/pageview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+          keepalive: true,
+        });
+      } catch (error) {
+        console.error('Failed to send analytics event:', error);
+      }
+    }
+
+    async function loadRecords() {
+      const response = await fetch('/api/analytics/summary');
+      if (!response.ok) {
+        throw new Error(`Analytics summary request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      document.getElementById('total-pageviews').textContent = data.total_pageviews || 0;
+      document.getElementById('unique-paths').textContent = data.unique_paths || 0;
+      document.getElementById('tracked-paths').textContent = (data.by_path || []).length || 0;
+
+      const rows = (data.recent || []).map((item) => {
+        const when = new Date(item.at).toLocaleString();
+        return `
+          <tr>
+            <td>${when}</td>
+            <td><code>${item.path}</code></td>
+            <td>${item.title || '—'}</td>
+            <td>${item.referrer || '—'}</td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('recent-records').innerHTML = rows || '<tr><td colspan="4">No records yet.</td></tr>';
+    }
+
+    trackPageview();
+    loadRecords().catch((error) => {
+      console.error(error);
+      document.getElementById('recent-records').innerHTML = '<tr><td colspan="4">Unable to load records.</td></tr>';
+    });
+  </script>
+</body>
+</html>
