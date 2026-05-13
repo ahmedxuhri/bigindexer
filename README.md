@@ -1,5 +1,8 @@
 # BGI - Big Indexer
 
+[![Validation](https://img.shields.io/badge/Validation-Page-blue)](https://bigindexer.com/validation)
+[![ahmedxuhri/bigindexer MCP server](https://glama.ai/mcp/servers/ahmedxuhri/bigindexer/badges/score.svg)](https://glama.ai/mcp/servers/ahmedxuhri/bigindexer)
+
 <!-- mcp-name: io.github.ahmedxuhri/bigindexer -->
 
 > Copyright (c) 2026 Ahmed Xuhri — Licensed under Apache-2.0.
