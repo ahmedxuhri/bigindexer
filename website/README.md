@@ -1,14 +1,13 @@
 # Big Indexer Website
 
-Landing page and waitlist for the Big Indexer MCP public launch.
+Public site for Big Indexer validation evidence and launch updates.
 
-> Current public validation lives at `https://bigindexer.com/validation`.
+> Current validation evidence lives at `https://bigindexer.com/validation`.
 
 ## Features
 
-- 🎨 Beautiful responsive landing page
-- ⏰ Waitlist signup with email validation
-- 📊 Real-time waitlist status
+- 🎨 Responsive landing page
+- 📊 Public validation evidence and summary API
 - ✨ Modern UI with gradient theme
 - 🚀 One-click deployment to Azure
 
@@ -132,6 +131,12 @@ Get full waitlist (admin only).
   "emails": ["user1@example.com", "user2@example.com", ...]
 }
 ```
+
+### GET `/validation`
+Open the public validation evidence page.
+
+### GET `/api/validation/summary`
+Return the current validation summary JSON for the 100-run / 3-model evidence set.
 
 ## Costs
 

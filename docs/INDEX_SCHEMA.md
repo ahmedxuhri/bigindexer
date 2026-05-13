@@ -1,13 +1,15 @@
-# BGI Interactive Search Index — Phase 6 Task 1 Design
+# BGI Interactive Search Index Schema
 
 ## Executive Summary
 
-This document specifies the index schema for BGI's interactive search layer. The goal is **sub-second search** on large codebases (3.6M LOC) by pre-computing and structuring Gate 1-3 output into queryable indexes.
+This document is the current SQLite schema reference for BGI's interactive search layer. The live implementation is in `bgi/indexer/schema.py`, `bgi/indexer/builder.py`, and `bgi/indexer/planner.py`, with coverage in `tests/test_index_schema.py` and `tests/test_query_planner.py`.
+
+The goal is **sub-second search** on large codebases by pre-computing and structuring Gate 1-3 output into queryable indexes.
 
 **Key Design Principles:**
 1. **Fast Scope Narrowing:** Quickly identify candidate units/clusters from a query
 2. **Incremental:** Support adding/updating units without full re-indexing
-3. **Memory-Efficient:** Index large repos without excessive RAM (target: <1GB for 3.6M LOC)
+3. **Memory-Efficient:** Index large repos without excessive RAM (target: <1GB)
 4. **Language-Agnostic:** Work across all BGI-supported languages
 
 ---
@@ -41,7 +43,7 @@ From each cluster (DRS result), we extract:
 
 ## 2. Index Schema (SQLite)
 
-All indexes stored in `bgi/index.db` (SQLite):
+All indexes are stored in `bgi/index.db` (SQLite):
 
 ```sql
 -- Unit index (primary search target)
@@ -65,6 +67,7 @@ CREATE TABLE units (
 CREATE INDEX idx_units_file ON units(file_path);
 CREATE INDEX idx_units_name ON units(name);
 CREATE INDEX idx_units_language ON units(language);
+CREATE INDEX idx_units_exported ON units(is_exported);
 
 -- Edge index (relationship queries)
 CREATE TABLE edges (
@@ -82,6 +85,7 @@ CREATE TABLE edges (
 CREATE INDEX idx_edges_source ON edges(source_id);
 CREATE INDEX idx_edges_target ON edges(target_id);
 CREATE INDEX idx_edges_type ON edges(edge_type);
+CREATE INDEX idx_edges_forward ON edges(is_forward);
 
 -- Cluster index (architectural queries)
 CREATE TABLE clusters (
@@ -94,6 +98,7 @@ CREATE TABLE clusters (
 );
 
 CREATE INDEX idx_clusters_size ON clusters(size);
+CREATE INDEX idx_clusters_boundary ON clusters(is_boundary);
 
 -- Cluster membership (many-to-many)
 CREATE TABLE cluster_members (
@@ -105,6 +110,7 @@ CREATE TABLE cluster_members (
 );
 
 CREATE INDEX idx_members_unit ON cluster_members(unit_id);
+CREATE INDEX idx_members_cluster ON cluster_members(cluster_id);
 
 -- Inverted index for full-text search (tokenized names)
 CREATE TABLE symbol_index (
@@ -122,7 +128,7 @@ CREATE TABLE index_meta (
     value TEXT,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
--- Typical rows: ("version", "1.0"), ("repo_commit", "abc123"), ("built_at", "2026-05-07T15:00:00Z")
+-- Typical row: ("schema_version", "1.0")
 ```
 
 ---
@@ -188,37 +194,34 @@ LIMIT 50;
 
 ---
 
-### Pattern 5: Token-Based Search
-```sql
--- Find all units with specific COV token (e.g., all FETCH operations)
-SELECT u.* FROM units u
-WHERE u.fingerprint JSON_CONTAINS(u.fingerprint, '"FETCH"', '$.tokens')
-ORDER BY u.language, u.file_path;
-```
-**Response Time:** <500ms
+### Pattern 5: Fingerprint Overlap
+Fingerprint matching is computed in `QueryPlanner._compute_fingerprint_score()` by loading `units.fingerprint` JSON and comparing token sets in Python.
+
+Direct SQL is used only to fetch the candidate rows; the overlap score and ranking happen in the planner layer.
 
 ---
 
 ## 4. Index Building Process
 
-### Phase: Pre-indexing (after Gate 3)
+### Current build pipeline
 ```
-1. Load Gate 1 units.jsonl → populate `units` table
-2. Load Gate 2 edges.jsonl → populate `edges` table
-3. Load Gate 3 clusters.jsonl + fuse-graph.json → populate `clusters` + `cluster_members` tables
-4. Tokenize unit names → populate `symbol_index` (inverted index)
-5. Analyze & classify clusters → update `clusters.cluster_type`
-6. Run VACUUM & ANALYZE on index.db for optimization
+1. Load Gate 1 `units.jsonl` → populate `units`
+2. Load Gate 2 `edges.jsonl` → populate `edges`
+3. Load Gate 3 `clusters.jsonl` + `fuse-graph.json` → populate `clusters` + `cluster_members`
+4. Tokenize unit names → populate `symbol_index`
+5. Classify clusters → update `clusters.cluster_type`
+6. Run `VACUUM` + `ANALYZE` on `index.db`
 ```
 
-**Time on kubernetes (3.6M LOC):**
+**Sizing estimates:** these are design targets, not current repo-wide benchmarks.
+
 - Load units (162k): ~500ms
 - Load edges (8.6M): ~2s
 - Load clusters (14k): ~200ms
 - Tokenize & invert: ~1s
-- **Total: ~4s** (can run offline after Gate 3)
+- **Total: ~4s** (offline after Gate 3)
 
-### Phase: Incremental Update
+### Incremental update
 For CI/incremental mode:
 ```
 1. Identify changed files & their units
@@ -238,11 +241,11 @@ For CI/incremental mode:
 | Symbol search | <100ms | Indexed lookup + LIMIT |
 | 1-hop neighbors | <200ms | Single JOIN on indexed edge |
 | Cluster discovery | <300ms | JOIN on cluster membership |
-| Token search | <500ms | JSON_CONTAINS scan |
+| Fingerprint overlap | <1ms/candidate | Python Jaccard over `units.fingerprint` |
 | Multi-hop (2-3) | <1s | Repeated JOINs, LIMIT results |
 
 ### Memory Usage
-- **Index size on kubernetes:** ~300MB (indexes + B-tree overhead)
+- **Index size:** ~300MB (indexes + B-tree overhead)
 - **In-memory query cache:** ~50MB (LRU for frequent queries)
 - **Total:** <400MB ✅ (well under 1GB target)
 
@@ -254,7 +257,7 @@ To support fast re-indexing on file changes:
 
 ### Change Detection
 ```python
-# In pipeline.py after Gate 1
+# In the indexing pipeline after Gate 1
 changed_units = {u.id: u for u in new_units if u.id not in old_index}
 deleted_units = old_index.keys() - {u.id for u in new_units}
 
@@ -277,22 +280,19 @@ Future additions (without schema changes):
 
 ---
 
-## 8. Deliverables
+## 8. Current implementation surfaces
 
-**Phase 6 Task 1 Output:**
-1. `docs/INDEX_SCHEMA.md` — this document
-2. `bgi/bgi/indexer/__init__.py` — module marker
-3. `bgi/bgi/indexer/schema.py` — SQL schema creation & migrations
-4. `tests/test_index_schema.py` — schema validation tests
-
-**Next Task:** Implement indexing engine (build indexes from Gate 1-3 output)
+1. `bgi/indexer/schema.py` — SQLite schema creation, verification, and stats
+2. `bgi/indexer/builder.py` — Gate 1-3 ingestion into the schema
+3. `bgi/indexer/planner.py` — token, edge, locality, and fingerprint ranking
+4. `tests/test_index_schema.py` — schema coverage
+5. `tests/test_index_builder.py`, `tests/test_query_planner.py` — build and lookup coverage
 
 ---
 
-## 9. Success Criteria
+## 9. Current verification
 
-- ✅ Schema supports all 5 query patterns (<500ms)
-- ✅ Index size <300MB on kubernetes
-- ✅ Build time <5s after Gate 3
-- ✅ All tests passing
-- ✅ Incremental updates working
+- ✅ Required tables exist: `units`, `edges`, `clusters`, `cluster_members`, `symbol_index`, `index_meta`
+- ✅ Required indexes exist for lookup, edge traversal, cluster membership, and export filtering
+- ✅ Schema version is stored in `index_meta`
+- ✅ Incremental build and lookup paths are covered by tests

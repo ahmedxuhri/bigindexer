@@ -3,326 +3,400 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Big Indexer - Architecture Analysis at Scale</title>
+  <title>Big Indexer — Public Validation & MCP</title>
+  <meta name="description" content="Big Indexer public site with validation evidence, MCP docs, and the current 100-run / 3-model summary.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="shortcut icon" href="/favicon.svg">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f7f8ff;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #5b6472;
+      --purple: #667eea;
+      --purple-dk: #4f63c9;
+      --purple-lt: #eef2ff;
+      --violet: #8b5cf6;
+      --green: #16a34a;
+      --green-lt: #f0fdf4;
+      --orange: #f97316;
+      --orange-lt: #fff7ed;
+      --line: #e5e7eb;
+      --shadow: 0 18px 50px rgba(31, 41, 55, 0.14);
     }
-    
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(102, 126, 234, 0.18), transparent 32%),
+        linear-gradient(135deg, #f8f9ff 0%, #f4f6ff 100%);
     }
-    
+
+    a { color: inherit; }
+
+    .wrap {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+    }
+
     header {
-      padding: 2rem;
-      color: white;
-      text-align: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(255, 255, 255, 0.72);
+      border-bottom: 1px solid rgba(229, 231, 235, 0.7);
     }
-    
-    header h1 {
-      font-size: 2.5rem;
-      margin-bottom: 0.5rem;
-      font-weight: 700;
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      min-height: 68px;
     }
-    
-    header p {
-      font-size: 1.1rem;
-      opacity: 0.9;
-    }
-    
-    main {
-      flex: 1;
+
+    .brand {
       display: flex;
       align-items: center;
-      justify-content: center;
-      padding: 2rem;
+      gap: 0.65rem;
+      text-decoration: none;
+      font-weight: 800;
+      color: var(--text);
     }
-    
-    .container {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      max-width: 600px;
-      width: 100%;
-      padding: 3rem;
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      color: white;
+      background: linear-gradient(135deg, var(--purple) 0%, #764ba2 100%);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.28);
     }
-    
-    .container h2 {
-      color: #333;
-      margin-bottom: 1rem;
-      font-size: 1.8rem;
-    }
-    
-    .features {
-      margin: 2rem 0;
-      padding: 2rem 0;
-      border-top: 1px solid #eee;
-      border-bottom: 1px solid #eee;
-    }
-    
-    .feature {
-      margin-bottom: 1.5rem;
+
+    nav {
       display: flex;
       gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      font-size: 0.92rem;
     }
-    
-    .feature:last-child {
-      margin-bottom: 0;
+
+    nav a {
+      text-decoration: none;
+      color: var(--muted);
     }
-    
-    .feature-icon {
-      font-size: 1.5rem;
-      flex-shrink: 0;
+
+    nav a:hover { color: var(--purple-dk); }
+
+    main { padding: 3rem 0 4rem; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.2fr 0.9fr;
+      gap: 1.5rem;
+      align-items: stretch;
     }
-    
-    .feature h3 {
-      color: #333;
-      font-size: 1rem;
-      margin-bottom: 0.25rem;
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid rgba(229, 231, 235, 0.9);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
     }
-    
-    .feature p {
-      color: #666;
-      font-size: 0.95rem;
+
+    .hero-copy {
+      padding: 2rem;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      background: var(--purple-lt);
+      color: var(--purple-dk);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin-top: 1rem;
+      font-size: clamp(2.25rem, 5vw, 4rem);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+    }
+
+    .lede {
+      margin-top: 1rem;
+      color: var(--muted);
+      font-size: 1.02rem;
+      line-height: 1.7;
+      max-width: 62ch;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1.6rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.9rem 1.15rem;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 700;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--purple) 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 12px 26px rgba(102, 126, 234, 0.26);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .stats {
+      padding: 1.4rem;
+      display: grid;
+      gap: 0.85rem;
+    }
+
+    .stat-card {
+      background: linear-gradient(180deg, #ffffff 0%, #fbfbff 100%);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 1rem 1rem 0.9rem;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 0.77rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .stat-value {
+      margin-top: 0.35rem;
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--purple-dk);
+      line-height: 1;
+    }
+
+    .stat-note {
+      margin-top: 0.35rem;
+      color: var(--muted);
+      font-size: 0.88rem;
       line-height: 1.5;
     }
-    
-    form {
-      margin-top: 2rem;
-    }
-    
-    .form-group {
-      margin-bottom: 1rem;
-    }
-    
-    input[type="text"],
-    input[type="email"] {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 1rem;
-      font-family: inherit;
-    }
-    
-    input[type="text"]:focus,
-    input[type="email"]:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-    
-    input[type="text"]::placeholder,
-    input[type="email"]::placeholder {
-      color: #999;
-    }
-    
-    button {
-      width: 100%;
-      padding: 1rem;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-    }
-    
-    button:active {
-      transform: translateY(0);
-    }
-    
-    .message {
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
       margin-top: 1rem;
-      padding: 1rem;
-      border-radius: 6px;
-      text-align: center;
-      font-weight: 500;
-      display: none;
     }
-    
-    .message.success {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
-      display: block;
+
+    .info-card {
+      padding: 1.25rem;
     }
-    
-    .message.error {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-      display: block;
+
+    .info-card h2,
+    .info-card h3 {
+      font-size: 1.05rem;
+      margin-bottom: 0.55rem;
     }
-    
-    .status {
-      margin-top: 2rem;
-      text-align: center;
-      color: #666;
+
+    .info-card p {
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 0.94rem;
+    }
+
+    .info-card ul {
+      margin-top: 0.75rem;
+      padding-left: 1.1rem;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 0.94rem;
+    }
+
+    .callout {
+      margin-top: 1rem;
+      padding: 1rem 1.1rem;
+      border-radius: 14px;
+      background: var(--green-lt);
+      border-left: 4px solid var(--green);
+      color: #14532d;
+      line-height: 1.6;
+      font-size: 0.94rem;
+    }
+
+    .site-footer {
+      padding: 1.8rem 0 2.4rem;
+      color: var(--muted);
       font-size: 0.9rem;
     }
-    
-    footer {
-      text-align: center;
-      padding: 1.5rem;
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 0.9rem;
-    }
-    
-    a {
-      color: rgba(255, 255, 255, 0.9);
+
+    .site-footer a {
+      color: var(--purple-dk);
       text-decoration: none;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.5);
     }
-    
-    a:hover {
-      border-bottom: 1px solid rgba(255, 255, 255, 0.9);
+
+    .site-footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 900px) {
+      .hero,
+      .grid { grid-template-columns: 1fr; }
+      nav { justify-content: flex-start; }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>🗺️ Big Indexer</h1>
-    <p>Architecture analysis at scale. Architecture summaries for real codebases.</p>
+    <div class="wrap topbar">
+      <a class="brand" href="/">
+        <span class="brand-mark">B</span>
+        <span>Big Indexer</span>
+      </a>
+      <nav>
+        <a href="/validation">Validation</a>
+        <a href="/api/validation/summary">API</a>
+        <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/docs/MCP_SETUP.md" target="_blank" rel="noopener">Docs</a>
+        <a href="https://github.com/ahmedxuhri/bigindexer" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
   </header>
-  
+
   <main>
-    <div class="container">
-      <h2>Join the Waitlist</h2>
-      
-      <div class="features">
-        <div class="feature">
-          <div class="feature-icon">✨</div>
-          <div>
-            <h3>Real Architecture Analysis</h3>
-            <p>Get actual structural insights from your codebase, not guesses from training data.</p>
+    <div class="wrap">
+      <section class="hero">
+        <div class="panel hero-copy">
+          <div class="eyebrow">Public validation is live</div>
+          <h1>Big Indexer turns architecture into evidence.</h1>
+          <p class="lede">
+            The public site now centers the current validation record, MCP setup, and the BGI-TWIN workflow.
+            Use the evidence page to inspect the full 100-run / 3-model result set, or jump straight to the API if you want the JSON summary.
+          </p>
+          <div class="actions">
+            <a class="btn btn-primary" href="/validation">View validation evidence</a>
+            <a class="btn btn-secondary" href="https://github.com/ahmedxuhri/bigindexer/blob/master/docs/MCP_SETUP.md" target="_blank" rel="noopener">Read MCP setup</a>
+            <a class="btn btn-secondary" href="https://github.com/ahmedxuhri/bigindexer/tree/master/validation/runs" target="_blank" rel="noopener">Browse raw runs</a>
+          </div>
+          <div class="callout">
+            Current public state: the validation page, MCP docs, and index schema docs are current; the old waitlist copy has been replaced with product and evidence language.
           </div>
         </div>
-        
-        <div class="feature">
-          <div class="feature-icon">🔗</div>
-          <div>
-            <h3>MCP Integration</h3>
-            <p>Use BigIndexer with OpenCode, GitHub Copilot, and Gemini CLIs via MCP protocol.</p>
+
+        <aside class="panel stats" aria-label="Validation summary">
+          <div class="stat-card">
+            <div class="stat-label">Scored runs</div>
+            <div class="stat-value" id="summary-runs">100</div>
+            <div class="stat-note">Across baseline, MCP, and three-model TWIN replication.</div>
           </div>
-        </div>
-        
-        <div class="feature">
-          <div class="feature-icon">📊</div>
-          <div>
-            <h3>Architectural Boundaries</h3>
-            <p>Identify clusters, integration seams, and refactoring opportunities automatically.</p>
+          <div class="stat-card">
+            <div class="stat-label">TWIN actionability</div>
+            <div class="stat-value" id="summary-actionability">4.75</div>
+            <div class="stat-note">BGI-TWIN deepseek refresh average.</div>
           </div>
+          <div class="stat-card">
+            <div class="stat-label">Boundary accuracy</div>
+            <div class="stat-value" id="summary-boundary">1.00</div>
+            <div class="stat-note">Held across the TWIN refresh and replications.</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Median latency</div>
+            <div class="stat-value" id="summary-latency">68.5s</div>
+            <div class="stat-note">TWIN median latency, with GPT-4o faster and Gemini close behind.</div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="grid" style="margin-top:1rem;">
+        <div class="panel info-card">
+          <h2>What Big Indexer does</h2>
+          <p>It indexes Gate 1-3 output into SQLite so MCP tools can answer architectural questions with real repo anchors.</p>
+          <ul>
+            <li>Gate 1 units, Gate 2 edges, Gate 3 clusters</li>
+            <li>Query planning with symbol, edge, locality, and fingerprint ranking</li>
+            <li>Public validation evidence with raw outputs and scoring rubric</li>
+          </ul>
         </div>
-      </div>
-      
-      <form id="waitlist-form">
-        <div class="form-group">
-          <input 
-            type="text" 
-            id="name" 
-            placeholder="Your name" 
-            required
-          >
+
+        <div class="panel info-card">
+          <h2>What changed recently</h2>
+          <p>The public site now reflects the current project state instead of the old launch waitlist framing.</p>
+          <ul>
+            <li>Homepage now points at validation and docs</li>
+            <li>Validation API reports the 100-run summary</li>
+            <li>Index schema docs now match the live SQLite stack</li>
+          </ul>
         </div>
-        <div class="form-group">
-          <input 
-            type="email" 
-            id="email" 
-            placeholder="you@example.com" 
-            required
-          >
+
+        <div class="panel info-card">
+          <h2>Best next links</h2>
+          <p>If you want the shortest path into the project, start here.</p>
+          <ul>
+            <li><a href="/validation">Public validation evidence</a></li>
+            <li><a href="/api/validation/summary">Validation summary JSON</a></li>
+            <li><a href="https://github.com/ahmedxuhri/bigindexer/blob/master/docs/MCP_QUICKSTART_DEMO.md" target="_blank" rel="noopener">MCP quickstart demo</a></li>
+          </ul>
         </div>
-        <button type="submit">Notify Me at Launch</button>
-      </form>
-      
-      <div id="message" class="message"></div>
-      
-      <div class="status">
-        <p id="waitlist-count">Loading waitlist status...</p>
+      </section>
+
+      <div class="site-footer">
+        Big Indexer · <a href="/validation">Evidence</a> · <a href="https://github.com/ahmedxuhri/bigindexer" target="_blank" rel="noopener">GitHub</a> · <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/docs/MCP_SETUP.md" target="_blank" rel="noopener">Docs</a>
       </div>
     </div>
   </main>
-  
-  <footer>
-    <p>Made with ❤️ | <a href="https://github.com/ahmedxuhri/bigindexer">GitHub</a> | <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/docs/MCP_SETUP.md">Docs</a> | <a href="/validation">Evidence</a></p>
-  </footer>
-  
+
   <script>
-    const form = document.getElementById('waitlist-form');
-    const messageEl = document.getElementById('message');
-    const statusEl = document.getElementById('waitlist-count');
-    
-    // Load initial status
-    loadWaitlistStatus();
-    
-    async function loadWaitlistStatus() {
+    async function loadSummary() {
       try {
-        const response = await fetch('/api/waitlist/status');
+        const response = await fetch('/api/validation/summary');
+        if (!response.ok) return;
+
         const data = await response.json();
-        statusEl.textContent = `${data.waitlist_size} people on the waitlist`;
-      } catch (error) {
-        console.error('Error loading waitlist status:', error);
-      }
-    }
-    
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const name = document.getElementById('name').value.trim();
-      const email = document.getElementById('email').value.trim();
-      
-      if (!name || !email) {
-        showMessage('Please fill in all fields', 'error');
-        return;
-      }
-      
-      try {
-        const response = await fetch('/api/waitlist/join', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          showMessage(data.error || 'An error occurred', 'error');
-          return;
+        const twin = data.stages && data.stages.bgi_twin;
+
+        if (data.total_scored_runs) {
+          document.getElementById('summary-runs').textContent = data.total_scored_runs;
         }
-        
-        showMessage(`✨ Welcome! You're #${data.position} on the waitlist.`, 'success');
-        form.reset();
-        loadWaitlistStatus();
-        
-        // Re-enable form after success
-        setTimeout(() => {
-          messageEl.classList.remove('success', 'error');
-        }, 5000);
+
+        if (twin) {
+          document.getElementById('summary-actionability').textContent = twin.actionability.toFixed(2);
+          document.getElementById('summary-boundary').textContent = twin.boundary_accuracy.toFixed(2);
+          document.getElementById('summary-latency').textContent = `${twin.median_latency_s.toFixed(1)}s`;
+        }
       } catch (error) {
-        console.error('Error:', error);
-        showMessage('Failed to join waitlist. Please try again.', 'error');
+        console.error('Failed to load validation summary:', error);
       }
-    });
-    
-    function showMessage(text, type) {
-      messageEl.textContent = text;
-      messageEl.className = `message ${type}`;
     }
+
+    loadSummary();
   </script>
 </body>
 </html>

@@ -76,8 +76,8 @@ app.get('/validation', (req, res) => {
 // API: validation summary (JSON)
 app.get('/api/validation/summary', (req, res) => {
   res.json({
-    generated: '2026-05-11',
-    total_scored_runs: 80,
+    generated: '2026-05-12',
+    total_scored_runs: 100,
     stages: {
       baseline: {
         runs: 20,
