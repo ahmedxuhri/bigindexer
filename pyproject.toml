@@ -26,6 +26,8 @@ dependencies = [
     "tree-sitter-elixir==0.3.5",
     "openai>=1.0",                  # OpenAI-compatible client — used for DeepSeek and others
     "mcp>=1.0",                     # MCP server framework (required for bgi mcp)
+    "fastapi>=0.100,<0.101",        # Query API depends on FastAPI/Starlette compatibility
+    "starlette>=0.27,<0.28",
 ]
 
 [project.scripts]
