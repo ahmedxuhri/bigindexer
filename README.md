@@ -23,6 +23,23 @@ bgi mcp --graph bgi-graph.json --fuse-graph fuse-graph.json
 
 Validation: https://bigindexer.com/validation
 
+## GitHub Marketplace Action
+
+Use the PR Architecture Risk Bot to comment on pull requests with blast radius, seam, and twin-based risk hints.
+
+```yaml
+permissions:
+  pull-requests: write
+  contents: read
+
+steps:
+  - uses: actions/checkout@v4
+  - uses: ahmedxuhri/bigindexer@v0.1.2
+    with:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+      task-prompt: "Review this PR for architecture risk."
+```
+
 ## What problem this solves
 
 Most architecture graphs fail at scale in two ways:
@@ -226,6 +243,7 @@ Return top twin candidate, seam suggestion, and rubric checklist.
 - `docs/INDEX_SCHEMA.md` - interactive index schema
 - `docs/QUERY_PLANNER.md` - query planner scoring
 - `docs/MCP_SETUP.md` - MCP server setup and usage
+- `docs/GITHUB_ACTION_PR_RISK_BOT.md` - PR Architecture Risk Bot usage
 - `https://bigindexer.com/validation` - public validation evidence
 - `docs/MCP_QUICKSTART_DEMO.md` - 5-minute demo walkthrough
 - `docs/MCP_EXAMPLE_TRANSCRIPTS.md` - real-world MCP tool invocation examples
