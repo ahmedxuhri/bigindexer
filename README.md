@@ -23,6 +23,12 @@ bgi mcp --graph bgi-graph.json --fuse-graph fuse-graph.json
 
 Validation: https://bigindexer.com/validation
 
+## PR Architecture Risk Bot
+
+The Marketplace Action now lives in a dedicated repo:
+
+https://github.com/ahmedxuhri/bigindexer-pr-risk-bot
+
 ## What problem this solves
 
 Most architecture graphs fail at scale in two ways:
