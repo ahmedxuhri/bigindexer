@@ -17,7 +17,7 @@ Project domain: `bigindexer.com`
 Big Indexer is published in the MCP Registry as `io.github.ahmedxuhri/bigindexer`.
 
 ```bash
-pip install bigindexer==0.1.2
+pip install bigindexer==0.1.3
 bgi mcp --graph bgi-graph.json --fuse-graph fuse-graph.json
 ```
 
@@ -34,7 +34,7 @@ permissions:
 
 steps:
   - uses: actions/checkout@v4
-  - uses: ahmedxuhri/bigindexer@v0.1.2
+  - uses: ahmedxuhri/bigindexer@v0.1.3
     with:
       github-token: ${{ secrets.GITHUB_TOKEN }}
       task-prompt: "Review this PR for architecture risk."

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bigindexer"
-version = "0.1.2"
+version = "0.1.3"
 description = "Big Indexer — language-agnostic hierarchical code intelligence"
 requires-python = ">=3.10"
 readme = {file = "README.md", content-type = "text/markdown"}

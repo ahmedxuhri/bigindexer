@@ -32,7 +32,7 @@ permissions:
 ```yaml
 steps:
   - uses: actions/checkout@v4
-  - uses: ahmedxuhri/bigindexer@v0.1.2
+  - uses: ahmedxuhri/bigindexer@v0.1.3
     with:
       github-token: ${{ secrets.GITHUB_TOKEN }}
       task-prompt: "Review this change for architectural risk."
