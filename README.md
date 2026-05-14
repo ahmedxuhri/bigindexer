@@ -8,8 +8,6 @@
 
 <!-- mcp-name: io.github.ahmedxuhri/bigindexer -->
 
-> Copyright (c) 2026 Ahmed Xuhri — Licensed under Apache-2.0.
-
 BGI is a static architecture analysis tool for large codebases.
 It groups code units by **behavioral role** and emits explicit architectural boundaries.
 Project domain: `bigindexer.com`
@@ -233,5 +231,4 @@ Return top twin candidate, seam suggestion, and rubric checklist.
 ## License and Copyright
 
 - License: Apache License 2.0 (`LICENSE`)
-- Copyright holder: bigindexer.com
 - Contributor terms: Developer Certificate of Origin (`DCO`) enforced on pull requests
