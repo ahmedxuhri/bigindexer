@@ -32,12 +32,16 @@ Most architecture graphs fail at scale in two ways:
 
 BGI is built to keep both under control, so the output remains usable on large repos.
 
-## What you can do with it (practical outcomes)
+## What you can do with it
 
-1. Find probable component boundaries for refactoring and ownership.
-2. Spot high-coupling seams between subsystems.
-3. Generate machine-readable architecture artifacts (`bgi-graph.json`, `fuse-graph.json`) plus optional human-readable context (`bigindexer.md`) for automation and review.
-4. Feed AI agents implementation-oriented MCP context (`task_fingerprint`, `behavioral_twins`, `twin_context`) so they start from proven in-repo patterns.
+1. **"Where should this boundary be before we refactor?"**  
+   BGI groups units by behavioral role (COV tokens + DRS clustering) so likely component boundaries are visible.
+2. **"Which subsystem coupling is risky?"**  
+   BGI surfaces high-coupling seams and fuse-boundary signals between clusters so integration risk is easier to spot.
+3. **"How do we plug architecture data into automation?"**  
+   BGI emits machine-readable artifacts (`bgi-graph.json`, `fuse-graph.json`) plus optional human context (`bigindexer.md`).
+4. **"How do we make AI changes less random?"**  
+   MCP tools (`task_fingerprint`, `behavioral_twins`, `twin_context`) ground prompts in in-repo behavior patterns.
 
 ---
 
