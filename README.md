@@ -23,23 +23,6 @@ bgi mcp --graph bgi-graph.json --fuse-graph fuse-graph.json
 
 Validation: https://bigindexer.com/validation
 
-## GitHub Marketplace Action
-
-Use the PR Architecture Risk Bot to comment on pull requests with blast radius, seam, and twin-based risk hints.
-
-```yaml
-permissions:
-  pull-requests: write
-  contents: read
-
-steps:
-  - uses: actions/checkout@v4
-  - uses: ahmedxuhri/bigindexer@v0.1.3
-    with:
-      github-token: ${{ secrets.GITHUB_TOKEN }}
-      task-prompt: "Review this PR for architecture risk."
-```
-
 ## What problem this solves
 
 Most architecture graphs fail at scale in two ways:
