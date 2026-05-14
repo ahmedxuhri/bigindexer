@@ -216,17 +216,6 @@ Return top twin candidate, seam suggestion, and rubric checklist.
 
 ---
 
-## Current project status
-
-- Phase 1 quality architecture: complete
-- Phase 5 Water-Clock: complete
-- Phase 6 interactive index/search: complete
-- Phase 7 Option B (Gate 2 performance tuning): complete
-- Phase 8 MCP + BGI-TWIN context packaging: shipped (full 20-run post-shipment refresh + GPT-4o + Gemini replication complete)
-- Phase 9 public launch: in progress (local/public doc split complete; registry submission next)
-
----
-
 ## Documentation map
 
 - `MEMORANDUM.md` - design contracts and invariants
