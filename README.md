@@ -5,6 +5,7 @@
 [![License](https://img.shields.io/github/license/ahmedxuhri/bigindexer.svg)](https://github.com/ahmedxuhri/bigindexer/blob/master/LICENSE)
 [![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen)](https://bigindexer.com/validation)
 [![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue)](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.ahmedxuhri/bigindexer)
+[![PR Risk Bot Action](https://img.shields.io/badge/PR%20Risk%20Bot-Action-blueviolet)](https://github.com/ahmedxuhri/bigindexer-pr-risk-bot)
 
 <!-- mcp-name: io.github.ahmedxuhri/bigindexer -->
 
@@ -22,12 +23,6 @@ bgi mcp --graph bgi-graph.json --fuse-graph fuse-graph.json
 ```
 
 Validation: https://bigindexer.com/validation
-
-## PR Architecture Risk Bot
-
-The Marketplace Action now lives in a dedicated repo:
-
-https://github.com/ahmedxuhri/bigindexer-pr-risk-bot
 
 ## What problem this solves
 
@@ -48,6 +43,8 @@ BGI is built to keep both under control, so the output remains usable on large r
    BGI emits machine-readable artifacts (`bgi-graph.json`, `fuse-graph.json`) plus optional human context (`bigindexer.md`).
 4. **"How do we make AI changes less random?"**  
    MCP tools (`task_fingerprint`, `behavioral_twins`, `twin_context`) ground prompts in in-repo behavior patterns.
+5. **"Can I run this automatically on PRs as a live example?"**  
+   Yes — use the dedicated action repo [`ahmedxuhri/bigindexer-pr-risk-bot`](https://github.com/ahmedxuhri/bigindexer-pr-risk-bot) to auto-comment PRs with blast radius, seams, and risk hints.
 
 ---
 
@@ -232,7 +229,6 @@ Return top twin candidate, seam suggestion, and rubric checklist.
 - `docs/INDEX_SCHEMA.md` - interactive index schema
 - `docs/QUERY_PLANNER.md` - query planner scoring
 - `docs/MCP_SETUP.md` - MCP server setup and usage
-- `docs/GITHUB_ACTION_PR_RISK_BOT.md` - PR Architecture Risk Bot usage
 - `https://bigindexer.com/validation` - public validation evidence
 - `docs/MCP_QUICKSTART_DEMO.md` - 5-minute demo walkthrough
 - `docs/MCP_EXAMPLE_TRANSCRIPTS.md` - real-world MCP tool invocation examples
