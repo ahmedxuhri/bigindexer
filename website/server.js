@@ -5,8 +5,8 @@ const path = require('path');
 
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '0.0.0.0';
+const PORT = process.env.PORT || 3200;
+const HOST = process.env.HOST || '127.0.0.1';
 const analytics = {
   totalPageviews: 0,
   byPath: new Map(),
