@@ -202,9 +202,9 @@ def run_scan(
     if narration.ai_enhanced:
         print(f"[BGI] Narrator AI-enhanced ({ai_model})")
 
-    agents_md_path = Path(output).parent / "agents.md"
-    agents_md_path.write_text(narration.agents_md)
-    print(f"[BGI] Architecture narration written to {agents_md_path}")
+    bigindexer_md_path = Path(output).parent / "bigindexer.md"
+    bigindexer_md_path.write_text(narration.agents_md)
+    print(f"[BGI] Architecture narration written to {bigindexer_md_path}")
 
     # Route manifest (optional)
     if routes_output:

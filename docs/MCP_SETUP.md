@@ -12,6 +12,8 @@ Run a scan first so MCP tools have data:
 bgi scan /path/to/repo --lang auto --out bgi-graph.json --fuse-graph fuse-graph.json
 ```
 
+This generates required MCP artifacts (`bgi-graph.json`, `fuse-graph.json`) and an optional context note file (`bigindexer.md`).
+
 Optional: build a query index DB if you want ranked symbol search:
 
 ```bash
@@ -27,7 +29,7 @@ From repository root:
 bgi mcp --graph bgi-graph.json --fuse-graph fuse-graph.json --index-db index.db
 ```
 
-If you do not use index DB, omit `--index-db`.
+If you do not use index DB, omit `--index-db`. MCP now fails fast with a clear "run bgi scan first" message when either required graph artifact is missing or invalid JSON.
 
 ## 3) MCP tools exposed
 
@@ -71,6 +73,7 @@ If your client supports environment variables, set them as needed for your works
 
 - Big Indexer MCP is static-analysis based; it does not use runtime traces.
 - `search_symbols` is stronger with `--index-db`; otherwise it falls back to graph scanning.
+- `bigindexer.md` is optional metadata for human/agent context and is not required to start MCP.
 
 ## 7) High-trust prompting (recommended)
 

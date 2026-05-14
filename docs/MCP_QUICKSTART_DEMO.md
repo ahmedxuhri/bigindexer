@@ -19,6 +19,7 @@ cd /tmp/demo-repo
 
 # Scan it with Big Indexer
 bgi scan . --lang auto --out bgi-graph.json --fuse-graph fuse-graph.json
+# Optional human-readable context is also generated as bigindexer.md
 
 # Create MCP config (copy-paste this into your CLI directory or use --additional-mcp-config)
 cat > mcp-config.json << EOF
@@ -133,12 +134,13 @@ Flask's architecture centers around three core areas:
 
 ## Troubleshooting
 
-### "MCP server not found"
+### "MCP server exits at startup"
 
 ```bash
-# Ensure config points to absolute paths:
-# Use $(pwd) or full /path/to instead of relative paths
-opencode run --dir /path/to/repo --additional-mcp-config '{"mcpServers": {...}}'
+# Make sure required scan artifacts exist and are valid JSON:
+bgi scan /path/to/repo --out bgi-graph.json --fuse-graph fuse-graph.json
+
+# Then run MCP with absolute artifact paths in your config.
 ```
 
 ### "No MCP tool invocation in response"

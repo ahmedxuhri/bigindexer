@@ -153,12 +153,18 @@ class ArchitectureContextService:
     def _load_graph(self) -> dict[str, Any]:
         if not self.graph_path.exists():
             raise FileNotFoundError(f"Graph file not found: {self.graph_path}")
-        return json.loads(self.graph_path.read_text(encoding="utf-8"))
+        try:
+            return json.loads(self.graph_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid graph JSON at {self.graph_path}: {exc}") from exc
 
     def _load_fuse_graph(self) -> dict[str, Any]:
         if not self.fuse_graph_path.exists():
-            return {"meta": {}, "boundary_clusters": [], "bridges": []}
-        return json.loads(self.fuse_graph_path.read_text(encoding="utf-8"))
+            raise FileNotFoundError(f"Fuse graph file not found: {self.fuse_graph_path}")
+        try:
+            return json.loads(self.fuse_graph_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid fuse graph JSON at {self.fuse_graph_path}: {exc}") from exc
 
     def reload(self) -> dict[str, Any]:
         """Reload graph/fuse artifacts from disk."""

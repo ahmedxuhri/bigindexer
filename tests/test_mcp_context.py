@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from bgi.mcp.context import ArchitectureContextService, cluster_id_from_rep
 
 
@@ -367,3 +369,19 @@ def test_twin_context_escalates_for_vague_task(tmp_path: Path):
     assert ctx["status"] == "needs_more_context"
     assert ctx["confidence_gate"]["status"] == "no_confident_twin"
     assert "escalation" in ctx
+
+
+def test_service_requires_fuse_graph_artifact(tmp_path: Path):
+    graph_path, fuse_path, _ = _build_artifacts(tmp_path)
+    fuse_path.unlink()
+
+    with pytest.raises(FileNotFoundError, match="Fuse graph file not found"):
+        ArchitectureContextService(str(graph_path), str(fuse_path))
+
+
+def test_service_rejects_invalid_graph_json(tmp_path: Path):
+    graph_path, fuse_path, _ = _build_artifacts(tmp_path)
+    graph_path.write_text("{not-json", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Invalid graph JSON"):
+        ArchitectureContextService(str(graph_path), str(fuse_path))

@@ -2,17 +2,17 @@
 AI Position 3 — Architecture Narrator.
 
 Consumes the fully assembled BGI graph and produces two outputs:
-  1. agents.md  — structured markdown for AI agent consumption
+  1. bigindexer.md  — structured markdown for AI agent consumption
   2. A plain-text architecture summary for humans (logged to stdout or file)
 
 Design:
-  - Heuristic pass always runs: produces a deterministic, rule-based agents.md with no API cost.
+  - Heuristic pass always runs: produces a deterministic, rule-based markdown context with no API cost.
   - AI pass (when enabled): sends heuristic draft + graph context to an LLM (DeepSeek by default,
     any OpenAI-compatible provider works) to enrich cluster names, add architectural intent,
     and flag notable relationships.
-  - Output is written to <output_dir>/agents.md alongside the JSON graph.
+  - Output is written to <output_dir>/bigindexer.md alongside the JSON graph.
 
-agents.md format:
+bigindexer.md format:
   # BGI Architecture — <root>
   ## Clusters
   ### <cluster_name>  [HARD|SOFT] [CROSS-FILE]
@@ -33,7 +33,7 @@ Quick start (with DeepSeek):
         client=make_deepseek_client("sk-..."),
     )
     result = narrator.narrate(graph, root="my_service")
-    Path("agents.md").write_text(result.agents_md)
+    Path("bigindexer.md").write_text(result.agents_md)
 """
 from __future__ import annotations
 

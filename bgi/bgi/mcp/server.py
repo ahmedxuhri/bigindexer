@@ -7,8 +7,36 @@ SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
 import argparse
+import json
+from pathlib import Path
 
 from bgi.mcp.context import ArchitectureContextService
+
+
+def _resolve_fuse_path(graph_path: str, fuse_graph_path: str | None) -> Path:
+    if fuse_graph_path:
+        return Path(fuse_graph_path)
+    return Path(graph_path).with_name("fuse-graph.json")
+
+
+def _scan_hint(graph_path: str, fuse_path: Path) -> str:
+    return (
+        "Run a scan first, for example:\n"
+        f"  bgi scan /path/to/repo --out {graph_path} --fuse-graph {fuse_path}"
+    )
+
+
+def _require_json_artifact(path: Path, label: str, hint: str) -> None:
+    if not path.exists():
+        raise RuntimeError(f"Missing required {label} file: {path}\n{hint}")
+    try:
+        json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"Invalid JSON in required {label} file: {path}\n"
+            f"JSON error: {exc.msg} (line {exc.lineno}, column {exc.colno})\n"
+            f"{hint}"
+        ) from exc
 
 
 def create_mcp_server(
@@ -270,9 +298,34 @@ def run_server(
     fuse_graph_path: str | None = None,
     index_db_path: str | None = None,
 ) -> None:
+    resolved_fuse_path = _resolve_fuse_path(graph_path, fuse_graph_path)
+    hint = _scan_hint(graph_path, resolved_fuse_path)
+    _require_json_artifact(Path(graph_path), "graph", hint)
+    _require_json_artifact(resolved_fuse_path, "fuse-graph", hint)
+
+    metadata_path = Path(graph_path).with_name("bigindexer.md")
+    if metadata_path.exists():
+        print(f"[BGI] Optional context file detected: {metadata_path}")
+    else:
+        print(
+            "[BGI] Optional context file not found: "
+            f"{metadata_path} (scan can generate it for human-readable architecture notes)."
+        )
+
+    if index_db_path:
+        if Path(index_db_path).exists():
+            print(f"[BGI] Optional index DB enabled: {index_db_path} (ranked symbol search active).")
+        else:
+            print(
+                "[BGI] Optional index DB path not found: "
+                f"{index_db_path} (continuing with graph-based symbol fallback)."
+            )
+    else:
+        print("[BGI] Optional index DB not provided (using graph-based symbol fallback).")
+
     mcp = create_mcp_server(
         graph_path=graph_path,
-        fuse_graph_path=fuse_graph_path,
+        fuse_graph_path=str(resolved_fuse_path),
         index_db_path=index_db_path,
     )
     mcp.run()

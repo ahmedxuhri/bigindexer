@@ -97,3 +97,20 @@ class TestPipelineJSONSerializable:
         assert "total" in s
         assert "pending" in s
         assert "resolved" in s
+
+
+def test_scan_writes_bigindexer_context_and_not_agents(tmp_path):
+    from bgi.pipeline import run_scan
+
+    out = tmp_path / "bgi-graph.json"
+    db = tmp_path / "sep.db"
+
+    run_scan(
+        root=str(FIXTURES_DIR),
+        language="python",
+        output=str(out),
+        db=str(db),
+    )
+
+    assert (tmp_path / "bigindexer.md").exists()
+    assert not (tmp_path / "agents.md").exists()

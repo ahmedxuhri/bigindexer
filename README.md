@@ -38,7 +38,7 @@ BGI is built to keep both under control, so the output remains usable on large r
 
 1. Find probable component boundaries for refactoring and ownership.
 2. Spot high-coupling seams between subsystems.
-3. Generate machine-readable architecture artifacts (`bgi-graph.json`, `fuse-graph.json`) for automation and review.
+3. Generate machine-readable architecture artifacts (`bgi-graph.json`, `fuse-graph.json`) plus optional human-readable context (`bigindexer.md`) for automation and review.
 4. Feed AI agents implementation-oriented MCP context (`task_fingerprint`, `behavioral_twins`, `twin_context`) so they start from proven in-repo patterns.
 
 ---
@@ -101,7 +101,7 @@ Gate 2: create behavioral edges with scoped matching
    ->
 Gate 3: cluster with hard size cap + boundary emission
    ->
-Artifacts: bgi-graph.json, fuse-graph.json, optional routes/graphml/html
+Artifacts: bgi-graph.json, fuse-graph.json, bigindexer.md, optional routes/graphml/html
 ```
 
 Core approach:
