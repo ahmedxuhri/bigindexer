@@ -45,7 +45,6 @@ function getAnalyticsSummary() {
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static('public'));
 
 // In-memory waitlist (in production, use Azure Table Storage or PostgreSQL)
 const waitlist = new Set();
@@ -220,6 +219,9 @@ app.get('/api/validation/summary', (req, res) => {
     raw_outputs: 'https://github.com/ahmedxuhri/bigindexer/tree/master/validation/runs'
   });
 });
+
+// Serve static files (after API routes so /api/* routes are handled first)
+app.use(express.static('public'));
 
 // Catch-all: serve index.html for SPA routing
 app.get('*', (req, res) => {
