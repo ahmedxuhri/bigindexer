@@ -108,10 +108,14 @@ app.get('/api/analytics/summary', (req, res) => {
   res.json(getAnalyticsSummary());
 });
 
-// API: Get waitlist (admin endpoint - in production, require auth)
+// API: Get waitlist (admin endpoint - requires ADMIN_KEY env var)
 app.get('/api/admin/waitlist', (req, res) => {
   const adminKey = req.query.key;
-  const expectedKey = process.env.ADMIN_KEY || 'demo-key';
+  const expectedKey = process.env.ADMIN_KEY;
+
+  if (!expectedKey) {
+    return res.status(503).json({ error: 'Admin key not configured' });
+  }
 
   if (adminKey !== expectedKey) {
     return res.status(403).json({ error: 'Unauthorized' });
