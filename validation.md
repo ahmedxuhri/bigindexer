@@ -2,7 +2,8 @@
 
 > Operational workspace now lives in `validation/`.
 > Use `validation/README.md` as the primary entry point.
-> Current published evidence is in `docs/VALIDATION_EVIDENCE.md` (100 scored runs, deepseek + GPT-4o + Gemini auto).
+> Current published evidence is in `docs/VALIDATION_EVIDENCE.md` (100 scored runs, deepseek + GPT-4o + Gemini auto, plus external benchmark vs Louvain on django + prometheus + gin).
+> Public mirror: `website/public/validation.html`.
 
 This file defines a reproducible validation protocol for **manual + publishable** evidence.
 

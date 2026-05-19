@@ -27,7 +27,13 @@ _TIER1: dict[str, COV] = {
 
 def apply_tier1(node: Node) -> tuple[COV, float] | None:
     token = _TIER1.get(node.type)
-    return (token, 1.0) if token else None
+    if token:
+        return (token, 1.0)
+    if node.type == "unary_expression":
+        op = node.child_by_field_name("operator")
+        if op is not None and node_text(op) == "<-":
+            return (COV.SUBSCRIBE, 1.0)
+    return None
 
 
 _INIT_NAMES = {"init", "setup", "bootstrap"}
@@ -50,18 +56,31 @@ def apply_tier3(annotation: str) -> list[tuple[COV, float]]:
     return []
 
 
-_PERSIST_METHODS = {"save", "insert", "create", "write", "persist", "add", "put", "store", "upsert"}
-_FETCH_METHODS = {"find", "get", "read", "query", "fetch", "load", "select", "filter", "findone", "findall", "findby"}
-_EMIT_METHODS = {"emit", "publish", "dispatch", "send", "broadcast", "trigger", "next"}
-_SUBSCRIBE_METHODS = {"on", "subscribe", "listen"}
-_TRANSFORM_METHODS = {"map", "transform", "convert", "serialize", "deserialize", "encode", "decode", "format", "parse"}
+_PERSIST_METHODS = {"save", "insert", "create", "write", "persist", "add", "put", "store", "upsert",
+                    "exec", "execcontext", "writeto", "writefile", "writeall"}
+_FETCH_METHODS = {"find", "get", "read", "query", "fetch", "load", "select", "filter", "findone", "findall", "findby",
+                  "querycontext", "queryrow", "queryrowcontext", "scan", "readfile", "readall", "lookup", "search"}
+_EMIT_METHODS = {"emit", "publish", "dispatch", "send", "broadcast", "trigger", "next", "notify", "fire"}
+_SUBSCRIBE_METHODS = {"on", "subscribe", "listen", "receive", "watch", "observe"}
+_TRANSFORM_METHODS = {"map", "transform", "convert", "serialize", "deserialize", "encode", "decode", "format", "parse",
+                      "marshal", "unmarshal", "marshaljson", "unmarshaljson"}
 _MUTATE_METHODS = {"update", "append", "push", "splice", "pop", "delete", "remove", "clear", "set", "patch"}
-_VALIDATE_METHODS = {"validate", "check", "ensure", "verify", "assert"}
-_RAISE_METHODS = {"panic"}
+_VALIDATE_METHODS = {"validate", "check", "ensure", "verify", "assert", "ispresent", "isvalid"}
+_RAISE_METHODS = {"panic", "fatal", "fatalln", "fatalf"}
 _RECOVER_METHODS = {"recover"}
 _ASYNC_METHODS = {"go", "spawn"}
-_LOG_OBJECTS = {"log", "logger"}
-_MEASURE_OBJECTS = {"metrics", "statsd", "counter", "gauge", "histogram", "timer", "telemetry", "prometheus"}
+_TEARDOWN_METHODS = {"close", "stop", "shutdown", "cancel", "release", "unlock", "rwunlock", "done", "wait", "wg.done"}
+_AUTHN_METHODS = {"authenticate", "login", "signin", "verifytoken", "verifycredentials", "checkpassword", "verifypassword"}
+_AUTHZ_METHODS = {"authorize", "requireauth", "requirepermission", "requirerole", "checkpermission", "haspermission", "canaccess"}
+
+_HTTP_ROUTE_METHODS = {"handlefunc", "handle", "get", "post", "put", "delete", "patch", "head", "options",
+                        "any", "use", "group", "subrouter", "pathprefix"}
+_HTTP_ROUTE_OBJECTS = {"http", "mux", "router", "r", "app", "engine", "g", "api", "rg",
+                        "v1", "v2", "echo", "fiber", "gin", "chi", "mux.router"}
+
+_LOG_OBJECTS = {"log", "logger", "slog", "klog", "zap", "logrus", "zerolog", "glog"}
+_MEASURE_OBJECTS = {"metrics", "statsd", "counter", "gauge", "histogram", "timer", "telemetry", "prometheus",
+                     "meter", "tracer", "span", "otel", "observability"}
 
 
 def apply_tier4(call_node: Node) -> list[tuple[COV, float]]:
@@ -84,6 +103,15 @@ def apply_tier4(call_node: Node) -> list[tuple[COV, float]]:
     lowered = method.lower()
     obj_lower = obj.lower()
 
+    if lowered in _HTTP_ROUTE_METHODS and (obj_lower in _HTTP_ROUTE_OBJECTS
+                                            or any(o in obj_lower for o in _HTTP_ROUTE_OBJECTS)):
+        results.append((COV.ROUTE, 0.85))
+
+    if lowered in _AUTHN_METHODS:
+        results.append((COV.AUTHENTICATE, 0.8))
+    if lowered in _AUTHZ_METHODS:
+        results.append((COV.AUTHORIZE, 0.8))
+
     if lowered in _PERSIST_METHODS:
         results.append((COV.PERSIST, 0.75))
     elif lowered in _FETCH_METHODS:
@@ -104,6 +132,8 @@ def apply_tier4(call_node: Node) -> list[tuple[COV, float]]:
         results.append((COV.RECOVER, 0.75))
     if lowered in _ASYNC_METHODS:
         results.append((COV.ASYNC, 0.75))
+    if lowered in _TEARDOWN_METHODS:
+        results.append((COV.TEARDOWN, 0.75))
     if obj_lower in _LOG_OBJECTS:
         results.append((COV.LOG, 0.75))
     if obj_lower in _MEASURE_OBJECTS:

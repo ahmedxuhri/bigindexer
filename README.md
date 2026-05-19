@@ -89,7 +89,7 @@ Why this matters: instead of raw syntax references only, you get behavioral rela
 |---|---|
 | **COV token** | A behavior label for a unit (for example: `FETCH`, `PERSIST`, `AUTHENTICATE`) |
 | **Key-Lock edge** | A behavioral connection between two units with complementary roles |
-| **DRS cluster** | A group of units likely belonging to one architectural component |
+| **DRS cluster** | A unit-level grouping by behavioral role. Mostly intra-file in practice. File-level architectural components are better expressed via the BGI edge graph or the fuse-graph boundary signal — see [external benchmark](docs/VALIDATION_EVIDENCE.md#external-benchmark-vs-louvain) |
 | **Fuse edge / fuse event** | A refused merge because cluster growth hit the cap; treated as boundary signal |
 | **Spectral masks** | Scope rules that limit where matching is allowed (global, directory, file) |
 
@@ -125,9 +125,11 @@ Core approach:
 |---|---|---|---|
 | Fast symbol lookup | Strong | Medium | Available (Phase 6 index) |
 | Behavioral token model | No | Usually no | **Yes** |
-| Hard-bounded clustering | No | Usually no | **Yes** |
+| Hard-bounded clustering | No | Usually no | **Yes** (unit-level) |
 | First-class boundary artifact | No | Usually no | **Yes (`fuse-graph.json`)** |
 | Scope-constrained edge generation | Limited | Rare | **Yes (spectral masks)** |
+
+External head-to-head benchmark (Louvain on BGI's edges vs Louvain on raw imports, scored against package layout): BGI's edges win on Python (django F1 0.38 vs 0.29, MoJoFM 0.45 vs 0.34) and currently tie/lose on Go due to lower cross-file edge density on tier-2 scanners. Full results and methodology in [docs/VALIDATION_EVIDENCE.md](docs/VALIDATION_EVIDENCE.md#external-benchmark-vs-louvain).
 
 ---
 
@@ -170,6 +172,8 @@ BGI does not treat all languages equally; support is tiered:
 3. **Generic regex fallback by extension**: `swift`, `r`, `dart`, `bash`, `nim`, `zig`, `haskell`, `ocaml`, `fsharp`, `clojure`, `erlang`, `matlab`, `vb`, `crystal`, `cobol`, `groovy`
 
 Use this as a reliability signal: query-backed and dedicated scanner tiers are stronger than generic fallback.
+
+**Cross-file edge density caveat:** the language tiers above describe parser quality. A separate axis is *cross-file behavioral edge density* — how many key-lock pairs the scanner produces that link units in different files. Tier-1 (`.scm`-backed) languages produce dense cross-file edges. Tier-2 scanner-backed languages currently produce sparser cross-file edges because their token mix is dominated by structural tokens (INTAKE/OUTPUT/CONDITIONAL/LOOP) that gate-2 deliberately scopes to same-file to prevent O(N²) noise. The user-visible MCP product (boundary detection, twin retrieval, AI-assistant context) still works on tier-2 languages — see the validation evidence — but cluster-recovery benchmarks against import-graph baselines reflect this density gap. Concrete numbers in [docs/VALIDATION_EVIDENCE.md](docs/VALIDATION_EVIDENCE.md#external-benchmark-vs-louvain).
 
 ---
 

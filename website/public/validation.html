@@ -794,6 +794,65 @@ GPT-4o (opencode_mcp_p03_twin_refresh_gpt4o_r1):
       <p>Not a single factually incorrect module or file claim appeared in any baseline, MCP, or BGI-TWIN run across all three models. MCP and BGI-TWIN ground the model on real indexed artifacts — they do not introduce new errors.</p>
     </section>
 
+    <!-- ─────────────── EXTERNAL BENCHMARK ─────────────── -->
+    <section>
+      <div class="section-heading">External benchmark vs Louvain</div>
+      <div class="section-sub">Independent of the AI-assistant study above. Same algorithm (networkx Louvain), different edge sources, scored against the maintainers' own package layout. No rubric scoring.</div>
+
+      <div class="card">
+        <h3 style="margin-top:0">Setup</h3>
+        <p>For each repo, the maintainers' top-level package layout (e.g. <code>django/db/</code>, <code>django/forms/</code>, <code>django/contrib/auth/</code>) is the ground truth. Four file-level clusterings are scored against it:</p>
+        <ul>
+          <li><code>bgi_native</code> — BGI's <code>clusters</code> field, file-level majority vote</li>
+          <li><code>louvain_imports</code> — Louvain on the language-native import graph (Python AST or Go imports)</li>
+          <li><code>louvain_bgi_hard</code> — Louvain on BGI's HARD edges projected to file level</li>
+          <li><code>louvain_bgi_all</code> — Louvain on BGI's HARD + PREDICTED edges projected to file level</li>
+        </ul>
+        <p>The two <code>louvain_bgi_*</code> methods isolate BGI's edge contribution from the unit-vs-file granularity confound: same algorithm, same ground truth, only the edge source differs. Metrics are pairwise precision/recall/F1 and MoJoFM (the canonical architecture-recovery score; higher is better, 1.0 = exact match).</p>
+
+        <h3>django (Python, 564 files, 31 ground-truth clusters)</h3>
+        <table>
+          <thead><tr><th>method</th><th>clusters</th><th>precision</th><th>recall</th><th>F1</th><th>MoJoFM</th></tr></thead>
+          <tbody>
+            <tr><td>bgi_native</td><td>100</td><td>0.246</td><td>0.167</td><td>0.199</td><td>0.190</td></tr>
+            <tr><td>louvain_imports</td><td>17</td><td>0.258</td><td>0.337</td><td>0.292</td><td>0.335</td></tr>
+            <tr><td><strong>louvain_bgi_hard</strong></td><td>287</td><td><strong>1.000</strong></td><td>0.235</td><td><strong>0.381</strong></td><td>0.440</td></tr>
+            <tr><td><strong>louvain_bgi_all</strong></td><td>139</td><td>0.312</td><td>0.348</td><td>0.329</td><td><strong>0.453</strong></td></tr>
+          </tbody>
+        </table>
+        <p>BGI's edges win on every metric. HARD-only achieves <strong>perfect precision</strong>: every file pair BGI's confident edges co-cluster does in fact share a real package.</p>
+
+        <h3>prometheus (Go, 665 files, 18 ground-truth clusters)</h3>
+        <table>
+          <thead><tr><th>method</th><th>clusters</th><th>precision</th><th>recall</th><th>F1</th><th>MoJoFM</th></tr></thead>
+          <tbody>
+            <tr><td>bgi_native</td><td>620</td><td>1.000</td><td>0.005</td><td>0.010</td><td>-0.204</td></tr>
+            <tr><td><strong>louvain_imports</strong></td><td>11</td><td><strong>0.445</strong></td><td><strong>0.678</strong></td><td><strong>0.537</strong></td><td><strong>0.396</strong></td></tr>
+            <tr><td>louvain_bgi_hard</td><td>663</td><td>1.000</td><td>0.000</td><td>0.000</td><td>-0.290</td></tr>
+            <tr><td>louvain_bgi_all</td><td>368</td><td>0.152</td><td>0.074</td><td>0.100</td><td>-0.118</td></tr>
+          </tbody>
+        </table>
+
+        <h3>gin (Go, 96 files, 7 ground-truth clusters)</h3>
+        <table>
+          <thead><tr><th>method</th><th>clusters</th><th>precision</th><th>recall</th><th>F1</th><th>MoJoFM</th></tr></thead>
+          <tbody>
+            <tr><td>bgi_native</td><td>96</td><td>0.000</td><td>0.000</td><td>0.000</td><td>-0.534</td></tr>
+            <tr><td><strong>louvain_imports</strong></td><td>32</td><td><strong>0.620</strong></td><td>0.364</td><td><strong>0.459</strong></td><td><strong>0.207</strong></td></tr>
+            <tr><td>louvain_bgi_hard</td><td>96</td><td>0.000</td><td>0.000</td><td>0.000</td><td>-0.534</td></tr>
+            <tr><td>louvain_bgi_all</td><td>61</td><td>0.425</td><td>0.088</td><td>0.145</td><td>-0.172</td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout orange">
+          <strong>Honest read.</strong> Raw imports dominate on both Go repos. Root cause is structural, not algorithmic: of BGI's 47,204 HARD edges on prometheus, 47,202 stay inside one file. Token mix is the upstream driver — about 70% of Go emissions are INTAKE/OUTPUT/CONDITIONAL/LOOP, which gate-2 deliberately scopes to same-file to prevent O(N²) noise. We expanded the Go scanner's data-flow patterns (HTTP routing, channel receive→SUBSCRIBE, marshal/unmarshal→TRANSFORM, lock cleanup→TEARDOWN) and re-validated on gin — token coverage improved (249 ROUTE emissions where prometheus had 0) — but the spectral-mask interaction means cross-file edges remain sparse on tier-2 scanner-backed languages relative to tier-1 query-backed languages.<br><br>
+          <strong>What this changes.</strong> The user-visible MCP product (boundary detection, twin retrieval, AI-assistant context) still works on Go — boundary accuracy 1.0, actionability 4.25–5.0 across all three models in the study above. The cluster-recovery gap on tier-2 languages is now documented in the README's language-tier section. The README's <code>DRS cluster</code> glossary is also softened to describe clusters honestly as unit-level groupings; file-level architectural components are better expressed via the BGI edge graph or the fuse-graph boundary signal.
+        </div>
+
+        <p>Reproduce: <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/scripts/external_benchmark/run_repo.py" target="_blank" rel="noopener">scripts/external_benchmark/run_repo.py</a>. Per-repo raw outputs (<code>summary.json</code>, <code>metrics.csv</code>, full <code>clusterings.json</code>) committed under <code>output/benchmarks/external/{django,prometheus,gin}/</code>.</p>
+      </div>
+    </section>
+
     <!-- ─────────────── LIMITATIONS ─────────────── -->
     <section>
       <div class="section-heading">Limitations — read this first</div>

@@ -74,11 +74,35 @@ _ROLE_RULES: list[tuple[set[str], str]] = [
 
 
 def _infer_role(dominant_tokens: list[str]) -> str:
+    """
+    Infer architectural role from dominant tokens.
+
+    Special case: when COV.TEST is the most prevalent token (position 0),
+    the cluster is a test surface regardless of what other tokens it carries
+    (tests routinely call routes, fetch data, mutate state — that does not
+    make them an API Routing Layer).
+    """
+    if dominant_tokens and dominant_tokens[0] == "COV.TEST":
+        return "Test Suite"
     token_set = set(dominant_tokens)
     for required, role in _ROLE_RULES:
         if required.issubset(token_set):
             return role
     return "General Logic"
+
+
+def _is_test_cluster(cluster: dict, name: str) -> bool:
+    """Heuristic: top dominant token is TEST, or the cluster name/files look test-shaped."""
+    tokens = cluster.get("dominant_tokens", [])
+    if tokens and tokens[0] == "COV.TEST":
+        return True
+    lowered_name = name.lower()
+    if "test" in lowered_name or "benchmark" in lowered_name:
+        return True
+    files = cluster.get("files", [])
+    if files and all("test" in f.lower() or "benchmark" in f.lower() for f in files):
+        return True
+    return False
 
 
 # ── Cluster name heuristic ────────────────────────────────────────────────────
@@ -135,6 +159,135 @@ def _cross_cluster_edges(edges: list[dict], unit_to_cluster: dict[str, str]) -> 
     return cross
 
 
+def _aggregate_cross_edges(cross_edges: list[dict],
+                            cluster_names: dict[str, str]) -> list[dict]:
+    """Collapse cross-cluster edges into name-level traffic.
+
+    The raw cross-edge list often includes:
+      - many edges between cluster IDs that derive the same human name
+        (BGI fragments a single class into several IDs)
+      - many edges with the same (key, lock) pair between two name pairs
+
+    Both are noise for a reader. We collapse to one row per
+    (src_name, tgt_name, key, lock), drop self-pairs (src_name == tgt_name),
+    and attach a count so the size is visible.
+    """
+    aggregated: dict[tuple[str, str, str, str], dict] = {}
+    for ce in cross_edges:
+        src_name = cluster_names.get(ce["from_cluster"], ce["from_cluster"])
+        tgt_name = cluster_names.get(ce["to_cluster"], ce["to_cluster"])
+        if src_name == tgt_name:
+            continue
+        bucket = aggregated.setdefault(
+            (src_name, tgt_name, ce["key"], ce["lock"]),
+            {"src_name": src_name, "tgt_name": tgt_name,
+             "key": ce["key"], "lock": ce["lock"],
+             "count": 0, "best_type": ce["type"]},
+        )
+        bucket["count"] += 1
+        # Prefer HARD over PREDICTED for the displayed type
+        if bucket["best_type"] != "HARD" and ce["type"] == "HARD":
+            bucket["best_type"] = "HARD"
+    return sorted(aggregated.values(),
+                  key=lambda b: (-(1 if b["best_type"] == "HARD" else 0), -b["count"]))
+
+_UNIT_PREVIEW_CAP = 5
+
+
+def _architecture_glance(graph: dict, cross_edges: list[dict],
+                          cluster_names: dict[str, str]) -> str:
+    """Two-to-three sentence executive summary derived from the graph."""
+    clusters = graph.get("clusters", [])
+    cross_file = [c for c in clusters if c.get("is_cross_file")]
+    sized = sorted(clusters, key=lambda c: -len(c.get("members", [])))
+
+    if not clusters:
+        return "_No clusters detected. Repo may be empty or scan parameters too strict._"
+
+    # Deduplicate by name when picking "largest behavioral surfaces" — the
+    # cluster list often fragments one component into several IDs that share
+    # a name, and we don't want the same name showing up three times.
+    largest_names: list[str] = []
+    seen: set[str] = set()
+    for c in sized:
+        n = cluster_names.get(c["id"], c["id"])
+        if n not in seen:
+            largest_names.append(n)
+            seen.add(n)
+        if len(largest_names) >= 3:
+            break
+
+    parts: list[str] = []
+    parts.append(
+        f"This codebase fingerprints into **{len(clusters)} behavioral clusters** "
+        f"({len(cross_file)} cross-file)."
+    )
+    if largest_names:
+        parts.append(
+            "Largest behavioral surfaces: "
+            + ", ".join(f"`{n}`" for n in largest_names) + "."
+        )
+
+    aggregated = _aggregate_cross_edges(cross_edges, cluster_names)
+    if aggregated:
+        top_pairs: list[tuple[str, str]] = []
+        seen_pair: set[tuple[str, str]] = set()
+        for b in aggregated:
+            pair = (b["src_name"], b["tgt_name"])
+            if pair in seen_pair:
+                continue
+            seen_pair.add(pair)
+            top_pairs.append(pair)
+            if len(top_pairs) >= 3:
+                break
+        if top_pairs:
+            formatted = ", ".join(f"`{a}` ↔ `{b}`" for a, b in top_pairs)
+            parts.append(f"Notable cross-component coupling: {formatted}.")
+    return " ".join(parts)
+
+
+def _format_cluster_section(c: dict, name: str, role: str, seam_ids: set[str]) -> list[str]:
+    """One cluster's markdown block. Caps unit list, drops internal jargon."""
+    badges: list[str] = []
+    if c.get("is_hard"):
+        badges.append("HARD")
+    if c.get("is_cross_file"):
+        badges.append("CROSS-FILE")
+    badge_str = "  `" + "` `".join(badges) + "`" if badges else ""
+
+    members = c.get("members", [])
+    files = c.get("files", [])
+    files_display = ", ".join(f"`{f}`" for f in files[:6])
+    if len(files) > 6:
+        files_display += f", _and {len(files) - 6} more_"
+
+    lines = [
+        f"### {name}{badge_str}",
+        "",
+        f"**Role:** {role}",
+        f"**Files** ({len(files)}): {files_display}",
+        f"**Units:** {len(members)}",
+    ]
+
+    preview_count = min(len(members), _UNIT_PREVIEW_CAP)
+    if preview_count:
+        lines.append("")
+        for m in members[:preview_count]:
+            seam_tag = " ⚡ seam" if m in seam_ids else ""
+            lines.append(f"- `{m}`{seam_tag}")
+        if len(members) > preview_count:
+            lines.append(f"- _…and {len(members) - preview_count} more_")
+
+    tokens = c.get("dominant_tokens", [])
+    if tokens:
+        lines += [
+            "",
+            f"**Dominant tokens:** {', '.join(t.split('.')[-1] for t in tokens[:5])}",
+        ]
+    lines.append("")
+    return lines
+
+
 # ── Heuristic markdown generator ─────────────────────────────────────────────
 
 def _build_agents_md(graph: dict, root: str, cross_edges: list[dict], cluster_names: dict[str, str]) -> str:
@@ -144,6 +297,25 @@ def _build_agents_md(graph: dict, root: str, cross_edges: list[dict], cluster_na
     forecasts = graph.get("resurrection_forecasts", [])
     sep = stats.get("sep", {})
 
+    # Sort: cross-file first, then by member count desc, then by id for stability
+    sorted_clusters = sorted(
+        clusters,
+        key=lambda c: (
+            0 if c.get("is_cross_file") else 1,
+            -len(c.get("members", [])),
+            c.get("id", ""),
+        ),
+    )
+
+    # Split into production vs test surfaces so the marketing-facing sections lead
+    production: list[dict] = []
+    test_surfaces: list[dict] = []
+    for c in sorted_clusters:
+        if _is_test_cluster(c, cluster_names.get(c["id"], "")):
+            test_surfaces.append(c)
+        else:
+            production.append(c)
+
     lines: list[str] = []
 
     lines += [
@@ -152,10 +324,14 @@ def _build_agents_md(graph: dict, root: str, cross_edges: list[dict], cluster_na
         "<!-- Generated by BGI Architecture Narrator (Position 3) -->",
         "<!-- Consume this file to understand system structure before editing code. -->",
         "",
+        "## Architecture at a glance",
+        "",
+        _architecture_glance(graph, cross_edges, cluster_names),
+        "",
         "## Overview",
         "",
-        f"| Metric | Value |",
-        f"|--------|-------|",
+        "| Metric | Value |",
+        "|--------|-------|",
         f"| Code units fingerprinted | {stats.get('units', 0)} |",
         f"| Edges detected | {stats.get('edges', 0)} (HARD: {stats.get('hard', 0)}, PREDICTED: {stats.get('predicted', 0)}) |",
         f"| Clusters | {stats.get('clusters', 0)} ({stats.get('hard_clusters', 0)} hard) |",
@@ -165,43 +341,53 @@ def _build_agents_md(graph: dict, root: str, cross_edges: list[dict], cluster_na
         "",
     ]
 
-    # Clusters
+    # Cross-cluster relationships — surfaced early since they describe the architecture
+    aggregated_cross = _aggregate_cross_edges(cross_edges, cluster_names)
+    if aggregated_cross:
+        lines += ["## Cross-cluster coupling", ""]
+        for b in aggregated_cross[:30]:
+            key = b["key"].split(".")[-1]
+            lock = b["lock"].split(".")[-1]
+            count_suffix = f" ×{b['count']}" if b["count"] > 1 else ""
+            lines.append(
+                f"- `{b['src_name']}` → `{b['tgt_name']}` via "
+                f"**{key}↔{lock}** [{b['best_type']}]{count_suffix}"
+            )
+        if len(aggregated_cross) > 30:
+            lines.append(f"- _…and {len(aggregated_cross) - 30} more cross-cluster pairs_")
+        lines += [""]
+
+    # Production clusters
     lines += ["## Clusters", ""]
-    for c in clusters:
-        cid = c["id"]
-        name = cluster_names.get(cid, cid)
-        role = _infer_role(c["dominant_tokens"])
-        badges = []
-        if c.get("is_hard"):
-            badges.append("HARD")
-        if c.get("is_cross_file"):
-            badges.append("CROSS-FILE")
-        badge_str = "  `" + "` `".join(badges) + "`" if badges else ""
+    if production:
+        for c in production:
+            cid = c["id"]
+            name = cluster_names.get(cid, cid)
+            role = _infer_role(c.get("dominant_tokens", []))
+            lines += _format_cluster_section(c, name, role, seam_ids)
+    else:
+        lines += ["_No production clusters above the size threshold._", ""]
 
+    # Test surfaces — separate section so they don't dominate
+    if test_surfaces:
         lines += [
-            f"### {name}{badge_str}",
+            "## Test surfaces",
             "",
-            f"**Role:** {role}",
-            f"**Probability:** {c['probability']:.2f}  **Radar range:** {c['radar_range']} lines",
-            f"**Files:** {', '.join(f'`{f}`' for f in c['files'])}",
+            f"_{len(test_surfaces)} test/benchmark cluster(s); summarized below._",
             "",
-            "**Units:**",
         ]
-        for m in c["members"]:
-            seam_tag = " ⚡ seam" if m in seam_ids else ""
-            lines.append(f"- `{m}`{seam_tag}")
-
-        lines += ["", f"**Dominant tokens:** {', '.join(t.split('.')[1] for t in c['dominant_tokens'][:5])}", ""]
-
-    # Cross-cluster relationships
-    if cross_edges:
-        lines += ["## Cross-Cluster Relationships", ""]
-        for ce in cross_edges:
-            src_name = cluster_names.get(ce["from_cluster"], ce["from_cluster"])
-            tgt_name = cluster_names.get(ce["to_cluster"], ce["to_cluster"])
-            key = ce["key"].split(".")[-1]
-            lock = ce["lock"].split(".")[-1]
-            lines.append(f"- `{src_name}` → `{tgt_name}` via **{key}↔{lock}** [{ce['type']}]")
+        for c in test_surfaces[:10]:
+            cid = c["id"]
+            name = cluster_names.get(cid, cid)
+            files = c.get("files", [])
+            files_display = ", ".join(f"`{f}`" for f in files[:3])
+            if len(files) > 3:
+                files_display += f", _and {len(files) - 3} more_"
+            lines.append(
+                f"- **{name}** — {len(c.get('members', []))} units in {files_display}"
+            )
+        if len(test_surfaces) > 10:
+            lines.append(f"- _…and {len(test_surfaces) - 10} more test clusters_")
         lines += [""]
 
     # Seam units
@@ -242,7 +428,7 @@ def _build_agents_md(graph: dict, root: str, cross_edges: list[dict], cluster_na
         "---",
         "",
         "_This file was auto-generated by BGI. Do not edit manually._",
-        f"_Re-run `bgi scan` to refresh._",
+        "_Re-run `bgi scan` to refresh._",
     ]
 
     return "\n".join(lines) + "\n"

@@ -24,6 +24,8 @@ from bgi.ai.narrator import (
     _infer_role,
     _cluster_name,
     _cross_cluster_edges,
+    _is_test_cluster,
+    _architecture_glance,
 )
 
 
@@ -37,8 +39,9 @@ def _minimal_graph(n_clusters: int = 2) -> dict:
 
     for i in range(n_clusters):
         cid = f"c{i}"
-        uid_a = f"mod_{i}.py::ClassA::method_a"
-        uid_b = f"mod_{i}.py::ClassA::method_b"
+        class_name = f"ClassA{i}"  # distinct names so cross-edges survive name-aggregation
+        uid_a = f"mod_{i}.py::{class_name}::method_a"
+        uid_b = f"mod_{i}.py::{class_name}::method_b"
         units += [
             {"id": uid_a, "tokens": ["COV.FETCH"], "cluster": cid, "is_seam": False},
             {"id": uid_b, "tokens": ["COV.PERSIST"], "cluster": cid, "is_seam": False},
@@ -57,8 +60,8 @@ def _minimal_graph(n_clusters: int = 2) -> dict:
     # Cross-cluster edge between cluster 0 and cluster 1
     if n_clusters >= 2:
         edges.append({
-            "source": "mod_0.py::ClassA::method_a",
-            "target": "mod_1.py::ClassA::method_b",
+            "source": "mod_0.py::ClassA0::method_a",
+            "target": "mod_1.py::ClassA1::method_b",
             "key": "COV.FETCH",
             "lock": "COV.PERSIST",
             "type": "HARD",
@@ -133,6 +136,44 @@ class TestInferRole:
 
     def test_test_suite(self):
         assert _infer_role(["COV.TEST"]) == "Test Suite"
+
+    def test_test_dominant_overrides_route(self):
+        """Regression: a test cluster carrying ROUTE/INTAKE/MUTATE/FETCH should
+        still be classified as Test Suite when TEST is the most dominant token."""
+        assert _infer_role(["COV.TEST", "COV.INTAKE", "COV.ROUTE", "COV.MUTATE", "COV.FETCH"]) == "Test Suite"
+
+
+# ── _is_test_cluster ──────────────────────────────────────────────────────────
+
+class TestIsTestCluster:
+    def test_test_dominant_token(self):
+        c = {"dominant_tokens": ["COV.TEST", "COV.ROUTE"], "files": ["x.go"]}
+        assert _is_test_cluster(c, "x") is True
+
+    def test_test_in_name(self):
+        c = {"dominant_tokens": ["COV.ROUTE"], "files": ["foo.go"]}
+        assert _is_test_cluster(c, "Auth Test") is True
+
+    def test_all_files_under_tests(self):
+        c = {"dominant_tokens": ["COV.ROUTE"], "files": ["a_test.go", "b_test.go"]}
+        assert _is_test_cluster(c, "X") is True
+
+    def test_production_cluster(self):
+        c = {"dominant_tokens": ["COV.ROUTE", "COV.FETCH"], "files": ["server.go"]}
+        assert _is_test_cluster(c, "Server") is False
+
+
+# ── _architecture_glance ──────────────────────────────────────────────────────
+
+class TestArchitectureGlance:
+    def test_empty_graph(self):
+        glance = _architecture_glance({"clusters": []}, [], {})
+        assert "No clusters" in glance
+
+    def test_summarizes_cluster_count(self):
+        graph = _minimal_graph(n_clusters=3)
+        glance = _architecture_glance(graph, [], {c["id"]: c["id"] for c in graph["clusters"]})
+        assert "3 behavioral clusters" in glance
 
 
 # ── _cluster_name ─────────────────────────────────────────────────────────────
@@ -221,7 +262,7 @@ class TestNarratorHeuristic:
         graph = _minimal_graph(n_clusters=2)
         narrator = ArchitectureNarrator(enabled=False)
         result = narrator.narrate(graph, root="/svc")
-        assert "Cross-Cluster Relationships" in result.agents_md
+        assert "Cross-cluster coupling" in result.agents_md
 
     def test_empty_graph(self):
         graph = {"units": [], "clusters": [], "edges": [], "stats": {

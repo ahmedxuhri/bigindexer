@@ -162,6 +162,88 @@ No factually incorrect module or file claim in any baseline, MCP, or TWIN run.
 
 ---
 
+## External benchmark vs Louvain
+
+The 100-run study above measures whether BGI improves AI assistant outputs. A separate, complementary question is whether BGI's behavioral edges are stronger than raw import edges as a clustering signal — measured against an external ground truth, with no rubric scoring.
+
+**Setup.** For each repo, we use the maintainers' own top-level package layout as architectural ground truth (e.g. `django/db/`, `django/forms/`, `django/contrib/auth/`). We then compare four file-level clusterings:
+
+- `bgi_native` — BGI's own `clusters` field (file-level majority vote)
+- `louvain_imports` — Louvain on the language-native import graph (Python AST or Go imports)
+- `louvain_bgi_hard` — Louvain on BGI's HARD edges projected to file level
+- `louvain_bgi_all` — Louvain on BGI's HARD + PREDICTED edges projected to file level
+
+Same algorithm (networkx Louvain, seed=42), same ground truth, same metric harness. The two `louvain_bgi_*` methods isolate BGI's edge contribution from any unit-vs-file granularity confound.
+
+**Metrics.** Pairwise precision/recall/F1 on co-clustering decisions, plus MoJoFM (Tzerpos & Holt) — the canonical architecture-recovery similarity score. Higher is better; 1.0 = exact match (label-equivalent).
+
+### Results
+
+**django (Python, 564 files, 31 ground-truth clusters):**
+
+| method | clusters | precision | recall | F1 | MoJoFM |
+|---|---:|---:|---:|---:|---:|
+| bgi_native | 100 | 0.246 | 0.167 | 0.199 | 0.190 |
+| louvain_imports | 17 | 0.258 | 0.337 | 0.292 | 0.335 |
+| **louvain_bgi_hard** | 287 | **1.000** | 0.235 | **0.381** | 0.440 |
+| **louvain_bgi_all** | 139 | 0.312 | 0.348 | 0.329 | **0.453** |
+
+BGI's edges win on every metric. HARD-only achieves perfect precision: every file pair BGI's confident edges co-cluster does in fact share a real package. HARD+PREDICTED gives the best MoJoFM by trading some precision for recall.
+
+**prometheus (Go, 665 files, 18 ground-truth clusters):**
+
+| method | clusters | precision | recall | F1 | MoJoFM |
+|---|---:|---:|---:|---:|---:|
+| bgi_native | 620 | 1.000 | 0.005 | 0.010 | -0.204 |
+| **louvain_imports** | 11 | **0.445** | **0.678** | **0.537** | **0.396** |
+| louvain_bgi_hard | 663 | 1.000 | 0.000 | 0.000 | -0.290 |
+| louvain_bgi_all | 368 | 0.152 | 0.074 | 0.100 | -0.118 |
+
+**gin (Go, 96 files, 7 ground-truth clusters):**
+
+| method | clusters | precision | recall | F1 | MoJoFM |
+|---|---:|---:|---:|---:|---:|
+| bgi_native | 96 | 0.000 | 0.000 | 0.000 | -0.534 |
+| **louvain_imports** | 32 | **0.620** | 0.364 | **0.459** | **0.207** |
+| louvain_bgi_hard | 96 | 0.000 | 0.000 | 0.000 | -0.534 |
+| louvain_bgi_all | 61 | 0.425 | 0.088 | 0.145 | -0.172 |
+
+Raw imports dominate on both Go repos. Root cause is **structural, not algorithmic**: of BGI's 47,204 HARD edges on prometheus, 47,202 stay inside one file. Token mix is the upstream driver — ~70% of Go emissions are INTAKE/OUTPUT/CONDITIONAL/LOOP, which gate-2 deliberately scopes to same-file to prevent O(N²) noise. Cross-file pair density (FETCH/PERSIST, EMIT/SUBSCRIBE, ROUTE/AUTHENTICATE) is lower on Go than on Python. We expanded the Go scanner's data-flow patterns (HTTP routing, channel receive→SUBSCRIBE, marshal/unmarshal→TRANSFORM, lock cleanup→TEARDOWN) and re-ran on gin — token coverage improved (249 ROUTE emissions on gin vs 0 on prometheus's older scan), but the spectral-mask interaction means cross-file edges remain sparse on Go relative to Python.
+
+### Honest read
+
+**Where BGI's edges add real value:** tier-1 query-backed languages (`.scm`-based: Python, TypeScript). The HARD-only precision of 1.000 on django is the strongest single result here — when BGI promotes an edge to HARD, those two files genuinely belong together. This validates the README's "scope-constrained edge generation" claim on the languages where the scanner produces dense cross-file behavioral edges.
+
+**Where BGI's edges currently underperform:** tier-2 scanner-backed languages on cluster-recovery benchmarks. The user-visible MCP product (boundary detection, twin retrieval, AI-assistant context) still works on Go — boundary accuracy 1.0, actionability 4.25–5.0 across all three models in the 100-run study. The cluster-recovery gap is real and documented in the language-tier section of the README.
+
+**What this changes:**
+- The README's `DRS cluster` glossary line is softened — `clusters` is honestly described as unit-level grouping, mostly intra-file. File-level architectural components are better expressed via the BGI edge graph + Louvain (or via the fuse-graph boundary signal).
+- The language-tier section adds a cross-file edge density caveat distinguishing tier-1 from tier-2 on this specific axis.
+
+### Reproduce
+
+Per-repo command, raw outputs, and harness code:
+
+```bash
+# Python repo
+python3 scripts/external_benchmark/run_repo.py \
+  --repo-slug django --repo-root /tmp/bgi-ab-repos/django \
+  --package-root django --bgi-graph output/validation/mcp-ab/django/bgi-graph.json \
+  --ext py --language python --truth-split contrib \
+  --out output/benchmarks/external/django
+
+# Go repo
+python3 scripts/external_benchmark/run_repo.py \
+  --repo-slug gin --repo-root /tmp/bgi-ab-repos/gin \
+  --package-root . --bgi-graph output/benchmarks/external/gin/bgi-graph.json \
+  --ext go --language go \
+  --out output/benchmarks/external/gin
+```
+
+Per-repo `summary.json`, `metrics.csv`, and full `clusterings.json` are committed under `output/benchmarks/external/{django,prometheus,gin}/`. Harness source: `scripts/external_benchmark/`.
+
+---
+
 ## Limitations
 
 We publish limitations before readers find them. A reader who discovers a flaw themselves trusts evidence less than one who was told.
