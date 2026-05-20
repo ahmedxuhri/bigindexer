@@ -67,6 +67,7 @@ TASKPLAN.md
 /gate3/
 /output/
 /sep/
+/telemetry.py
 /bgi/cli.py
 /bgi/pipeline.py
 /bgi/__init__.py
@@ -79,6 +80,7 @@ TASKPLAN.md
 /bgi/mcp/
 /bgi/output/
 /bgi/sep/
+/bgi/telemetry.py
 /bgi/MEMORANDUM.md
 /bgi/README.md
 /bgi/TASKPLAN.md
@@ -97,3 +99,5 @@ TASKPLAN.md
 # ── JavaScript tooling ─────────────────────────────────────────────────────────
 node_modules/
 *.vsix
+/output/rollups/
+/website/data/

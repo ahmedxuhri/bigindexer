@@ -225,6 +225,19 @@ Return top twin candidate, seam suggestion, and rubric checklist.
 
 ---
 
+## Telemetry
+
+BGI ships with **opt-in, off-by-default** anonymous telemetry. To enable:
+
+```bash
+export BGI_TELEMETRY=1
+bgi mcp --graph bgi-graph.json --fuse-graph fuse-graph.json
+```
+
+What's collected when enabled: BGI version, OS, repo size bucket, and a 12-char hash of your repo's git remote (so we can deduplicate "same repo seen twice" without ever knowing which repo). What's never collected: file paths, source code, repo names, user identity, or IP addresses. Full schema and disable instructions in [`docs/TELEMETRY.md`](docs/TELEMETRY.md).
+
+---
+
 ## Documentation map
 
 - `MEMORANDUM.md` - design contracts and invariants
@@ -233,6 +246,7 @@ Return top twin candidate, seam suggestion, and rubric checklist.
 - `docs/INDEX_SCHEMA.md` - interactive index schema
 - `docs/QUERY_PLANNER.md` - query planner scoring
 - `docs/MCP_SETUP.md` - MCP server setup and usage
+- `docs/TELEMETRY.md` - opt-in telemetry: what we collect and how to disable
 - `https://bigindexer.com/validation` - public validation evidence
 - `docs/MCP_QUICKSTART_DEMO.md` - 5-minute demo walkthrough
 - `docs/MCP_EXAMPLE_TRANSCRIPTS.md` - real-world MCP tool invocation examples

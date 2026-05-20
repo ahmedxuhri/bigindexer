@@ -2,11 +2,14 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 
 const app = express();
 const PORT = process.env.PORT || 3200;
 const HOST = process.env.HOST || '127.0.0.1';
+const TELEMETRY_LOG = process.env.BGI_TELEMETRY_LOG
+  || path.join(__dirname, 'data', 'telemetry.jsonl');
 const analytics = {
   totalPageviews: 0,
   byPath: new Map(),
@@ -106,6 +109,68 @@ app.post('/api/analytics/pageview', (req, res) => {
 // API: Analytics summary
 app.get('/api/analytics/summary', (req, res) => {
   res.json(getAnalyticsSummary());
+});
+
+// ── Telemetry (opt-in BGI client pings) ─────────────────────────────────────
+// Schema (all fields optional but typed). Anything unrecognized is rejected.
+const TELEMETRY_OS_VALUES = new Set(['linux', 'darwin', 'windows', 'other']);
+const TELEMETRY_BUCKETS = new Set(['S', 'M', 'L', 'XL']);
+const TELEMETRY_KINDS = new Set(['mcp_start', 'tool_call']);
+
+function validateTelemetry(body) {
+  if (!body || typeof body !== 'object') return 'invalid body';
+  const required = ['version', 'os', 'event_kind', 'repo_id'];
+  for (const k of required) {
+    if (typeof body[k] !== 'string' || !body[k]) return `missing ${k}`;
+  }
+  if (body.version.length > 32) return 'version too long';
+  if (!TELEMETRY_OS_VALUES.has(body.os)) return 'invalid os';
+  if (!TELEMETRY_KINDS.has(body.event_kind)) return 'invalid event_kind';
+  if (!/^[a-f0-9]{12}$/.test(body.repo_id)) return 'invalid repo_id';
+  if (body.os_version != null
+      && (typeof body.os_version !== 'string' || body.os_version.length > 64)) {
+    return 'invalid os_version';
+  }
+  if (body.repo_size_bucket != null && !TELEMETRY_BUCKETS.has(body.repo_size_bucket)) {
+    return 'invalid repo_size_bucket';
+  }
+  if (body.lang_tier_count != null
+      && (!Number.isInteger(body.lang_tier_count)
+          || body.lang_tier_count < 0
+          || body.lang_tier_count > 100)) {
+    return 'invalid lang_tier_count';
+  }
+  if (body.tool_name != null
+      && (typeof body.tool_name !== 'string' || body.tool_name.length > 64)) {
+    return 'invalid tool_name';
+  }
+  return null;
+}
+
+app.post('/api/telemetry', (req, res) => {
+  const error = validateTelemetry(req.body);
+  if (error) {
+    return res.status(400).json({ error });
+  }
+  const entry = {
+    version:          req.body.version,
+    os:               req.body.os,
+    os_version:       req.body.os_version || '',
+    event_kind:       req.body.event_kind,
+    repo_id:          req.body.repo_id,
+    repo_size_bucket: req.body.repo_size_bucket || '',
+    lang_tier_count:  Number.isInteger(req.body.lang_tier_count) ? req.body.lang_tier_count : null,
+    tool_name:        req.body.tool_name || '',
+    received_at:      new Date().toISOString(),
+  };
+  try {
+    fs.mkdirSync(path.dirname(TELEMETRY_LOG), { recursive: true });
+    fs.appendFileSync(TELEMETRY_LOG, JSON.stringify(entry) + '\n');
+  } catch (err) {
+    console.error(`[telemetry] append failed: ${err.message}`);
+    return res.status(500).json({ error: 'log write failed' });
+  }
+  return res.status(204).end();
 });
 
 // API: Get waitlist (admin endpoint - requires ADMIN_KEY env var)

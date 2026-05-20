@@ -293,6 +293,43 @@ def create_mcp_server(
     return mcp
 
 
+def _telemetry_mcp_start(graph_path: str) -> None:
+    """Fire opt-in mcp_start telemetry event. No-op unless BGI_TELEMETRY=1."""
+    try:
+        from bgi import telemetry
+    except ImportError:
+        return
+    if not telemetry.is_enabled():
+        return
+    try:
+        from importlib.metadata import version, PackageNotFoundError
+        try:
+            bgi_version = version("bigindexer")
+        except PackageNotFoundError:
+            bgi_version = "unknown"
+        repo_id = telemetry.compute_repo_id(Path.cwd())
+        bucket = None
+        try:
+            graph = json.loads(Path(graph_path).read_text(encoding="utf-8"))
+            distinct_files = {
+                u["id"].split("::", 1)[0]
+                for u in graph.get("units", [])
+                if isinstance(u.get("id"), str)
+            }
+            bucket = telemetry.repo_size_bucket(len(distinct_files))
+        except Exception:
+            pass
+        telemetry.report_event(
+            "mcp_start",
+            version=bgi_version,
+            repo_id=repo_id,
+            repo_size_bucket=bucket,
+        )
+    except Exception:
+        # Telemetry must never break MCP startup
+        pass
+
+
 def run_server(
     graph_path: str = "bgi-graph.json",
     fuse_graph_path: str | None = None,
@@ -322,6 +359,8 @@ def run_server(
             )
     else:
         print("[BGI] Optional index DB not provided (using graph-based symbol fallback).")
+
+    _telemetry_mcp_start(graph_path)
 
     mcp = create_mcp_server(
         graph_path=graph_path,
