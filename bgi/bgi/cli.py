@@ -68,6 +68,8 @@ def main() -> None:
                           help="Language to scan (default: auto for multi-language)")
     diff_cmd.add_argument("--out", default=None, metavar="FILE",
                           help="Write diff JSON to file (optional)")
+    diff_cmd.add_argument("--report", default=None, metavar="FILE",
+                          help="Write architectural drift narration as markdown (optional)")
     diff_cmd.add_argument("--verbose", action="store_true", default=False,
                           help="Show full added/removed/changed unit lists")
 
@@ -135,7 +137,7 @@ def main() -> None:
         from pathlib import Path
         from bgi.gate1.scanner import scan_repository, scan_directory
         from bgi.gate1.ai_fallback import AIFallback
-        from bgi.delta.diff import diff_scans, format_diff_report, serialize_diff
+        from bgi.delta.diff import diff_scans, format_diff_report, format_diff_markdown, serialize_diff
 
         ai = AIFallback(enabled=False)
         lang = args.lang.lower()
@@ -157,6 +159,15 @@ def main() -> None:
         if args.out:
             Path(args.out).write_text(json.dumps(serialize_diff(diff), indent=2))
             print(f"\n[BGI] Diff written to {args.out}")
+
+        if args.report:
+            md = format_diff_markdown(
+                diff,
+                before_label=Path(args.before).name or "before",
+                after_label=Path(args.after).name or "after",
+            )
+            Path(args.report).write_text(md)
+            print(f"[BGI] Drift report written to {args.report}")
 
     elif args.command == "mcp":
         from bgi.mcp.server import run_server
