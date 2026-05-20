@@ -246,6 +246,7 @@ What's collected when enabled: BGI version, OS, repo size bucket, and a 12-char 
 - `docs/INDEX_SCHEMA.md` - interactive index schema
 - `docs/QUERY_PLANNER.md` - query planner scoring
 - `docs/MCP_SETUP.md` - MCP server setup and usage
+- `docs/MCP_WITH_CONTINUE.md` - 5-minute Continue + BGI walkthrough
 - `docs/TELEMETRY.md` - opt-in telemetry: what we collect and how to disable
 - `https://bigindexer.com/validation` - public validation evidence
 - `docs/MCP_QUICKSTART_DEMO.md` - 5-minute demo walkthrough
