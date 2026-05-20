@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>I left Cody. Here's how I made my BYO-API-key AI setup not suck on big repos. — Big Indexer</title>
+  <meta name="description" content="A walkthrough for the BYO-API-key crowd: how to cut input-token costs 20–30% on big-repo agentic tasks with a local, free, MCP-based architecture context layer.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="shortcut icon" href="/favicon.svg">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --purple:     #667eea;
+      --purple-dk:  #4f63c9;
+      --purple-lt:  #eef2ff;
+      --green:      #22c55e;
+      --green-lt:   #f0fdf4;
+      --orange:     #f97316;
+      --orange-lt:  #fff7ed;
+      --gray-50:    #f9fafb;
+      --gray-100:   #f3f4f6;
+      --gray-200:   #e5e7eb;
+      --gray-400:   #9ca3af;
+      --gray-600:   #4b5563;
+      --gray-700:   #374151;
+      --gray-800:   #1f2937;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(102, 126, 234, 0.10), transparent 26%),
+        linear-gradient(180deg, #fafbff 0%, #f4f6ff 100%);
+      color: var(--gray-800);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Nav ── */
+    nav {
+      background: linear-gradient(135deg, #4f63c9 0%, #764ba2 100%);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+    }
+    nav .brand { color: white; font-weight: 800; font-size: 1.02rem; text-decoration: none; letter-spacing: -0.01em; display: inline-flex; align-items: center; gap: 0.65rem; }
+    nav .brand-mark { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.22); overflow: hidden; }
+    nav .brand-mark img { width: 100%; height: 100%; display: block; }
+    nav .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    nav .nav-links a { color: rgba(255,255,255,0.88); text-decoration: none; font-size: 0.88rem; font-weight: 500; }
+    nav .nav-links a:hover { color: white; }
+    nav .nav-links a.active { color: white; border-bottom: 2px solid rgba(255,255,255,0.6); padding-bottom: 2px; }
+
+    /* ── Article hero ── */
+    .article-hero {
+      background: linear-gradient(135deg, #4f63c9 0%, #764ba2 100%);
+      padding: 3.5rem 1.5rem 4.5rem;
+      color: white;
+      text-align: center;
+    }
+    .article-hero .breadcrumbs {
+      font-size: 0.84rem;
+      opacity: 0.85;
+      margin-bottom: 1rem;
+    }
+    .article-hero .breadcrumbs a {
+      color: white;
+      text-decoration: none;
+      border-bottom: 1px dotted rgba(255,255,255,0.4);
+    }
+    .article-hero .breadcrumbs a:hover { border-bottom-color: white; }
+    .article-hero h1 {
+      max-width: 22ch;
+      margin: 0.5rem auto 1rem;
+      font-size: clamp(1.7rem, 3.6vw, 2.4rem);
+      font-weight: 800;
+      line-height: 1.18;
+      letter-spacing: -0.02em;
+    }
+    .article-hero .meta {
+      font-size: 0.88rem;
+      opacity: 0.86;
+    }
+    .article-hero .meta .tag {
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 99px;
+      padding: 0.18rem 0.6rem;
+      font-weight: 600;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-right: 0.5rem;
+    }
+
+    /* ── Article body ── */
+    article {
+      max-width: 720px;
+      margin: -2.5rem auto 0;
+      padding: 0 1.25rem 5rem;
+    }
+    .article-body {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 18px;
+      padding: 2.5rem 2.25rem;
+      box-shadow: 0 20px 56px rgba(31, 41, 55, 0.10);
+    }
+    .article-body p,
+    .article-body ul,
+    .article-body ol,
+    .article-body blockquote,
+    .article-body table {
+      margin-bottom: 1.05rem;
+      color: var(--gray-700);
+      font-size: 1rem;
+      line-height: 1.72;
+    }
+    .article-body h2 {
+      margin-top: 2.4rem;
+      margin-bottom: 0.85rem;
+      font-size: 1.35rem;
+      letter-spacing: -0.015em;
+      color: var(--gray-800);
+    }
+    .article-body h3 {
+      margin-top: 1.7rem;
+      margin-bottom: 0.55rem;
+      font-size: 1.08rem;
+      color: var(--gray-800);
+    }
+    .article-body strong { color: var(--gray-800); }
+    .article-body a {
+      color: var(--purple-dk);
+      text-decoration: underline;
+      text-decoration-color: rgba(79, 99, 201, 0.4);
+      text-underline-offset: 2px;
+    }
+    .article-body a:hover { text-decoration-color: var(--purple-dk); }
+    .article-body code {
+      font-family: 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 0.9em;
+      background: var(--gray-100);
+      padding: 0.12rem 0.4rem;
+      border-radius: 5px;
+      color: var(--gray-800);
+      border: 1px solid var(--gray-200);
+    }
+    .article-body pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 1.1rem 1.2rem;
+      border-radius: 10px;
+      overflow-x: auto;
+      font-size: 0.86rem;
+      line-height: 1.55;
+      margin: 1.1rem 0 1.4rem;
+      border: 1px solid #1e293b;
+    }
+    .article-body pre code {
+      background: transparent;
+      border: none;
+      padding: 0;
+      color: inherit;
+      font-size: inherit;
+    }
+    .article-body ul, .article-body ol { padding-left: 1.5rem; }
+    .article-body li { margin-bottom: 0.4rem; }
+    .article-body blockquote {
+      border-left: 3px solid var(--purple);
+      background: var(--purple-lt);
+      padding: 0.85rem 1.1rem;
+      border-radius: 0 8px 8px 0;
+      color: var(--gray-700);
+      font-style: italic;
+    }
+    .article-body table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+      margin: 1.2rem 0 1.4rem;
+    }
+    .article-body th, .article-body td {
+      border: 1px solid var(--gray-200);
+      padding: 0.6rem 0.85rem;
+      text-align: left;
+    }
+    .article-body th {
+      background: var(--gray-50);
+      font-weight: 700;
+      color: var(--gray-800);
+    }
+    .article-body td:not(:first-child),
+    .article-body th:not(:first-child) {
+      text-align: right;
+    }
+    .article-body hr {
+      border: none;
+      border-top: 1px solid var(--gray-200);
+      margin: 2rem 0;
+    }
+    .callout-orange {
+      background: var(--orange-lt);
+      border-left: 3px solid var(--orange);
+      padding: 0.95rem 1.15rem;
+      border-radius: 0 8px 8px 0;
+      margin: 1.3rem 0;
+      color: var(--gray-700);
+    }
+    .article-footer {
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--gray-200);
+      color: var(--gray-600);
+      font-size: 0.92rem;
+    }
+    .article-footer a {
+      color: var(--purple-dk);
+      text-decoration: none;
+      border-bottom: 1px dotted var(--purple);
+    }
+    .signature {
+      margin-top: 1.4rem;
+      font-style: italic;
+      color: var(--gray-600);
+    }
+
+    @media (max-width: 640px) {
+      nav { padding: 0 1rem; }
+      .article-hero { padding: 2.4rem 1rem 3rem; }
+      article { padding: 0 0.75rem 4rem; }
+      .article-body { padding: 1.6rem 1.25rem; border-radius: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="brand" href="/">
+      <span class="brand-mark"><img src="/favicon.svg" alt="" aria-hidden="true"></span>
+      <span>Big Indexer</span>
+    </a>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/validation">Validation</a>
+      <a href="/blog" class="active">Blog</a>
+      <a href="https://github.com/ahmedxuhri/bigindexer" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </nav>
+
+  <section class="article-hero">
+    <div class="breadcrumbs"><a href="/blog">← Back to all posts</a></div>
+    <h1>I left Cody. Here's how I made my BYO-API-key AI setup not suck on big repos.</h1>
+    <div class="meta">
+      <span class="tag">Walkthrough</span>
+      <span>2026 · 8 min read</span>
+    </div>
+  </section>
+
+  <article>
+    <div class="article-body">
+      <blockquote>A walkthrough for the people scrolling through r/ClaudeAI, r/LocalLLaMA, and the Continue Discord asking "what's a good Cody alternative now that AMP charges per line?"</blockquote>
+
+      <p>If you're reading this, you probably already know the story. Sourcegraph quietly retired Cody and replaced it with AMP, which charges per line of code generated. Cursor caps your usage at $20. Copilot's pricing is opaque. The whole "flat-rate AI coding assistant" market just admitted that the economics don't work at current LLM token prices.</p>
+
+      <p>Meanwhile, the BYO-API-key crowd — Continue, Aider, Claude Code with the <code>claude</code> CLI, Cline — is sitting on a $5–20/month Anthropic or OpenAI bill and getting nearly the same value, <em>if</em> they can get the AI to actually understand their codebase. That last part is where it falls apart on big repos. The AI reads files randomly. It misses the architecture. It suggests changes that cross boundaries it shouldn't.</p>
+
+      <p>This is a write-up of what's actually been working for me to close that gap, with concrete numbers from a 100-run study and reproducible code. I'm the maintainer of <a href="https://github.com/ahmedxuhri/bigindexer" target="_blank" rel="noopener">Big Indexer</a>, so I'm not exactly unbiased — but the validation data is public, the loss cases are documented, and you can run the whole thing locally on your own repo in 5 minutes.</p>
+
+      <h2>The actual problem with BYO-API-key setups on big repos</h2>
+
+      <p>Continue, Aider, and friends do retrieval. They embed your codebase, pull a few chunks per query, send those to the AI. That works fine for "what does this function do" but it falls over on architectural questions:</p>
+
+      <ul>
+        <li><em>"Where should I add this feature without leaking responsibilities across modules?"</em></li>
+        <li><em>"What's the blast radius if I change this route handler?"</em></li>
+        <li><em>"Are there other places in the repo that solve a similar problem I should mirror?"</em></li>
+      </ul>
+
+      <p>Embedding-based retrieval doesn't have a model of architecture. It has a model of textual similarity. Those aren't the same thing. The result: AI gives you syntactically reasonable code that crosses the wrong boundaries, gets the wrong abstractions, and reads ten files when it should have read two.</p>
+
+      <p>Sourcegraph knew this — that's why Cody had a "structural" code graph backing it. But it was a managed service, your queries went to their cloud, and the per-line economics became untenable.</p>
+
+      <h2>What I tried instead</h2>
+
+      <p>A small open-source tool called <a href="https://github.com/ahmedxuhri/bigindexer" target="_blank" rel="noopener">Big Indexer</a> that does one thing: scan your repo, build a behavioral graph, expose it over MCP (Model Context Protocol). MCP is the standard your AI assistant probably already speaks — Continue, Cursor, Claude Desktop, Cline all support it.</p>
+
+      <p>The pitch: BGI is <em>not</em> an AI coding assistant. It runs alongside whichever one you've picked. It's the architecture-aware context layer that gives the AI a real model of your codebase's structure, so it stops file-fishing and starts giving you architecturally sane suggestions.</p>
+
+      <p>Cost: free, local, Apache 2.0. No service in the loop. No per-token fee.</p>
+
+      <h2>Setup, in 5 minutes</h2>
+
+<pre><code>pip install bigindexer
+cd /path/to/your/big/repo
+bgi scan . --lang auto --out bgi-graph.json --fuse-graph fuse-graph.json</code></pre>
+
+      <p>Then add it to whichever MCP client you're using. For Continue, that's an entry in <code>~/.continue/config.json</code>:</p>
+
+<pre><code>{
+  "experimental": {
+    "modelContextProtocolServers": [{
+      "name": "bgi",
+      "transport": {
+        "type": "stdio",
+        "command": "bgi",
+        "args": ["mcp",
+          "--graph", "/abs/path/bgi-graph.json",
+          "--fuse-graph", "/abs/path/fuse-graph.json"
+        ]
+      }
+    }]
+  }
+}</code></pre>
+
+      <p>Restart Continue, and it has 12 new MCP tools available. The three I actually use:</p>
+
+      <ul>
+        <li><code>task_fingerprint(task)</code> — convert a natural-language task into the repo's behavioral vocabulary</li>
+        <li><code>behavioral_twins(task)</code> — find the top 3 in-repo code units already doing similar work</li>
+        <li><code>twin_context(task)</code> — combined: fingerprint + twins + the seam where they connect + a 5-point safety rubric</li>
+      </ul>
+
+      <p>The full setup walkthrough with more detail (Claude Desktop, Cursor, Cline configs too) is in <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/docs/MCP_WITH_CONTINUE.md" target="_blank" rel="noopener">docs/MCP_WITH_CONTINUE.md</a>.</p>
+
+      <h2>What actually changes</h2>
+
+      <p>The validation page has 100 scored runs across 5 production OSS repos (django, fastapi, prometheus, pydantic-core, next.js) with three different models (deepseek-v4-flash, GPT-4o, Gemini auto). Raw outputs are committed; you can re-score yourself.</p>
+
+      <p>Headline numbers:</p>
+
+      <table>
+        <thead>
+          <tr><th>Metric</th><th>No BGI</th><th>With BGI MCP context</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Median agent latency</td><td>133.8s</td><td><strong>66.2s</strong></td></tr>
+          <tr><td>Boundary accuracy</td><td>0.95</td><td><strong>1.00</strong></td></tr>
+          <tr><td>Actionability (1–5)</td><td>4.00</td><td><strong>4.75</strong></td></tr>
+          <tr><td>Hallucination rate</td><td>0</td><td>0</td></tr>
+        </tbody>
+      </table>
+
+      <p>The latency drop is the cost story. Median agent run halved. That's because the AI read fewer files — BGI told it which ones mattered. Translates to roughly 20–30% lower input-token cost on big-repo agentic tasks (depends entirely on your starting setup; don't believe specific cost claims without measuring on your own repo).</p>
+
+      <p>The boundary and actionability numbers are the answer-quality story. Both moved up. That's the part that matters more — a wrong answer at half the price is still wrong.</p>
+
+      <h2>The pydantic-core moment</h2>
+
+      <p>The clearest result in the dataset is on pydantic-core. Without BGI, the model on prompt p01 scored 0% on evidence coverage and 0 on boundary accuracy — it described a pure-Python architecture. The repo is Python + Rust with a <code>pyo3</code> bridge, and the model never found it. With BGI MCP context, same prompt: 80% evidence coverage, 1.0 boundary accuracy. BGI surfaced the bridge directly; the model identified it correctly on the first attempt.</p>
+
+      <p>That's not a benchmark trick. That's an architecture-aware context layer doing what an embedding retriever cannot.</p>
+
+      <h2>The honest losses</h2>
+
+      <p>I'm going to publish the loss cases too because that's the only way these "we ran a benchmark" posts are believable.</p>
+
+      <div class="callout-orange">
+        <strong>Go scanner has a known gap.</strong> On Go repos, BGI's behavioral edges currently stay mostly within file boundaries due to how the spectral mask system interacts with Go's token distribution. Boundary accuracy is still 1.0, actionability is still 4.25–5.0, and the user-visible MCP product still works. But on a recent external benchmark vs Louvain on raw imports, BGI lost on Go and won on Python. Documented in detail at <a href="https://bigindexer.com/validation">bigindexer.com/validation</a>.
+      </div>
+
+      <p><strong>Evidence coverage is style-sensitive.</strong> Different models produce different <code>VERIFIED/HYPOTHESIS/UNKNOWN</code> tagging styles. deepseek tags strictly; Gemini tags less; GPT-4o gives correct answers with fewer explicit tags. The rubric reflects tagging style as much as answer quality. We publish a tag-relaxed second score to make the gap visible, and we never normalize numbers behind the scenes.</p>
+
+      <p><strong>Self-scored.</strong> I wrote the rubric. I scored the runs. The full rubric is in <code>validation/SCORING_RUBRIC.md</code>, every raw output is committed to <code>validation/runs/</code>, and I genuinely want people to re-score independently and open issues if they disagree. That's the level of "self-scored" this is — not a closed-door evaluation.</p>
+
+      <h2>Why this is open source and free</h2>
+
+      <p>Because the business isn't the code. The code is replicable by a motivated engineer in a few months — that's not a moat worth defending. The validation evidence, the network of users, the managed-cloud version eventually, those are the things that compound. The code stays free, Apache 2.0, runs on your machine, and your queries don't leave it.</p>
+
+      <p>That's also the answer to the obvious "why isn't this $9.99/month like Cody was" question. There is nothing to charge for. You install it, you scan your repo, you point Continue at it, and it works.</p>
+
+      <h2>Try it on your repo</h2>
+
+<pre><code>pip install bigindexer
+cd /your/repo
+bgi scan . --lang auto --out bgi-graph.json --fuse-graph fuse-graph.json
+
+# then point your AI client at:
+#   bgi mcp --graph bgi-graph.json --fuse-graph fuse-graph.json</code></pre>
+
+      <p>If you've got a big monorepo, use <code>--incremental</code> after the first scan and it stays fast.</p>
+
+      <p>If your AI assistant gives architecturally bad suggestions on a specific repo, please <a href="https://github.com/ahmedxuhri/bigindexer/issues" target="_blank" rel="noopener">open an issue</a> with the prompt and the response. That's the kind of feedback that makes the next version better.</p>
+
+      <h2>What I'd love to know from people trying this</h2>
+
+      <ol>
+        <li>Did you switch from Cody/Cursor/etc., or have you been BYO-API-key the whole time?</li>
+        <li>What's your repo size, and which AI client are you using?</li>
+        <li>Which MCP tool actually paid back? <code>cluster_of_file</code>? <code>twin_context</code>? <code>boundary_edges</code>?</li>
+        <li>Where did it fail? Specifically — <em>which</em> prompt produced <em>which</em> unhelpful answer?</li>
+      </ol>
+
+      <p>Drop a comment, open an issue, or DM. I'd genuinely like to know who you are and what would actually help.</p>
+
+      <div class="article-footer">
+        <strong>Links:</strong>
+        <ul style="margin-top: 0.6rem;">
+          <li>Repo: <a href="https://github.com/ahmedxuhri/bigindexer" target="_blank" rel="noopener">github.com/ahmedxuhri/bigindexer</a></li>
+          <li>Validation evidence: <a href="/validation">bigindexer.com/validation</a></li>
+          <li>Continue setup: <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/docs/MCP_WITH_CONTINUE.md" target="_blank" rel="noopener">docs/MCP_WITH_CONTINUE.md</a></li>
+          <li>License: Apache 2.0</li>
+        </ul>
+        <div class="signature">— Ahmed</div>
+      </div>
+    </div>
+  </article>
+
+  <script>
+    (function () {
+      try {
+        var body = JSON.stringify({
+          path: window.location.pathname,
+          title: document.title || '',
+          referrer: document.referrer || '',
+        });
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon('/api/analytics/pageview', new Blob([body], { type: 'application/json' }));
+        } else {
+          fetch('/api/analytics/pageview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body,
+            keepalive: true,
+          }).catch(function () {});
+        }
+      } catch (err) {}
+    })();
+  </script>
+</body>
+</html>
