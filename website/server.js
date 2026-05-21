@@ -202,9 +202,13 @@ app.get(['/blog', '/blog/'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'blog.html'));
 });
 
-// Blog posts (single-post for now; add cases as posts are added)
+// Blog posts
 app.get('/blog/i-left-cody', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'blog-i-left-cody.html'));
+  res.redirect(301, '/blog/reduce-input-token-costs-agentic-tasks');
+});
+
+app.get('/blog/reduce-input-token-costs-agentic-tasks', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'blog-reduce-input-token-costs-agentic-tasks.html'));
 });
 
 // Records page
