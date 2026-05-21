@@ -232,6 +232,74 @@
       color: var(--gray-600);
     }
 
+    /* ── Comments ── */
+    .comments {
+      max-width: 720px;
+      margin: 1rem auto 0;
+      padding: 0 1.25rem 5rem;
+    }
+    .comments-card {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 18px;
+      padding: 2rem 2.25rem;
+      box-shadow: 0 20px 56px rgba(31, 41, 55, 0.10);
+    }
+    .comments-card h2 { font-size: 1.25rem; margin-bottom: 0.4rem; }
+    .comments-card .lede { color: var(--gray-600); font-size: 0.92rem; margin-bottom: 1.25rem; }
+    .comment-form { display: grid; gap: 0.65rem; margin-bottom: 1.5rem; }
+    .comment-form input,
+    .comment-form textarea {
+      width: 100%;
+      padding: 0.7rem 0.85rem;
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      font: inherit;
+      color: var(--gray-800);
+      background: var(--gray-50);
+    }
+    .comment-form input:focus,
+    .comment-form textarea:focus {
+      outline: 2px solid var(--purple);
+      outline-offset: 1px;
+      background: white;
+    }
+    .comment-form textarea { min-height: 110px; resize: vertical; }
+    .comment-form .row { display: flex; gap: 0.75rem; align-items: center; justify-content: space-between; }
+    .comment-form .hint { color: var(--gray-400); font-size: 0.82rem; }
+    .comment-form button {
+      align-self: flex-start;
+      background: linear-gradient(135deg, var(--purple) 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 0.7rem 1.2rem;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .comment-form button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .comment-form .honeypot { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+    .comment-status { font-size: 0.88rem; min-height: 1.2em; }
+    .comment-status.error { color: #b91c1c; }
+    .comment-status.ok { color: #15803d; }
+    .comment-list { display: grid; gap: 0.85rem; border-top: 1px solid var(--gray-200); padding-top: 1.25rem; }
+    .comment-item {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      padding: 0.85rem 1rem;
+    }
+    .comment-head { display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap; margin-bottom: 0.3rem; }
+    .comment-name { font-weight: 700; color: var(--gray-800); }
+    .comment-when { color: var(--gray-400); font-size: 0.8rem; }
+    .comment-text { white-space: pre-wrap; word-wrap: break-word; color: var(--gray-700); line-height: 1.65; }
+    .comment-empty { color: var(--gray-400); font-size: 0.92rem; padding: 0.5rem 0; }
+
+    @media (max-width: 640px) {
+      .comments { padding: 0 0.75rem 4rem; }
+      .comments-card { padding: 1.4rem 1.2rem; border-radius: 14px; }
+    }
+
     @media (max-width: 640px) {
       nav { padding: 0 1rem; }
       .article-hero { padding: 2.4rem 1rem 3rem; }
@@ -413,6 +481,30 @@ bgi scan . --lang auto --out bgi-graph.json --fuse-graph fuse-graph.json
     </div>
   </article>
 
+  <section class="comments" id="comments">
+    <div class="comments-card">
+      <h2>Comments</h2>
+      <p class="lede">Open thread. No login, no approval queue. Be useful, be kind, no links or promo. Comments post instantly.</p>
+
+      <form class="comment-form" id="comment-form" autocomplete="off">
+        <input type="text" name="name" id="comment-name" maxlength="60" placeholder="Your name (optional)">
+        <textarea name="text" id="comment-text" maxlength="2000" placeholder="What did you try? What worked, what didn't? Skip links and code blocks." required></textarea>
+        <div class="honeypot" aria-hidden="true">
+          <label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+        </div>
+        <div class="row">
+          <span class="hint">Plain text only · 2000 char max</span>
+          <button type="submit" id="comment-submit">Post comment</button>
+        </div>
+        <div class="comment-status" id="comment-status" role="status" aria-live="polite"></div>
+      </form>
+
+      <div class="comment-list" id="comment-list">
+        <div class="comment-empty">Loading comments…</div>
+      </div>
+    </div>
+  </section>
+
   <script>
     (function () {
       try {
@@ -432,6 +524,96 @@ bgi scan . --lang auto --out bgi-graph.json --fuse-graph fuse-graph.json
           }).catch(function () {});
         }
       } catch (err) {}
+    })();
+  </script>
+
+  <script>
+    (function () {
+      const SLUG = 'reduce-input-token-costs-agentic-tasks';
+      const form = document.getElementById('comment-form');
+      const list = document.getElementById('comment-list');
+      const status = document.getElementById('comment-status');
+      const submitBtn = document.getElementById('comment-submit');
+      const nameInput = document.getElementById('comment-name');
+      const textInput = document.getElementById('comment-text');
+      const loadedAt = Date.now();
+
+      function escapeHTML(s) {
+        return String(s).replace(/[&<>"']/g, c => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[c]);
+      }
+
+      function fmtWhen(iso) {
+        const d = new Date(iso);
+        return isNaN(d) ? iso : d.toLocaleString();
+      }
+
+      function renderComments(items) {
+        if (!items.length) {
+          list.innerHTML = '<div class="comment-empty">No comments yet. Be the first.</div>';
+          return;
+        }
+        list.innerHTML = items.slice().reverse().map(c => `
+          <div class="comment-item">
+            <div class="comment-head">
+              <span class="comment-name">${escapeHTML(c.name || 'anonymous')}</span>
+              <span class="comment-when">${escapeHTML(fmtWhen(c.at))}</span>
+            </div>
+            <div class="comment-text">${escapeHTML(c.text)}</div>
+          </div>
+        `).join('');
+      }
+
+      function setStatus(msg, kind) {
+        status.textContent = msg || '';
+        status.className = 'comment-status' + (kind ? ' ' + kind : '');
+      }
+
+      async function loadComments() {
+        try {
+          const r = await fetch('/api/comments/' + SLUG);
+          if (!r.ok) throw new Error('load failed');
+          const data = await r.json();
+          renderComments(data.comments || []);
+        } catch (e) {
+          list.innerHTML = '<div class="comment-empty">Could not load comments.</div>';
+        }
+      }
+
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        setStatus('');
+        const text = textInput.value.trim();
+        if (!text) { setStatus('Please write something.', 'error'); return; }
+        submitBtn.disabled = true;
+        try {
+          const r = await fetch('/api/comments/' + SLUG, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: nameInput.value,
+              text,
+              website: form.elements['website'].value,
+              dwell_ms: Date.now() - loadedAt,
+            }),
+          });
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok) {
+            setStatus(data.error || 'Could not post comment.', 'error');
+          } else {
+            textInput.value = '';
+            setStatus('Posted. Thanks.', 'ok');
+            await loadComments();
+          }
+        } catch (e) {
+          setStatus('Network error. Try again.', 'error');
+        } finally {
+          submitBtn.disabled = false;
+        }
+      });
+
+      loadComments();
     })();
   </script>
 </body>

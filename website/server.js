@@ -10,6 +10,13 @@ const PORT = process.env.PORT || 3200;
 const HOST = process.env.HOST || '127.0.0.1';
 const TELEMETRY_LOG = process.env.BGI_TELEMETRY_LOG
   || path.join(__dirname, 'data', 'telemetry.jsonl');
+const COMMENTS_DIR = process.env.BGI_COMMENTS_DIR
+  || path.join(__dirname, 'data', 'comments');
+const COMMENT_SLUG_RE = /^[a-z0-9][a-z0-9-]{0,80}$/;
+const COMMENT_RATE_LIMIT_MS = 10 * 60 * 1000;
+const COMMENT_RATE_LIMIT_MAX = 3;
+const COMMENT_MIN_DWELL_MS = 5_000;
+const commentRateBuckets = new Map();
 const analytics = {
   totalPageviews: 0,
   byPath: new Map(),
@@ -171,6 +178,97 @@ app.post('/api/telemetry', (req, res) => {
     return res.status(500).json({ error: 'log write failed' });
   }
   return res.status(204).end();
+});
+
+// ── Comments (per-post, no admin approval, anti-spam guards) ────────────────
+const COMMENT_BANNED_PATTERNS = [
+  /https?:\/\//i,
+  /www\./i,
+  /\b(viagra|casino|crypto|bitcoin|loan|porn|xxx|escort)\b/i,
+  /<\s*script/i,
+];
+
+function commentSlugOk(slug) {
+  return typeof slug === 'string' && COMMENT_SLUG_RE.test(slug);
+}
+
+function commentLooksLikeCode(text) {
+  if (/^\s*```/m.test(text)) return true;
+  if (/^[ \t]{4,}\S/m.test(text)) return true;
+  const codeChars = (text.match(/[{};=<>]/g) || []).length;
+  return codeChars > 12;
+}
+
+function commentRateLimited(ip) {
+  const now = Date.now();
+  const bucket = (commentRateBuckets.get(ip) || []).filter(t => now - t < COMMENT_RATE_LIMIT_MS);
+  if (bucket.length >= COMMENT_RATE_LIMIT_MAX) {
+    commentRateBuckets.set(ip, bucket);
+    return true;
+  }
+  bucket.push(now);
+  commentRateBuckets.set(ip, bucket);
+  return false;
+}
+
+function validateComment(body) {
+  if (!body || typeof body !== 'object') return 'invalid body';
+  if (body.website) return 'spam';
+  const dwell = Number(body.dwell_ms);
+  if (!Number.isFinite(dwell) || dwell < COMMENT_MIN_DWELL_MS) return 'too fast';
+  const name = typeof body.name === 'string' ? body.name.trim() : '';
+  const text = typeof body.text === 'string' ? body.text.trim() : '';
+  if (!text) return 'comment is empty';
+  if (text.length > 2000) return 'comment too long';
+  if (name.length > 60) return 'name too long';
+  if (commentLooksLikeCode(text)) return 'no code blocks please';
+  for (const re of COMMENT_BANNED_PATTERNS) {
+    if (re.test(text) || re.test(name)) return 'links and promotional content are not allowed';
+  }
+  return null;
+}
+
+function commentsFile(slug) {
+  return path.join(COMMENTS_DIR, `${slug}.jsonl`);
+}
+
+function readComments(slug) {
+  const file = commentsFile(slug);
+  if (!fs.existsSync(file)) return [];
+  return fs.readFileSync(file, 'utf8')
+    .split('\n')
+    .filter(Boolean)
+    .map(line => { try { return JSON.parse(line); } catch { return null; } })
+    .filter(Boolean);
+}
+
+app.get('/api/comments/:slug', (req, res) => {
+  const slug = req.params.slug;
+  if (!commentSlugOk(slug)) return res.status(400).json({ error: 'invalid slug' });
+  const items = readComments(slug).map(c => ({ name: c.name, text: c.text, at: c.at }));
+  res.json({ slug, count: items.length, comments: items });
+});
+
+app.post('/api/comments/:slug', (req, res) => {
+  const slug = req.params.slug;
+  if (!commentSlugOk(slug)) return res.status(400).json({ error: 'invalid slug' });
+  const error = validateComment(req.body);
+  if (error) return res.status(400).json({ error });
+  const ip = req.ip || req.connection.remoteAddress || 'unknown';
+  if (commentRateLimited(ip)) return res.status(429).json({ error: 'rate limit reached, try again later' });
+  const entry = {
+    name: (req.body.name || '').trim() || 'anonymous',
+    text: req.body.text.trim(),
+    at: new Date().toISOString(),
+  };
+  try {
+    fs.mkdirSync(COMMENTS_DIR, { recursive: true });
+    fs.appendFileSync(commentsFile(slug), JSON.stringify(entry) + '\n');
+  } catch (err) {
+    console.error(`[comments] append failed: ${err.message}`);
+    return res.status(500).json({ error: 'could not save comment' });
+  }
+  res.status(201).json({ name: entry.name, text: entry.text, at: entry.at });
 });
 
 // API: Get waitlist (admin endpoint - requires ADMIN_KEY env var)
