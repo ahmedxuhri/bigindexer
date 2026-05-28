@@ -36,9 +36,15 @@ bgi/bgi/gate1/
 ├── queries/
 │   ├── __init__.py              # Language registry initialization
 │   ├── python.scm               # Python patterns
-│   ├── typescript.scm           # TypeScript/JavaScript patterns
-│   ├── rust.scm                 # (example) Rust patterns
-│   └── <lang>.scm               # (new) Language queries
+│   ├── typescript.scm           # TypeScript/JavaScript/TSX patterns
+│   ├── go.scm                   # Go patterns
+│   ├── rust.scm                 # Rust patterns
+│   ├── java.scm                 # Java patterns
+│   ├── csharp.scm               # C# patterns
+│   ├── php.scm                  # PHP patterns
+│   ├── ruby.scm                 # Ruby patterns
+│   ├── kotlin.scm               # Kotlin patterns
+│   └── scala.scm                # Scala patterns
 ├── parallel_scanner.py          # Multiprocessing Gate 1
 ├── fingerprinter.py             # COV token extraction
 └── ...
@@ -445,17 +451,17 @@ python3 -m pytest tests/test_ruby_language.py -v
 
 ## Quick Reference: COV Token Coverage by Language
 
-| Token | Python | TypeScript | Rust | Go |
-|-------|--------|-----------|------|-----|
-| OUTPUT | ✅ | ✅ | ✅ | ✅ |
-| EMIT | ✅ | ✅ | ✅ | ❌ |
-| TRANSFORM | ✅ | ✅ | ✅ | ✅ |
-| CONDITIONAL | ✅ | ✅ | ✅ | ✅ |
-| LOOP | ✅ | ✅ | ✅ | ✅ |
-| MUTATE | ✅ | ✅ | ✅ | ✅ |
-| FETCH | ✅ | ✅ | ✅ | ✅ |
-| SANITIZE | ✅ | ✅ | ❌ | ❌ |
-| GUARD | ✅ | ✅ | ❌ | ❌ |
+| Token | Python | TypeScript | Rust | Go | Java | C# | PHP | Ruby | Kotlin | Scala |
+|-------|--------|-----------|------|----|------|----|-----|------|--------|-------|
+| OUTPUT | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| EMIT | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| TRANSFORM | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| CONDITIONAL | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| LOOP | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| MUTATE | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| FETCH | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SANITIZE | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| GUARD | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 ---
 

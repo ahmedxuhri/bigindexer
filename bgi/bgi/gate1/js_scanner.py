@@ -30,6 +30,7 @@ from bgi.gate1.typescript_rules import (
     extract_route_call_info, extract_route_handler,
 )
 from bgi.gate1.ai_fallback import AIFallback
+from bgi.gate1.query_fingerprinter import get_node_tokens
 
 
 _JS_LANGUAGE = Language(tsjs.language())
@@ -209,19 +210,23 @@ def fingerprint_function_js(
 
     body = _get_body(func_node)
     if body:
-        for node in _walk_body(body):
-            t1 = apply_tier1(node)
-            if t1:
-                collected.append(t1)
-                continue
-            if node.type == "call_expression":
-                t4 = apply_tier4(node)
-                if t4:
-                    collected.extend(t4)
-                else:
-                    ai_result = ai.classify(node, context_snippet=node_text(node))
-                    if ai_result:
-                        collected.append(ai_result)
+        query_tokens = get_node_tokens(body, "javascript")
+        if query_tokens is not None:
+            collected.extend(query_tokens)
+        else:
+            for node in _walk_body(body):
+                t1 = apply_tier1(node)
+                if t1:
+                    collected.append(t1)
+                    continue
+                if node.type == "call_expression":
+                    t4 = apply_tier4(node)
+                    if t4:
+                        collected.extend(t4)
+                    else:
+                        ai_result = ai.classify(node, context_snippet=node_text(node))
+                        if ai_result:
+                            collected.append(ai_result)
 
     class_context_raw = _get_class_context(func_node)
     class_context_tokens = dedupe_ordered([t for t, _ in class_context_raw])

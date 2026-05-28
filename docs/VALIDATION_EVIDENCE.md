@@ -1,7 +1,7 @@
 # Big Indexer — Validation Evidence
 
-> **Public evidence record** — 100 scored runs across 5 repos (Python + Go + TypeScript).
-> Every raw output is committed. Every claim is traceable to a run artifact.
+> **Public evidence record** — 100 scored runs across 5 repos (validating Python + Go + TypeScript, with core support since expanded to 11 query-backed languages).
+> Mirrors the validation page at `website/public/validation.html` (served at `bigindexer.com/validation`).
 
 ## Does Big Indexer actually help AI coding assistants?
 
@@ -212,13 +212,13 @@ Raw imports dominate on both Go repos. Root cause is **structural, not algorithm
 
 ### Honest read
 
-**Where BGI's edges add real value:** tier-1 query-backed languages (`.scm`-based: Python, TypeScript). The HARD-only precision of 1.000 on django is the strongest single result here — when BGI promotes an edge to HARD, those two files genuinely belong together. This validates the README's "scope-constrained edge generation" claim on the languages where the scanner produces dense cross-file behavioral edges.
+**Where BGI's edges add real value:** tier-1 query-backed languages (`.scm`-based: Python, TypeScript, JavaScript, Go, Rust, Java, C#, PHP, Ruby, Kotlin, Scala). The HARD-only precision of 1.000 on django is the strongest single result here — when BGI promotes an edge to HARD, those two files genuinely belong together. This validates the README's "scope-constrained edge generation" claim on the languages where the scanner produces dense cross-file behavioral edges.
 
-**Where BGI's edges currently underperform:** tier-2 scanner-backed languages on cluster-recovery benchmarks. The user-visible MCP product (boundary detection, twin retrieval, AI-assistant context) still works on Go — boundary accuracy 1.0, actionability 4.25–5.0 across all three models in the 100-run study. The cluster-recovery gap is real and documented in the language-tier section of the README.
+**Where BGI's edges currently underperform:** tier-2 scanner-backed languages (and previously Go, prior to its query-backed upgrade) on cluster-recovery benchmarks. The user-visible MCP product (boundary detection, twin retrieval, AI-assistant context) still works on Go — boundary accuracy 1.0, actionability 4.25–5.0 across all three models in the 100-run study. The cluster-recovery gap is real and documented in the language-tier section of the README.
 
 **What this changes:**
 - The README's `DRS cluster` glossary line is softened — `clusters` is honestly described as unit-level grouping, mostly intra-file. File-level architectural components are better expressed via the BGI edge graph + Louvain (or via the fuse-graph boundary signal).
-- The language-tier section adds a cross-file edge density caveat distinguishing tier-1 from tier-2 on this specific axis.
+- The language-tier section adds a cross-file edge density caveat.
 
 ### Reproduce
 
@@ -250,7 +250,7 @@ We publish limitations before readers find them. A reader who discovers a flaw t
 
 **Self-reported scoring.** Checklists were written by us, scored by us. The checklists were defined before scoring by reading actual source code. The full rubric is at [validation/SCORING_RUBRIC.md](../validation/SCORING_RUBRIC.md). Every raw output is public at [validation/runs/](../validation/runs/). Re-score independently and open an issue if you disagree.
 
-**5 repos is not a large sample.** Python + Go + TypeScript is broader than Python-only, but still limited. The pydantic-core finding stands on its own. Three-model replication (GPT-4o + Gemini auto) is now complete, but we still need additional repos and external replications.
+**5 repos is not a large sample.** Python + Go + TypeScript (with core support since expanded to 11 first-class query-backed languages) is broader than Python-only, but still limited. The pydantic-core finding stands on its own. Three-model replication (GPT-4o + Gemini auto) is now complete, but we still need additional repos and external replications.
 
 **BGI-TWIN refresh is MCP-only.** No updated baseline was run alongside the refresh. We have no reason to believe the baseline changed, but this is a real experimental design limitation.
 

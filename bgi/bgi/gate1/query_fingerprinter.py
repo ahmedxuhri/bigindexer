@@ -46,6 +46,15 @@ _CAPTURE_TO_COV: dict[str, COV] = {
     "recover":     COV.RECOVER,
     "defer":       COV.DEFER,
     "async":       COV.ASYNC,
+    "route":        COV.ROUTE,
+    "delegate":     COV.DELEGATE,
+    "contract":     COV.CONTRACT,
+    "compose":      COV.COMPOSE,
+    "init":         COV.INIT,
+    "teardown":     COV.TEARDOWN,
+    "authenticate": COV.AUTHENTICATE,
+    "authorize":    COV.AUTHORIZE,
+    "test":         COV.TEST,
 }
 
 # Captures produced by pure structural AST patterns (no #match? predicates).
@@ -84,6 +93,30 @@ def _load_query(lang: str) -> object | None:
         elif lang == "javascript":
             import tree_sitter_javascript as tsjs
             ts_lang = Language(tsjs.language())
+        elif lang == "go":
+            import tree_sitter_go as tsgo
+            ts_lang = Language(tsgo.language())
+        elif lang == "rust":
+            import tree_sitter_rust as tsrust
+            ts_lang = Language(tsrust.language())
+        elif lang == "java":
+            import tree_sitter_java as tsjava
+            ts_lang = Language(tsjava.language())
+        elif lang == "csharp":
+            import tree_sitter_c_sharp as tscs
+            ts_lang = Language(tscs.language())
+        elif lang == "php":
+            import tree_sitter_php as tsphp
+            ts_lang = Language(tsphp.language_php())
+        elif lang == "ruby":
+            import tree_sitter_ruby as tsruby
+            ts_lang = Language(tsruby.language())
+        elif lang == "kotlin":
+            import tree_sitter_kotlin as tskotlin
+            ts_lang = Language(tskotlin.language())
+        elif lang == "scala":
+            import tree_sitter_scala as tsscala
+            ts_lang = Language(tsscala.language())
         else:
             _QUERY_CACHE[lang] = None
             return None

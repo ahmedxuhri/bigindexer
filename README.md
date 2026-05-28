@@ -167,8 +167,8 @@ Artifact: `output/validation/kubernetes-optionb-controlled-median-v21.json`
 
 BGI does not treat all languages equally; support is tiered:
 
-1. **Query-backed (`.scm`)**: `python`, `typescript`
-2. **Tree-sitter scanner + rule path**: `javascript`, `java`, `go`, `rust`, `ruby`, `csharp`, `php`, `kotlin`, `c`, `scala`, `lua`, `elixir`
+1. **Query-backed (`.scm`)**: `python`, `typescript`, `tsx`, `javascript`, `go`, `rust`, `java`, `csharp`, `php`, `ruby`, `kotlin`, `scala`
+2. **Tree-sitter scanner + rule path**: `c`, `lua`, `elixir`
 3. **Generic regex fallback by extension**: `swift`, `r`, `dart`, `bash`, `nim`, `zig`, `haskell`, `ocaml`, `fsharp`, `clojure`, `erlang`, `matlab`, `vb`, `crystal`, `cobol`, `groovy`
 
 Use this as a reliability signal: query-backed and dedicated scanner tiers are stronger than generic fallback.

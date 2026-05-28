@@ -11,6 +11,7 @@ from bgi.core.fingerprint import COVFingerprint
 from bgi.gate1.ai_fallback import AIFallback
 from bgi.gate1.rules import dedupe_ordered
 from bgi.gate1.rust_rules import apply_tier1, apply_tier2, apply_tier3, apply_tier4, apply_tier5, node_text
+from bgi.gate1.query_fingerprinter import get_node_tokens
 
 
 _RUST_LANGUAGE = Language(tsrust.language())
@@ -129,19 +130,23 @@ def fingerprint_function_rust(func_node: Node, rel_path: str, ai: AIFallback) ->
 
     body = func_node.child_by_field_name("body")
     if body is not None:
-        for node in _walk_body(body):
-            t1 = apply_tier1(node)
-            if t1:
-                collected.append(t1)
-                continue
-            if node.type in {"call_expression", "method_call_expression"}:
-                t4 = apply_tier4(node)
-                if t4:
-                    collected.extend(t4)
-                else:
-                    ai_result = ai.classify(node, context_snippet=node_text(node))
-                    if ai_result:
-                        collected.append(ai_result)
+        query_tokens = get_node_tokens(body, "rust")
+        if query_tokens is not None:
+            collected.extend(query_tokens)
+        else:
+            for node in _walk_body(body):
+                t1 = apply_tier1(node)
+                if t1:
+                    collected.append(t1)
+                    continue
+                if node.type in {"call_expression", "method_call_expression"}:
+                    t4 = apply_tier4(node)
+                    if t4:
+                        collected.extend(t4)
+                    else:
+                        ai_result = ai.classify(node, context_snippet=node_text(node))
+                        if ai_result:
+                            collected.append(ai_result)
 
     class_context_raw = _get_class_context(func_node)
     class_context_tokens = dedupe_ordered([token for token, _ in class_context_raw])
