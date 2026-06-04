@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Big Indexer — Interactive Demo Sandbox</title>
+  <meta name="description" content="Explore Big Indexer's static analysis pipeline and MCP tools in an interactive code sandbox.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="shortcut icon" href="/favicon.svg">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f8f9fd;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #64748b;
+      --purple: #6366f1;
+      --purple-dk: #4f46e5;
+      --purple-lt: #eeeffe;
+      --green: #10b981;
+      --green-lt: #ecfdf5;
+      --orange: #f59e0b;
+      --orange-lt: #fefbeb;
+      --red: #ef4444;
+      --red-lt: #fef2f2;
+      --blue: #3b82f6;
+      --blue-lt: #eff6ff;
+      --editor-bg: #1e1e2e;
+      --editor-fg: #cdd6f4;
+      --terminal-bg: #11111b;
+      --line: #e2e8f0;
+      --shadow: 0 20px 40px rgba(99, 102, 241, 0.08);
+      --glass-bg: rgba(255, 255, 255, 0.85);
+      --glass-border: rgba(226, 232, 240, 0.8);
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(99, 102, 241, 0.12), transparent 40%),
+        radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.08), transparent 35%),
+        linear-gradient(135deg, #f8f9fd 0%, #f1f5f9 100%);
+      line-height: 1.5;
+    }
+
+    a { color: inherit; }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(16px);
+      background: rgba(255, 255, 255, 0.8);
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 68px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 1.15rem;
+      color: var(--text);
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      color: white;
+      background: linear-gradient(135deg, var(--purple) 0%, #4f46e5 100%);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+    }
+
+    nav {
+      display: flex;
+      gap: 1.25rem;
+      font-size: 0.92rem;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: var(--muted);
+      font-weight: 550;
+      transition: color 0.15s ease;
+    }
+
+    nav a:hover, nav a.active {
+      color: var(--purple-dk);
+    }
+
+    main {
+      padding: 2.5rem 0 4rem;
+    }
+
+    .intro {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      background: var(--purple-lt);
+      color: var(--purple-dk);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.5rem;
+      color: #0f172a;
+    }
+
+    .lede {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 70ch;
+      margin: 0 auto;
+    }
+
+    /* Tabs Navigation */
+    .tabs-nav {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+      background: rgba(226, 232, 240, 0.5);
+      padding: 0.35rem;
+      border-radius: 14px;
+      max-width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .tab-btn {
+      padding: 0.6rem 1.25rem;
+      border: none;
+      background: transparent;
+      font-weight: 700;
+      font-size: 0.92rem;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background: var(--panel);
+      color: var(--purple-dk);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Tab Contents */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Option 1: MCP Simulator layout */
+    .mcp-sandbox {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 1.5rem;
+      align-items: stretch;
+    }
+
+    .sidebar-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .task-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+    }
+
+    .task-card:hover {
+      border-color: var(--purple);
+      transform: translateY(-1px);
+    }
+
+    .task-card.active {
+      border-color: var(--purple-dk);
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.12);
+      background: var(--purple-lt);
+    }
+
+    .task-card h3 {
+      font-size: 0.95rem;
+      margin-bottom: 0.35rem;
+      color: #0f172a;
+    }
+
+    .task-card p {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .ide-container {
+      background: var(--editor-bg);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      flex-direction: column;
+      height: 600px;
+    }
+
+    /* VSCode title bar mock */
+    .ide-header {
+      background: #181825;
+      padding: 0.65rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      font-size: 0.78rem;
+      color: var(--muted);
+      user-select: none;
+    }
+
+    .ide-dots {
+      display: flex;
+      gap: 0.35rem;
+    }
+
+    .ide-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .ide-dot-red { background: #ff5f56; }
+    .ide-dot-yellow { background: #ffbd2e; }
+    .ide-dot-green { background: #27c93f; }
+
+    .ide-tab {
+      background: var(--editor-bg);
+      color: var(--editor-fg);
+      padding: 0.4rem 0.85rem;
+      border-radius: 6px 6px 0 0;
+      font-family: monospace;
+      font-size: 0.78rem;
+      border-top: 1.5px solid var(--purple);
+    }
+
+    .ide-workspace {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      flex-grow: 1;
+      overflow: hidden;
+    }
+
+    /* MCP panel / explorer mockup */
+    .ide-explorer {
+      background: #181825;
+      border-right: 1px solid rgba(255, 255, 255, 0.03);
+      padding: 1rem;
+      font-family: monospace;
+      font-size: 0.78rem;
+      color: #a6adc8;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      overflow-y: auto;
+    }
+
+    .explorer-title {
+      font-weight: 700;
+      color: #cdd6f4;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 0.72rem;
+    }
+
+    .tool-ping {
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px dashed var(--purple);
+      border-radius: 6px;
+      padding: 0.6rem;
+      margin-top: 0.35rem;
+      font-size: 0.74rem;
+      color: #cdd6f4;
+      animation: pulse 2s infinite ease-in-out;
+    }
+
+    .tool-ping-success {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: var(--green);
+    }
+
+    .tool-method {
+      color: #89b4fa;
+      font-weight: 700;
+    }
+
+    /* Code editor area */
+    .editor-view {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--editor-bg);
+    }
+
+    .code-editor {
+      flex-grow: 1;
+      padding: 1.25rem;
+      overflow-y: auto;
+      font-family: "Fira Code", Consolas, Monaco, monospace;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: var(--editor-fg);
+      white-space: pre;
+    }
+
+    /* Side-by-side mode toggle inside editor */
+    .mode-bar {
+      background: #11111b;
+      padding: 0.5rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .mode-btns {
+      display: flex;
+      background: #181825;
+      padding: 0.2rem;
+      border-radius: 8px;
+    }
+
+    .mode-btn {
+      background: transparent;
+      border: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      color: #a6adc8;
+      font-size: 0.74rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .mode-btn.active {
+      background: var(--purple);
+      color: white;
+    }
+
+    .compare-label {
+      font-size: 0.74rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    /* Terminal area mockup */
+    .ide-terminal {
+      background: var(--terminal-bg);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      height: 180px;
+      padding: 0.85rem 1rem;
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #a6adc8;
+      overflow-y: auto;
+    }
+
+    .term-prompt { color: #f9e2af; }
+    .term-cmd { color: #cdd6f4; font-weight: bold; }
+    .term-output { color: #bac2de; margin-top: 0.25rem; white-space: pre-wrap;}
+
+    /* Token styling for editors */
+    .tk-key { color: #f38ba8; }
+    .tk-str { color: #a6e3a1; }
+    .tk-func { color: #89b4fa; }
+    .tk-comment { color: #6c7086; font-style: italic; }
+    .tk-class { color: #f9e2af; }
+    .tk-bold { font-weight: bold; }
+    .tk-marker {
+      background: rgba(99, 102, 241, 0.2);
+      border-bottom: 2px solid var(--purple);
+      padding: 0 0.15rem;
+    }
+
+    /* Option 2: Live Gate 1 Scanner layout */
+    .scanner-sandbox {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .scanner-left, .scanner-right {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .sandbox-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+
+    .sandbox-card h2 {
+      font-size: 1.15rem;
+      margin-bottom: 0.5rem;
+      color: #0f172a;
+    }
+
+    .code-input-area {
+      position: relative;
+    }
+
+    .code-textarea {
+      width: 100%;
+      height: 380px;
+      font-family: "Fira Code", Consolas, Monaco, monospace;
+      font-size: 0.88rem;
+      padding: 1rem;
+      background: #fafafc;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: #1e1e2e;
+      resize: none;
+      line-height: 1.5;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    .code-textarea:focus {
+      border-color: var(--purple);
+      background: white;
+    }
+
+    /* Highlighted view */
+    .scanner-output {
+      height: 380px;
+      border: 1px solid var(--line);
+      background: #1e1e2e;
+      border-radius: 12px;
+      padding: 1rem;
+      font-family: "Fira Code", Consolas, Monaco, monospace;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: #cdd6f4;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    /* COV Token Badge styles in Code Highlighter */
+    .cov-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      color: white;
+      margin-left: 0.25rem;
+      vertical-align: middle;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      cursor: help;
+      position: relative;
+      letter-spacing: 0.04em;
+    }
+
+    .cov-badge::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #11111b;
+      color: white;
+      padding: 0.4rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      font-weight: 500;
+      z-index: 10;
+    }
+
+    .cov-badge:hover::after {
+      opacity: 1;
+    }
+
+    .badge-output { background: var(--purple); }
+    .badge-mutate { background: var(--orange); }
+    .badge-fetch { background: var(--blue); }
+    .badge-guard { background: #8b5cf6; }
+    .badge-exception { background: var(--red); }
+    .badge-loop { background: var(--green); }
+    .badge-conditional { background: #ec4899; }
+    .badge-async { background: #14b8a6; }
+
+    /* Layout responsive utilities */
+    @media (max-width: 960px) {
+      .mcp-sandbox,
+      .scanner-sandbox {
+        grid-template-columns: 1fr;
+      }
+      .ide-container {
+        height: 520px;
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* Sample loader panel */
+    .sample-loader {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .sample-btn {
+      padding: 0.35rem 0.65rem;
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      color: var(--muted);
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+
+    .sample-btn:hover {
+      border-color: var(--purple);
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap topbar">
+      <a class="brand" href="/">
+        <span class="brand-mark">B</span>
+        <span>Big Indexer</span>
+      </a>
+      <nav>
+        <a href="/demo" class="active">Demo</a>
+        <a href="/validation">Validation</a>
+        <a href="/blog">Blog</a>
+        <a href="/api/validation/summary">API</a>
+        <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/docs/MCP_SETUP.md" target="_blank" rel="noopener">Docs</a>
+        <a href="https://github.com/ahmedxuhri/bigindexer" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <section class="intro">
+        <div class="eyebrow">Interactive Sandbox</div>
+        <h1>Test Big Indexer in Real Time</h1>
+        <p class="lede">
+          Experience the BGI difference. Toggle context to see how BGI halts AI hallucinations, and scan code snippets live in our Gate 1 analyzer.
+        </p>
+      </section>
+
+      <!-- Tabs -->
+      <div class="tabs-nav">
+        <button class="tab-btn active" onclick="switchTab('tab-mcp')">🔌 MCP IDE Simulator</button>
+        <button class="tab-btn" onclick="switchTab('tab-gate1')">⚡ Live Gate 1 Scanner</button>
+      </div>
+
+      <!-- TAB 1: MCP SIMULATOR -->
+      <div id="tab-mcp" class="tab-content active">
+        <div class="mcp-sandbox">
+          <div class="sidebar-panel">
+            <button class="task-card active" id="task-a" onclick="selectScenario('A')">
+              <h3>Scenario A: Secure Login Endpoint</h3>
+              <p>Adding credentials checking, database queries, and log recording.</p>
+            </button>
+            <button class="task-card" id="task-b" onclick="selectScenario('B')">
+              <h3>Scenario B: Route Refactoring</h3>
+              <p>Analyzing cross-file boundaries and coupling risks on API routing.</p>
+            </button>
+            <button class="task-card" id="task-c" onclick="selectScenario('C')">
+              <h3>Scenario C: Data Access Optimization</h3>
+              <p>Finding implementation twins to match established persistence patterns.</p>
+            </button>
+          </div>
+
+          <div class="ide-container">
+            <div class="ide-header">
+              <div class="ide-dots">
+                <div class="ide-dot ide-dot-red"></div>
+                <div class="ide-dot ide-dot-yellow"></div>
+                <div class="ide-dot ide-dot-green"></div>
+              </div>
+              <div id="editor-filename">api/auth.py</div>
+              <div>BGI MCP Client (active)</div>
+            </div>
+
+            <div class="mode-bar">
+              <div class="compare-label">AI Copilot output comparison:</div>
+              <div class="mode-btns">
+                <button class="mode-btn" id="btn-no-bgi" onclick="setBGIMode(false)">Without BGI Context</button>
+                <button class="mode-btn active" id="btn-with-bgi" onclick="setBGIMode(true)">With BGI Context</button>
+              </div>
+            </div>
+
+            <div class="ide-workspace">
+              <!-- Left Sidebar: BGI Client Actions -->
+              <div class="ide-explorer">
+                <div class="explorer-title">BGI Tool Calls</div>
+                
+                <div id="tool-step-1" class="tool-ping">
+                  <div class="tool-method">task_fingerprint(...)</div>
+                  <span id="tool-val-1">Resolving COV tokens...</span>
+                </div>
+
+                <div id="tool-step-2" class="tool-ping">
+                  <div class="tool-method">behavioral_twins(...)</div>
+                  <span id="tool-val-2">Finding code twins...</span>
+                </div>
+
+                <div id="tool-step-3" class="tool-ping">
+                  <div class="tool-method">twin_context(...)</div>
+                  <span id="tool-val-3">Compiling boundary rubric...</span>
+                </div>
+              </div>
+
+              <!-- Main Code Window -->
+              <div class="editor-view">
+                <div class="code-editor" id="editor-code">
+                  <!-- Dynamic content -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Terminal Window -->
+            <div class="ide-terminal">
+              <div><span class="term-prompt">ahmedxuhri@bigindexer:~/project$</span> <span class="term-cmd" id="terminal-command">bgi mcp --graph bgi-graph.json</span></div>
+              <div class="term-output" id="terminal-output">
+[BGI] Starting local MCP server v0.1.3...
+[BGI] Graph loaded: 4,192 units, 8,913 edges, 84 clusters.
+[BGI] Registry bound: listening for JSON-RPC on stdin.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: LIVE GATE 1 SCANNER -->
+      <div id="tab-gate1" class="tab-content">
+        <div class="scanner-sandbox">
+          <div class="scanner-left">
+            <div class="sandbox-card" style="flex-grow:1;">
+              <h2>Paste code snippet here:</h2>
+              <div class="sample-loader">
+                <span style="font-size:0.78rem;align-self:center;color:var(--muted)">Presets:</span>
+                <button class="sample-btn" onclick="loadSample('python')">Python Auth</button>
+                <button class="sample-btn" onclick="loadSample('javascript')">JavaScript Fetch</button>
+                <button class="sample-btn" onclick="loadSample('error')">Python Exception Guard</button>
+              </div>
+              <div class="code-input-area">
+                <textarea id="scanner-input" class="code-textarea" oninput="runHighlight()"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="scanner-right">
+            <div class="sandbox-card" style="flex-grow:1;">
+              <h2>Gate 1 Scanned Output (COV Fingerprint)</h2>
+              <p style="font-size:0.8rem;color:var(--muted);margin-bottom:1rem;">
+                Matching nodes in the Abstract Syntax Tree (AST) triggers behavioral token emissions:
+              </p>
+              <div id="scanner-result" class="scanner-output">
+                <!-- Highlighted code will render here -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Tab switching logic
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    // Scenarios Data
+    const SCENARIOS = {
+      'A': {
+        filename: 'api/auth.py',
+        cmd: 'bgi scan . --lang python',
+        term: '[BGI] Scan complete: 14 units fingerprinted.\n[BGI] Gate 1 COV tokens successfully extracted.\n[BGI] Match success: found authentication pattern, 3 cross-file boundaries.',
+        tools: {
+          t1: 'task_fingerprint("user login postgres, write jwt log") -> AUTHENTICATE, FETCH, MUTATE, OUTPUT',
+          t2: 'behavioral_twins() -> \n - auth.py::verify_credentials (0.91)\n - user_db.py::get_user (0.85)',
+          t3: 'twin_context() -> compiled 5-point safety rubric. Seam detected: auth.py'
+        },
+        withBGI: `<span class="tk-comment"># VERIFIED: Uses existing verify_credentials and log_event to avoid architectural drift</span>
+<span class="tk-key">from</span> api.auth_helpers <span class="tk-key">import</span> verify_credentials
+<span class="tk-key">from</span> core.database <span class="tk-key">import</span> get_user_by_email
+<span class="tk-key">from</span> utils.logger <span class="tk-key">import</span> log_event
+
+<span class="tk-key">async def</span> <span class="tk-func">login</span>(email, password):
+    <span class="tk-key">try</span>:
+        <span class="tk-comment"># Fetch credentials using project standard DB helper</span>
+        user = <span class="tk-key">await</span> get_user_by_email(email)
+        
+        <span class="tk-key">if not</span> user <span class="tk-key">or not</span> verify_credentials(password, user.hash):
+            <span class="tk-key">await</span> log_event(<span class="tk-str">"auth_fail"</span>, email)
+            <span class="tk-key">return</span> {<span class="tk-str">"success"</span>: <span class="tk-key">False</span>, <span class="tk-str">"msg"</span>: <span class="tk-str">"Invalid credentials"</span>}
+            
+        <span class="tk-key">await</span> log_event(<span class="tk-str">"auth_success"</span>, email)
+        <span class="tk-key">return</span> {<span class="tk-str">"success"</span>: <span class="tk-key">True</span>, <span class="tk-str">"token"</span>: generate_jwt(user)}
+    <span class="tk-key">except</span> DatabaseException <span class="tk-key">as</span> e:
+        <span class="tk-comment"># Caught standard exception mapping to project exception boundaries</span>
+        <span class="tk-key">return</span> {<span class="tk-str">"success"</span>: <span class="tk-key">False</span>, <span class="tk-str">"msg"</span>: <span class="tk-str">"Internal DB error"</span>}`,
+        noBGI: `<span class="tk-comment"># LLM HALLUCINATION: Hallucinated direct sqlite3 connections and custom logging logic</span>
+<span class="tk-key">import</span> sqlite3  <span class="tk-comment"># &lt;- VIOLATION: project uses core.database</span>
+<span class="tk-key">import</span> os
+
+<span class="tk-key">def</span> <span class="tk-func">login</span>(email, password):
+    <span class="tk-comment"># Hallucinated path. DB calls should be abstracted!</span>
+    conn = sqlite3.connect(<span class="tk-str">"users.db"</span>)
+    cursor = conn.cursor()
+    cursor.execute(<span class="tk-str">"SELECT password_hash FROM users WHERE email = ?"</span>, (email,))
+    row = cursor.fetchone()
+    
+    <span class="tk-key">if</span> row <span class="tk-key">and</span> row[0] == hash(password):
+        <span class="tk-comment"># Custom file writing instead of utils.logger standard hook</span>
+        <span class="tk-key">with</span> open(<span class="tk-str">"log.txt"</span>, <span class="tk-str">"a"</span>) <span class="tk-key">as</span> f:
+            f.write(f<span class="tk-str">"User {email} logged in\\n"</span>)
+        <span class="tk-key">return</span> {<span class="tk-str">"success"</span>: <span class="tk-key">True</span>}
+    <span class="tk-key">return</span> {<span class="tk-str">"success"</span>: <span class="tk-key">False</span>}`
+      },
+      'B': {
+        filename: 'core/routing.py',
+        cmd: 'bgi diff before/ after/ --report drift.md',
+        term: '[BGI] Scanning before: before/\n[BGI] Scanning after:  after/\n[BGI] Diff: +1 unit, -0 units, ~1 changed unit.\n[BGI] Drift report written to drift.md',
+        tools: {
+          t1: 'task_fingerprint("modify routing register schema") -> CONFIG, TRANSFORM, OUTPUT',
+          t2: 'behavioral_twins() -> \n - core/routing.py::register (0.88)',
+          t3: 'twin_context() -> WARNING: Seam Unit core/routing.py is high-coupling. 42 outgoing edges detected!'
+        },
+        withBGI: `<span class="tk-comment"># VERIFIED: AI is aware of core/routing.py coupling. Direct imports mapped.</span>
+<span class="tk-comment"># WARNING: High-coupling boundary seam! Modifying routing.py affects auth.py and payments.py.</span>
+<span class="tk-key">from</span> core.routing <span class="tk-key">import</span> APIRouter
+<span class="tk-key">from</span> api.auth <span class="tk-key">import</span> login_router
+<span class="tk-key">from</span> api.payments <span class="tk-key">import</span> billing_router
+
+router = APIRouter()
+<span class="tk-comment"># Sticking strictly to clean boundary routing pattern</span>
+router.include_router(login_router, prefix=<span class="tk-str">"/auth"</span>)
+router.include_router(billing_router, prefix=<span class="tk-str">"/billing"</span>)
+
+<span class="tk-key">def</span> <span class="tk-func">get_api_version</span>():
+    <span class="tk-key">return</span> <span class="tk-str">"v1.4.2"</span>`,
+        noBGI: `<span class="tk-comment"># LLM FAILURE: unaware of seams. Directly imports internal controller namespaces, breaking layering</span>
+<span class="tk-key">from</span> core.routing <span class="tk-key">import</span> APIRouter
+<span class="tk-key">from</span> api.auth.controllers <span class="tk-key">import</span> AuthController  <span class="tk-comment"># &lt;- BREAKS API BOUNDARY LAYER</span>
+<span class="tk-key">from</span> api.payments.handlers <span class="tk-key">import</span> stripe_charge
+
+router = APIRouter()
+<span class="tk-comment"># Calling controller actions inside router instead of routing interface</span>
+<span class="tk-key">async def</span> <span class="tk-func">direct_auth</span>(request):
+    <span class="tk-key">return await</span> AuthController().process_login(request)`
+      },
+      'C': {
+        filename: 'data/persistence.py',
+        cmd: 'bgi scan . --lang python --fuse-graph fuse.json',
+        term: '[BGI] Cluster detected: data/persistence.py (3 units)\n[BGI] Boundary merged successfully.\n[BGI] Output written to fuse.json.',
+        tools: {
+          t1: 'task_fingerprint("cache entity in redis with expiry") -> FETCH, MUTATE, CONFIG',
+          t2: 'behavioral_twins() -> \n - data/redis_cache.py::set_cache (0.95)\n - data/persistence.py::write_to_store (0.71)',
+          t3: 'twin_context() -> Use twin: redis_cache.py. Standard TTL config is 300s.'
+        },
+        withBGI: `<span class="tk-comment"># VERIFIED: Twin context found data/redis_cache.py set_cache model</span>
+<span class="tk-key">from</span> data.redis_cache <span class="tk-key">import</span> set_cache
+<span class="tk-key">from</span> core.config <span class="tk-key">import</span> CACHE_TTL_DEFAULT
+
+<span class="tk-key">async def</span> <span class="tk-func">cache_user_session</span>(session_id, user_data):
+    <span class="tk-comment"># Complies with established TTL and Redis client patterns</span>
+    key = f<span class="tk-str">"session:{session_id}"</span>
+    <span class="tk-key">await</span> set_cache(key, user_data, expire=CACHE_TTL_DEFAULT)
+    <span class="tk-key">return</span> <span class="tk-key">True</span>`,
+        noBGI: `<span class="tk-comment"># LLM FAILURE: Hallucinated redis library instantiation and hardcoded TTLs</span>
+<span class="tk-key">import</span> redis  <span class="tk-comment"># &lt;- VIOLATION: should reuse project cache module</span>
+
+<span class="tk-key">def</span> <span class="tk-func">cache_user_session</span>(session_id, user_data):
+    <span class="tk-comment"># Creates direct client instantiations instead of pool architecture</span>
+    r = redis.Redis(host=<span class="tk-str">'localhost'</span>, port=6379, db=0)
+    r.setex(f<span class="tk-str">"user:{session_id}"</span>, 3600, user_data)  <span class="tk-comment"># Hardcoded TTL</span>
+    <span class="tk-key">return</span> <span class="tk-key">True</span>`
+      }
+    };
+
+    let currentScenario = 'A';
+    let hasBGIContext = true;
+
+    function selectScenario(scenarioId) {
+      currentScenario = scenarioId;
+      document.querySelectorAll('.task-card').forEach(c => c.classList.remove('active'));
+      document.getElementById(`task-${scenarioId.toLowerCase()}`).classList.add('active');
+      
+      const sc = SCENARIOS[scenarioId];
+      document.getElementById('editor-filename').textContent = sc.filename;
+      
+      // Update terminal Mock
+      document.getElementById('terminal-command').textContent = sc.cmd;
+      document.getElementById('terminal-output').textContent = sc.term;
+
+      // Animate explorer / tool call simulator
+      document.getElementById('tool-step-1').classList.remove('tool-ping-success');
+      document.getElementById('tool-step-2').classList.remove('tool-ping-success');
+      document.getElementById('tool-step-3').classList.remove('tool-ping-success');
+
+      document.getElementById('tool-val-1').textContent = 'Calling tool...';
+      document.getElementById('tool-val-2').textContent = 'Calling tool...';
+      document.getElementById('tool-val-3').textContent = 'Calling tool...';
+
+      setTimeout(() => {
+        document.getElementById('tool-step-1').classList.add('tool-ping-success');
+        document.getElementById('tool-val-1').textContent = sc.tools.t1;
+        
+        setTimeout(() => {
+          document.getElementById('tool-step-2').classList.add('tool-ping-success');
+          document.getElementById('tool-val-2').textContent = sc.tools.t2;
+          
+          setTimeout(() => {
+            document.getElementById('tool-step-3').classList.add('tool-ping-success');
+            document.getElementById('tool-val-3').textContent = sc.tools.t3;
+          }, 400);
+        }, 400);
+      }, 300);
+
+      updateEditorContent();
+    }
+
+    function setBGIMode(withBgi) {
+      hasBGIContext = withBgi;
+      document.getElementById('btn-with-bgi').classList.toggle('active', withBgi);
+      document.getElementById('btn-no-bgi').classList.toggle('active', !withBgi);
+      
+      updateEditorContent();
+    }
+
+    function updateEditorContent() {
+      const code = hasBGIContext ? SCENARIOS[currentScenario].withBGI : SCENARIOS[currentScenario].noBGI;
+      document.getElementById('editor-code').innerHTML = code;
+    }
+
+    // Initialize option 1
+    selectScenario('A');
+
+    // TAB 2: Live Gate 1 code highlighter
+    const SAMPLES = {
+      python: `def process_user_payment(user_id, amount):
+    # Fetch customer from Stripe API
+    customer = stripe.Customer.retrieve(user_id) # @fetch
+    
+    if not customer.active: # @guard
+        raise PaymentException("Inactive user") # @exception
+        
+    for item in customer.subscriptions: # @loop
+        if item.amount > 0: # @conditional
+            # Update local subscription database
+            db.update_subscription(item.id, active=True) # @mutate
+            
+    print("Logged payment details") # @output
+    return True # @output`,
+      javascript: `async function fetchMetrics(nodeId) {
+  try {
+    // API boundary query
+    const res = await fetch(\`/api/v1/nodes/\${nodeId}/metrics\`); // @fetch @async
+    
+    if (!res.ok) { // @guard
+      throw new Error("HTTP error: " + res.status); // @exception
+    }
+    
+    const data = await res.json(); // @async
+    const rollup = data.metrics.map(m => m.value * 100); // @transform
+    
+    // In-place array insertion
+    analyticsCache.push(rollup); // @mutate
+    return rollup; // @output
+  } catch (err) {
+    console.error("Fetch failed: ", err); // @output
+    return null; // @output
+  }
+}`,
+      error: `def authenticate_request(headers):
+    # Exception handling and validations
+    try:
+        token = headers.get("Authorization")
+        if token is None: # @guard
+            raise AuthError("Missing Auth Header") # @exception
+            
+        user = token.split("Bearer ")[-1]
+        
+        # Verify database session state
+        session = db.query_session(user) # @fetch
+        if not session.valid: # @guard
+            return False # @output
+            
+        session.hits += 1 # @mutate
+        return True # @output
+    except DatabaseConnectionError: # @exception
+        return False # @output`
+    };
+
+    function loadSample(lang) {
+      document.getElementById('scanner-input').value = SAMPLES[lang];
+      runHighlight();
+    }
+
+    function runHighlight() {
+      const input = document.getElementById('scanner-input').value;
+      const lines = input.split('\n');
+      
+      const resultLines = lines.map(line => {
+        let cleanLine = line;
+        
+        // Remove helper comments that contain the tags
+        const commentIdx = line.indexOf('// @');
+        const pyCommentIdx = line.indexOf('# @');
+        
+        let tags = [];
+        if (commentIdx !== -1) {
+          tags = line.slice(commentIdx + 4).split(' @');
+          cleanLine = line.slice(0, commentIdx);
+        } else if (pyCommentIdx !== -1) {
+          tags = line.slice(pyCommentIdx + 3).split(' @');
+          cleanLine = line.slice(0, pyCommentIdx);
+        }
+
+        // Apply fallback standard regex matching for token color highlighting
+        // (This simulates Gate 1 query engine parsing)
+        
+        // Escape HTML
+        let escapedLine = cleanLine
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+
+        // Simple syntax highlight replacements
+        escapedLine = escapedLine.replace(/\b(def|function|async|await|return|if|for|while|try|except|catch|throw|raise|import|from|class)\b/g, '<span class="tk-key">$1</span>');
+        
+        // Add manual tags as badges
+        tags.forEach(tag => {
+          const t = tag.trim().toLowerCase();
+          let colorClass = `badge-${t}`;
+          let desc = '';
+          
+          if (t === 'fetch') desc = 'FETCH: Queries external data source/API';
+          if (t === 'mutate') desc = 'MUTATE: In-place state or variable modification';
+          if (t === 'output') desc = 'OUTPUT: Produces output or returns execution data';
+          if (t === 'guard') desc = 'GUARD: Validates preconditions or types';
+          if (t === 'exception') desc = 'EXCEPTION: Error boundaries or handlers';
+          if (t === 'loop') desc = 'LOOP: Iterative code blocks';
+          if (t === 'conditional') desc = 'CONDITIONAL: Control flow branch';
+          if (t === 'async') desc = 'ASYNC: Non-blocking asynchronous task execution';
+          if (t === 'transform') desc = 'TRANSFORM: Maps, folds or transforms data arrays';
+
+          escapedLine += `<span class="cov-badge ${colorClass}" data-tooltip="${desc}">${t.toUpperCase()}</span>`;
+        });
+
+        return escapedLine;
+      });
+
+      document.getElementById('scanner-result').innerHTML = resultLines.join('\n');
+    }
+
+    // Load initial sample
+    loadSample('python');
+  </script>
+</body>
+</html>

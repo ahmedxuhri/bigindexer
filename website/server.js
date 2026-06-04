@@ -295,6 +295,12 @@ app.get('/validation', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'validation.html'));
 });
 
+// Interactive Demo Sandbox
+app.get(['/demo', '/demo/'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'demo.html'));
+});
+
+
 // Blog index
 app.get(['/blog', '/blog/'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'blog.html'));
