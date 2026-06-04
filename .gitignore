@@ -34,6 +34,9 @@ bgi-graph.json
 graph.json
 graph.graphml
 routes.json
+bigindexer.md
+fuse-graph.json
+
 
 # ── Session / workspace artifacts ─────────────────────────────────────────────
 # Copilot session logs and notes — belong in /root/mad/sessions/, NOT here.
