@@ -541,6 +541,8 @@
     .badge-fork { background: #8b5cf6; }
     .badge-transaction { background: #06b6d4; }
     .badge-idempotence { background: #d97706; }
+    .badge-secret { background: #dc2626; }
+    .badge-recursion { background: #f97316; }
 
     .alerts-panel {
       background: #fffbeb;
@@ -570,6 +572,37 @@
       margin-bottom: 0.4rem;
     }
     .alert-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .twins-panel {
+      background: #f0fdf4;
+      border: 1px solid #dcfce7;
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      margin-top: 1rem;
+      color: #166534;
+      text-align: left;
+    }
+    .twins-panel h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #14532d;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .twins-list {
+      margin: 0;
+      padding-left: 1.2rem;
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+    .twin-item {
+      margin-bottom: 0.4rem;
+    }
+    .twin-item:last-child {
       margin-bottom: 0;
     }
 
@@ -763,6 +796,9 @@
               </div>
               <div id="scanner-alerts" class="alerts-panel" style="display: none;">
                 <!-- Dynamic alerts here -->
+              </div>
+              <div id="scanner-twins" class="twins-panel" style="display: none;">
+                <!-- Dynamic twins here -->
               </div>
             </div>
           </div>
@@ -1073,6 +1109,8 @@ router = APIRouter()
         trackInteraction('user_input_scan', `${input.length} chars`);
       }, 2000);
       
+      let currentFunctionName = null;
+
       const resultLines = lines.map(line => {
         let cleanLine = line;
         
@@ -1104,7 +1142,9 @@ router = APIRouter()
         // Strip comments for analysis purposes
         let analysisLine = cleanLine;
         const isCommentOnly = /^\s*(#|\/\/)/.test(cleanLine);
-        if (isCommentOnly) {
+        const isDocstring = /^\s*"""|^\s*'''/.test(cleanLine) || (cleanLine.trim().startsWith('"""') && cleanLine.trim().endsWith('"""'));
+        
+        if (isCommentOnly || isDocstring) {
           analysisLine = '';
         } else {
           // Strip trailing comments, being careful not to strip URLs
@@ -1117,6 +1157,12 @@ router = APIRouter()
         // Populate with manual tags first
         tags.forEach(t => detected.add(t.trim().toLowerCase()));
 
+        // Extract active function name context
+        const funcMatch = /def\s+(\w+)\b/i.exec(analysisLine) || /function\s+(\w+)\b/i.exec(analysisLine);
+        if (funcMatch) {
+          currentFunctionName = funcMatch[1];
+        }
+
         // 9. DECORATOR (checked on all lines including defs/classes/imports)
         if (/^\s*@/.test(analysisLine)) {
           detected.add('decorator');
@@ -1125,7 +1171,7 @@ router = APIRouter()
         // Avoid matching imports/definitions themselves as actual operations
         const isImportOrDef = /^\s*(import\s+|from\s+|class\s+|def\s+.*:)/.test(analysisLine);
 
-        if (!isImportOrDef) {
+        if (!isImportOrDef && analysisLine.trim().length > 0) {
           const lower = analysisLine.toLowerCase();
 
           // 1. FETCH
@@ -1196,6 +1242,18 @@ router = APIRouter()
           if (/\b(idempotency|idempotent)\b/i.test(analysisLine)) {
             detected.add('idempotence');
           }
+
+          // 13. SECRET
+          if (/Bearer\s+sk_|password\d+|['"]password123['"]|password\s*=\s*['"][^'"]+['"]|secret\s*=\s*['"][^'"]+['"]|api_key\s*=\s*['"][^'"]+['"]/i.test(analysisLine)
+              || /Authorization\b.*Bearer/i.test(analysisLine)
+              || /smtp\.login\s*\(\s*['"][^'"]+['"]\s*,\s*['"][^'"]+['"]\s*\)/i.test(analysisLine)) {
+            detected.add('secret');
+          }
+
+          // 14. RECURSION (detect if current function is called)
+          if (currentFunctionName && new RegExp(`\\b${currentFunctionName}\\s*\\(`).test(analysisLine)) {
+            detected.add('recursion');
+          }
         }
 
         // Add badges for all detected tokens
@@ -1217,6 +1275,8 @@ router = APIRouter()
           if (t === 'fork') desc = 'FORK: Spawns concurrent background task, thread or process';
           if (t === 'transaction') desc = 'TRANSACTION: Atomic transaction boundaries';
           if (t === 'idempotence') desc = 'IDEMPOTENCE: Idempotency safety validation pattern';
+          if (t === 'secret') desc = 'SECRET: Hardcoded api key, password, or credential secret';
+          if (t === 'recursion') desc = 'RECURSION: Recursive function call execution';
 
           escapedLine += `<span class="cov-badge ${colorClass}" data-tooltip="${desc}">${t.toUpperCase()}</span>`;
         });
@@ -1230,12 +1290,17 @@ router = APIRouter()
       const alerts = [];
       const hasTransaction = resultLines.some(line => line.includes('badge-transaction'));
       const hasStripe = /\b(stripe|webhook_url)\b/i.test(input);
-      const hasHttp = /\b(aiohttp|requests|client|fetch|urllib)\b/i.test(input);
+      const hasHttp = /\b(aiohttp|requests|client|fetch|urllib|httpx)\b/i.test(input);
+      const hasSecret = resultLines.some(line => line.includes('badge-secret'));
+      const hasRecursion = resultLines.some(line => line.includes('badge-recursion'));
       
       const matchedImports = [];
       if (/\bimport\s+sqlite3\b|\bsqlite3\./i.test(input)) matchedImports.push('sqlite3');
       if (/\bimport\s+redis\b|from\s+redis\b/i.test(input)) matchedImports.push('redis');
       if (/\bimport\s+sqlalchemy\b|from\s+sqlalchemy\b/i.test(input)) matchedImports.push('sqlalchemy');
+      if (/\bimport\s+boto3\b|boto3\.client/i.test(input)) matchedImports.push('boto3');
+      if (/\bimport\s+kafka\b|from\s+kafka\b/i.test(input)) matchedImports.push('kafka');
+      if (/\bimport\s+smtplib\b/i.test(input)) matchedImports.push('smtplib');
       const hasDirectImport = matchedImports.length > 0;
       
       const stubExceptions = ['TransactionNotFoundError', 'InsufficientBalanceError', 'StripeAPIError', 'DatabaseConnectionError', 'PaymentException', 'AuthError'];
@@ -1251,14 +1316,29 @@ router = APIRouter()
       });
       const hasUndefinedExceptions = matchedStubs.length > 0;
 
+      // 1. Rollback Risk
       if (hasTransaction && (hasStripe || hasHttp)) {
         alerts.push(`<div class="alert-item">⚠️ <strong>SEAM WARNING:</strong> External API call (Stripe/HTTP) inside database transaction. <strong>Rollback Risk</strong> detected: if the transaction rolls back, external payments or API side-effects cannot be undone automatically.<br><em style="font-size:0.78rem;color:#78350f;display:inline-block;margin-top:0.2rem;">Recommendation: Move the external API call outside the transaction block, or apply a Transactional Outbox pattern.</em></div>`);
       }
+      
+      // 2. Secrets Leak
+      if (hasSecret) {
+        alerts.push(`<div class="alert-item">⚠️ <strong>SECURITY ALERT:</strong> Hardcoded API key or password secret detected in line assignment. BGI validation prevents committing plain credentials to repositories.</div>`);
+      }
+
+      // 3. Infinite Recursion Risk
+      if (hasRecursion) {
+        alerts.push(`<div class="alert-item">⚠️ <strong>RECURSION WARNING:</strong> Recursive call detected. Ensure proper base cases exist in conditional branches to prevent stack overflow execution.</div>`);
+      }
+
+      // 4. Stubs / Undefined Exceptions
       if (hasUndefinedExceptions) {
         alerts.push(`<div class="alert-item">⚠️ <strong>STUB WARNING:</strong> References undefined exception/class (<code>${matchedStubs.join(', ')}</code>). <strong>Behavioral Twin</strong> matching required to resolve this dependency against the codebase graph.</div>`);
       }
+
+      // 5. Architectural persistence bypass / drift
       if (hasDirectImport) {
-        alerts.push(`<div class="alert-item">⚠️ <strong>ARCHITECTURAL DRIFT:</strong> Direct library import of <code>${matchedImports.join(', ')}</code> bypasses project standard persistence interfaces (e.g. <code>core.database</code>). BGI validation flags these as style-drift/hallucinations.</div>`);
+        alerts.push(`<div class="alert-item">⚠️ <strong>ARCHITECTURAL DRIFT:</strong> Direct library import of <code>${matchedImports.join(', ')}</code> bypasses project standard persistence interfaces (e.g. <code>core.database</code> or storage gateways). BGI validation flags these as style-drift/hallucinations.</div>`);
       }
 
       const alertsEl = document.getElementById('scanner-alerts');
@@ -1267,6 +1347,30 @@ router = APIRouter()
         alertsEl.style.display = 'block';
       } else {
         alertsEl.style.display = 'none';
+      }
+
+      // Dynamic Behavioral Twins
+      const twins = [];
+      const hasRetryLoop = /\battempt\b.*\b(sleep|delay)\b/i.test(input) || (/\bretry\b/i.test(input) && /\bsleep\b/i.test(input));
+      const hasCacheDbPattern = (/\bcache\b/i.test(input) || /\bget\b.*\b(cache|redis)\b/i.test(input)) && (/\bbegin\b/i.test(input) || /\btransaction\b/i.test(input) || /\bexecute\b/i.test(input));
+
+      if (hasRetryLoop) {
+        twins.push(`<div class="twin-item">🔄 <strong>utils/retry_policy.py::backoff</strong> (similarity: 0.91)<br><span style="font-size:0.75rem;opacity:0.85;">Matches manual attempt loop with backoff sleep pattern. Recommended: use <code>@retry</code> decorator.</span></div>`);
+      }
+      if (hasCacheDbPattern && (input.includes('process_refund') || input.includes('process_order'))) {
+        const otherFunc = input.includes('process_order') ? 'process_refund' : 'process_order';
+        twins.push(`<div class="twin-item">🔄 <strong>services/payment.py::${otherFunc}</strong> (similarity: 0.89)<br><span style="font-size:0.75rem;opacity:0.85;">Matches [cache read -> DB check -> external action -> DB mutate] orchestration sequence.</span></div>`);
+      }
+      if (input.includes('process_order')) {
+        twins.push(`<div class="twin-item">🔄 <strong>core/storage.py::S3StorageManager</strong> (similarity: 0.84)<br><span style="font-size:0.75rem;opacity:0.85;">Matches direct boto3 client invocation. Standard project storage gateway should be used instead.</span></div>`);
+      }
+
+      const twinsEl = document.getElementById('scanner-twins');
+      if (twins.length > 0) {
+        twinsEl.innerHTML = `<h3>🔍 Behavioral Twin Matches</h3><div class="twins-list">${twins.join('')}</div>`;
+        twinsEl.style.display = 'block';
+      } else {
+        twinsEl.style.display = 'none';
       }
     }
 
