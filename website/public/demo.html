@@ -537,6 +537,10 @@
     .badge-loop { background: var(--green); }
     .badge-conditional { background: #ec4899; }
     .badge-async { background: #14b8a6; }
+    .badge-decorator { background: #4b5563; }
+    .badge-fork { background: #8b5cf6; }
+    .badge-transaction { background: #06b6d4; }
+    .badge-idempotence { background: #d97706; }
 
     /* Layout responsive utilities */
     @media (max-width: 960px) {
@@ -1073,6 +1077,26 @@ router = APIRouter()
           if (/\b(return|print|emit|yield)\b/i.test(cleanLine)) {
             detected.add('output');
           }
+
+          // 9. DECORATOR
+          if (/^\s*@\w+/.test(cleanLine)) {
+            detected.add('decorator');
+          }
+
+          // 10. FORK
+          if (/\b(create_task|Thread|Process|fork)\b/i.test(cleanLine)) {
+            detected.add('fork');
+          }
+
+          // 11. TRANSACTION
+          if (/\b(begin|transaction)\b/i.test(cleanLine)) {
+            detected.add('transaction');
+          }
+
+          // 12. IDEMPOTENCE
+          if (/\b(idempotency|idempotent)\b/i.test(cleanLine)) {
+            detected.add('idempotence');
+          }
         }
 
         // Add badges for all detected tokens
@@ -1090,6 +1114,10 @@ router = APIRouter()
           if (t === 'conditional') desc = 'CONDITIONAL: Control flow branch';
           if (t === 'async') desc = 'ASYNC: Non-blocking asynchronous task execution';
           if (t === 'transform') desc = 'TRANSFORM: Maps, folds or transforms data arrays';
+          if (t === 'decorator') desc = 'DECORATOR: Function decorator applying cross-cutting concerns';
+          if (t === 'fork') desc = 'FORK: Spawns concurrent background task, thread or process';
+          if (t === 'transaction') desc = 'TRANSACTION: Atomic transaction boundaries';
+          if (t === 'idempotence') desc = 'IDEMPOTENCE: Idempotency safety validation pattern';
 
           escapedLine += `<span class="cov-badge ${colorClass}" data-tooltip="${desc}">${t.toUpperCase()}</span>`;
         });
