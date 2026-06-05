@@ -1020,7 +1020,7 @@ router = APIRouter()
           const lower = cleanLine.toLowerCase();
 
           // 1. FETCH
-          if (/\b(fetch|retrieve|get|post|put|delete|execute|select|query|request)\b/i.test(cleanLine)
+          if (/\b(fetch|retrieve|get|post|execute|select|query|request)\b/i.test(cleanLine)
               || /session\.(post|get|request)/i.test(cleanLine)
               || /self\.cache\.get/i.test(cleanLine)
               || /stripe\.\w+\.retrieve/i.test(cleanLine)
