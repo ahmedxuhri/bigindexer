@@ -1367,7 +1367,7 @@ router = APIRouter()
 
       const twinsEl = document.getElementById('scanner-twins');
       if (twins.length > 0) {
-        twinsEl.innerHTML = `<h3>🔍 Behavioral Twin Matches</h3><div class="twins-list">${twins.join('')}</div>`;
+        twinsEl.innerHTML = `<h3>🔍 Behavioral Twin Matches <span style="cursor:help; font-size:0.8rem; margin-left:0.35rem; opacity:0.75;" title="Behavioral twin simulation based on detected patterns. Connect your codebase for real matches.">ⓘ</span></h3><div class="twins-list">${twins.join('')}</div>`;
         twinsEl.style.display = 'block';
       } else {
         twinsEl.style.display = 'none';
