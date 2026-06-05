@@ -542,6 +542,37 @@
     .badge-transaction { background: #06b6d4; }
     .badge-idempotence { background: #d97706; }
 
+    .alerts-panel {
+      background: #fffbeb;
+      border: 1px solid #fef3c7;
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      margin-top: 1.25rem;
+      color: #92400e;
+      text-align: left;
+    }
+    .alerts-panel h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #78350f;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .alerts-list {
+      margin: 0;
+      padding-left: 1.2rem;
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+    .alert-item {
+      margin-bottom: 0.4rem;
+    }
+    .alert-item:last-child {
+      margin-bottom: 0;
+    }
+
     /* Layout responsive utilities */
     @media (max-width: 960px) {
       .mcp-sandbox,
@@ -636,14 +667,17 @@
           </div>
 
           <div class="ide-container">
-            <div class="ide-header">
-              <div class="ide-dots">
-                <div class="ide-dot ide-dot-red"></div>
-                <div class="ide-dot ide-dot-yellow"></div>
-                <div class="ide-dot ide-dot-green"></div>
+            <div class="ide-header" style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:0.75rem;">
+                <div class="ide-dots">
+                  <div class="ide-dot ide-dot-red"></div>
+                  <div class="ide-dot ide-dot-yellow"></div>
+                  <div class="ide-dot ide-dot-green"></div>
+                </div>
+                <div id="editor-filename" style="font-weight:600; color:#cdd6f4;">api/auth.py</div>
+                <span id="editor-status-badge" style="background:#10b981; color:#11111b; font-size:0.68rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:800; letter-spacing:0.03em;">BGI SECURED</span>
               </div>
-              <div id="editor-filename">api/auth.py</div>
-              <div>BGI MCP Client (active)</div>
+              <div style="font-size:0.74rem; color:rgba(255,255,255,0.4);">BGI MCP Client (active)</div>
             </div>
 
             <div class="mode-bar">
@@ -715,13 +749,16 @@
           </div>
 
           <div class="scanner-right">
-            <div class="sandbox-card" style="flex-grow:1;">
+            <div class="sandbox-card" style="flex-grow:1; display:flex; flex-direction:column;">
               <h2>Gate 1 Scanned Output (COV Fingerprint)</h2>
               <p style="font-size:0.8rem;color:var(--muted);margin-bottom:1rem;">
                 Matching nodes in the Abstract Syntax Tree (AST) triggers behavioral token emissions:
               </p>
-              <div id="scanner-result" class="scanner-output">
+              <div id="scanner-result" class="scanner-output" style="flex-grow:1;">
                 <!-- Highlighted code will render here -->
+              </div>
+              <div id="scanner-alerts" class="alerts-panel" style="display: none;">
+                <!-- Dynamic alerts here -->
               </div>
             </div>
           </div>
@@ -899,6 +936,19 @@ router = APIRouter()
       document.getElementById('btn-with-bgi').classList.toggle('active', withBgi);
       document.getElementById('btn-no-bgi').classList.toggle('active', !withBgi);
       
+      const badge = document.getElementById('editor-status-badge');
+      if (badge) {
+        if (withBgi) {
+          badge.textContent = 'BGI SECURED';
+          badge.style.background = '#10b981';
+          badge.style.color = '#11111b';
+        } else {
+          badge.textContent = 'HALLUCINATION RISK';
+          badge.style.background = '#f38ba8';
+          badge.style.color = '#11111b';
+        }
+      }
+      
       updateEditorContent();
       trackInteraction('toggle_bgi_context', withBgi ? 'with_bgi' : 'without_bgi');
     }
@@ -1011,90 +1061,99 @@ router = APIRouter()
         // Simple syntax highlight replacements
         escapedLine = escapedLine.replace(/\b(def|function|async|await|return|if|for|while|try|except|catch|throw|raise|import|from|class)\b/g, '<span class="tk-key">$1</span>');
         
-        // Dynamic analysis of cleanLine to extract COV tokens automatically
+        // Strip comments for analysis purposes
+        let analysisLine = cleanLine;
+        const isCommentOnly = /^\s*(#|\/\/)/.test(cleanLine);
+        if (isCommentOnly) {
+          analysisLine = '';
+        } else {
+          // Strip trailing comments, being careful not to strip URLs
+          analysisLine = analysisLine.replace(/(?<!https?:)\s*(#|\/\/).*/, '');
+        }
+
+        // Dynamic analysis of analysisLine to extract COV tokens automatically
         const detected = new Set();
         
         // Populate with manual tags first
         tags.forEach(t => detected.add(t.trim().toLowerCase()));
 
         // 9. DECORATOR (checked on all lines including defs/classes/imports)
-        if (/^\s*@/.test(cleanLine)) {
+        if (/^\s*@/.test(analysisLine)) {
           detected.add('decorator');
         }
 
         // Avoid matching imports/definitions themselves as actual operations
-        const isImportOrDef = /^\s*(import\s+|from\s+|class\s+|def\s+.*:)/.test(cleanLine);
+        const isImportOrDef = /^\s*(import\s+|from\s+|class\s+|def\s+.*:)/.test(analysisLine);
 
         if (!isImportOrDef) {
-          const lower = cleanLine.toLowerCase();
+          const lower = analysisLine.toLowerCase();
 
           // 1. FETCH
-          if (/\b(fetch|retrieve|get|post|execute|select|query|request)\b/i.test(cleanLine)
-              || /session\.(post|get|request)/i.test(cleanLine)
-              || /self\.cache\.get/i.test(cleanLine)
-              || /stripe\.\w+\.retrieve/i.test(cleanLine)
-              || /db\.execute/i.test(cleanLine)
-              || /aiohttp\.ClientSession/i.test(cleanLine)) {
+          if (/\b(fetch|retrieve|get|post|select|query|request)\b/i.test(analysisLine)
+              || /session\.(post|get|request)/i.test(analysisLine)
+              || /self\.cache\.get/i.test(analysisLine)
+              || /stripe\.\w+\.retrieve/i.test(analysisLine)
+              || /aiohttp\.ClientSession/i.test(analysisLine)) {
             // Avoid return/set calls that just happen to contain the words but aren't queries
-            if (!/\breturn\b/i.test(cleanLine) && !/self\.cache\.set/i.test(cleanLine)) {
+            if (!/\breturn\b/i.test(analysisLine) && !/self\.cache\.set/i.test(analysisLine)) {
               detected.add('fetch');
             }
           }
 
           // 2. MUTATE
-          if (/(\+=|-=|\*=|\/=)/.test(cleanLine)
-              || /\b(append|push|extend|pop|update|setex|insert|delete|add)\b/i.test(cleanLine)
-              || /self\.cache\.delete/i.test(cleanLine)
-              || /self\.cache\.setex/i.test(cleanLine)) {
+          if (/(\+=|-=|\*=|\/=)/.test(analysisLine)
+              || /\b(append|push|extend|pop|update|setex|insert|delete|add)\b/i.test(analysisLine)
+              || /self\.cache\.delete/i.test(analysisLine)
+              || /self\.cache\.setex/i.test(analysisLine)) {
             detected.add('mutate');
           }
 
           // 3. GUARD
-          if (/\b(isinstance|typeof|assert)\b/i.test(cleanLine)
+          if (/\b(isinstance|typeof|assert)\b/i.test(analysisLine)
               || /\bif\b.*\bis\s+none\b/i.test(lower)
               || /\bif\b.*\b==\s*none\b/i.test(lower)
               || /\bif\s+not\b/i.test(lower)
-              || /\bif\b.*(!=|==|<|>)/.test(cleanLine)) {
+              || /\bif\b.*(!=|==|<|>)/.test(analysisLine)) {
             detected.add('guard');
           }
 
           // 4. EXCEPTION (except/catch/throw/raise are the boundaries, try block is the context)
-          if (/\b(except|catch|throw|raise)\b/i.test(cleanLine)) {
+          if (/\b(except|catch|throw|raise)\b/i.test(analysisLine)) {
             detected.add('exception');
           }
 
           // 5. LOOP
-          if (/\b(for|while|retry)\b/i.test(cleanLine) || /\.(foreach|map|filter|reduce)\b/i.test(lower)) {
+          if (/\b(for|while|retry)\b/i.test(analysisLine) || /\.(foreach|map|filter|reduce)\b/i.test(lower)) {
             detected.add('loop');
           }
 
           // 6. ASYNC
-          if (/\b(async|await)\b/i.test(cleanLine)) {
+          if (/\b(async|await)\b/i.test(analysisLine)) {
             detected.add('async');
           }
 
           // 7. CONDITIONAL (if not already labeled as guard)
-          if (/\b(if|elif|else|switch|case)\b/i.test(cleanLine) && !detected.has('guard')) {
+          if (/\b(if|elif|else|switch|case)\b/i.test(analysisLine) && !detected.has('guard')) {
             detected.add('conditional');
           }
 
           // 8. OUTPUT
-          if (/\b(return|print|emit|yield)\b/i.test(cleanLine)) {
+          if (/\b(return|print|emit|yield)\b/i.test(analysisLine)) {
             detected.add('output');
           }
 
           // 10. FORK
-          if (/\b(create_task|Thread|Process|fork)\b/i.test(cleanLine)) {
+          if (/\b(create_task|Thread|Process|fork)\b/i.test(analysisLine)) {
             detected.add('fork');
           }
 
-          // 11. TRANSACTION
-          if (/\b(begin|transaction)\b/i.test(cleanLine)) {
+          // 11. TRANSACTION (begin, commit, rollback, atomic are boundary controls)
+          if (/\b(begin|commit|rollback|atomic)\b/i.test(analysisLine)) {
             detected.add('transaction');
           }
 
           // 12. IDEMPOTENCE
-          if (/\b(idempotency|idempotent)\b/i.test(cleanLine)) {
+          if (/\b(idempotency|idempotent)\b/i.test(analysisLine)) {
             detected.add('idempotence');
           }
         }
@@ -1126,6 +1185,43 @@ router = APIRouter()
       });
 
       document.getElementById('scanner-result').innerHTML = resultLines.join('\n');
+
+      // Dynamic alerts for architecture and seams
+      const alerts = [];
+      const hasTransaction = resultLines.some(line => line.includes('badge-transaction'));
+      const hasStripe = /\b(stripe|webhook_url)\b/i.test(input);
+      const hasHttp = /\b(aiohttp|requests|client|fetch|urllib)\b/i.test(input);
+      const hasDirectImport = /\b(sqlite3|import\s+redis|redis\.redis)\b/i.test(input);
+      
+      const stubExceptions = ['TransactionNotFoundError', 'InsufficientBalanceError', 'StripeAPIError', 'DatabaseConnectionError', 'PaymentException', 'AuthError'];
+      let hasUndefinedExceptions = false;
+      stubExceptions.forEach(exc => {
+        if (input.includes(exc)) {
+          const classDef = new RegExp(`class\\s+${exc}\\b`);
+          const importDef = new RegExp(`\\b${exc}\\b.*import|import.*\\b${exc}\\b`);
+          if (!classDef.test(input) && !importDef.test(input)) {
+            hasUndefinedExceptions = true;
+          }
+        }
+      });
+
+      if (hasTransaction && (hasStripe || hasHttp)) {
+        alerts.push(`<div class="alert-item">⚠️ <strong>SEAM WARNING:</strong> External API call (Stripe/HTTP) inside database transaction. <strong>Rollback Risk</strong> detected: if the transaction rolls back, external payments or API side-effects cannot be undone automatically.</div>`);
+      }
+      if (hasUndefinedExceptions) {
+        alerts.push(`<div class="alert-item">⚠️ <strong>STUB WARNING:</strong> References undefined exception/class (e.g., TransactionNotFoundError). <strong>Behavioral Twin</strong> matching required to resolve this dependency against the codebase graph.</div>`);
+      }
+      if (hasDirectImport) {
+        alerts.push(`<div class="alert-item">⚠️ <strong>ARCHITECTURAL DRIFT:</strong> Direct library import (sqlite3/redis) bypasses project standard persistence interfaces. BGI validation flags these as style-drift/hallucinations.</div>`);
+      }
+
+      const alertsEl = document.getElementById('scanner-alerts');
+      if (alerts.length > 0) {
+        alertsEl.innerHTML = `<h3>🚨 Architectural & Seam Alerts</h3><div class="alerts-list">${alerts.join('')}</div>`;
+        alertsEl.style.display = 'block';
+      } else {
+        alertsEl.style.display = 'none';
+      }
     }
 
     async function trackPageview() {
