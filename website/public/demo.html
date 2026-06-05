@@ -1007,8 +1007,76 @@ router = APIRouter()
         // Simple syntax highlight replacements
         escapedLine = escapedLine.replace(/\b(def|function|async|await|return|if|for|while|try|except|catch|throw|raise|import|from|class)\b/g, '<span class="tk-key">$1</span>');
         
-        // Add manual tags as badges
-        tags.forEach(tag => {
+        // Dynamic analysis of cleanLine to extract COV tokens automatically
+        const detected = new Set();
+        
+        // Populate with manual tags first
+        tags.forEach(t => detected.add(t.trim().toLowerCase()));
+
+        // Avoid matching imports/definitions themselves as actual operations
+        const isImportOrDef = /^\s*(import\s+|from\s+|class\s+|def\s+.*:)/.test(cleanLine);
+
+        if (!isImportOrDef) {
+          const lower = cleanLine.toLowerCase();
+
+          // 1. FETCH
+          if (/\b(fetch|retrieve|get|post|put|delete|execute|select|query|request)\b/i.test(cleanLine)
+              || /session\.(post|get|request)/i.test(cleanLine)
+              || /self\.cache\.get/i.test(cleanLine)
+              || /stripe\.\w+\.retrieve/i.test(cleanLine)
+              || /db\.execute/i.test(cleanLine)
+              || /aiohttp\.ClientSession/i.test(cleanLine)) {
+            // Avoid return/set calls that just happen to contain the words but aren't queries
+            if (!/\breturn\b/i.test(cleanLine) && !/self\.cache\.set/i.test(cleanLine)) {
+              detected.add('fetch');
+            }
+          }
+
+          // 2. MUTATE
+          if (/(\+=|-=|\*=|/=)/.test(cleanLine)
+              || /\b(append|push|extend|pop|update|setex|insert|delete|add)\b/i.test(cleanLine)
+              || /self\.cache\.delete/i.test(cleanLine)
+              || /self\.cache\.setex/i.test(cleanLine)) {
+            detected.add('mutate');
+          }
+
+          // 3. GUARD
+          if (/\b(isinstance|typeof|assert)\b/i.test(cleanLine)
+              || /\bif\b.*\bis\s+none\b/i.test(lower)
+              || /\bif\b.*\b==\s*none\b/i.test(lower)
+              || /\bif\s+not\b/i.test(lower)
+              || /\bif\b.*(!=|==|<|>)/.test(cleanLine)) {
+            detected.add('guard');
+          }
+
+          // 4. EXCEPTION
+          if (/\b(try|except|catch|throw|raise)\b/i.test(cleanLine)) {
+            detected.add('exception');
+          }
+
+          // 5. LOOP
+          if (/\b(for|while)\b/i.test(cleanLine) || /\.(foreach|map|filter|reduce)\b/i.test(lower)) {
+            detected.add('loop');
+          }
+
+          // 6. ASYNC
+          if (/\b(async|await)\b/i.test(cleanLine)) {
+            detected.add('async');
+          }
+
+          // 7. CONDITIONAL (if not already labeled as guard)
+          if (/\b(if|elif|else|switch|case)\b/i.test(cleanLine) && !detected.has('guard')) {
+            detected.add('conditional');
+          }
+
+          // 8. OUTPUT
+          if (/\b(return|print|emit|yield)\b/i.test(cleanLine)) {
+            detected.add('output');
+          }
+        }
+
+        // Add badges for all detected tokens
+        detected.forEach(tag => {
           const t = tag.trim().toLowerCase();
           let colorClass = `badge-${t}`;
           let desc = '';
