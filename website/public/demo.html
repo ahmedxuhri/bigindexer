@@ -1033,7 +1033,7 @@ router = APIRouter()
           }
 
           // 2. MUTATE
-          if (/(\+=|-=|\*=|/=)/.test(cleanLine)
+          if (/(\+=|-=|\*=|\/=)/.test(cleanLine)
               || /\b(append|push|extend|pop|update|setex|insert|delete|add)\b/i.test(cleanLine)
               || /self\.cache\.delete/i.test(cleanLine)
               || /self\.cache\.setex/i.test(cleanLine)) {
