@@ -1064,7 +1064,7 @@ router = APIRouter()
           }
 
           // 5. LOOP
-          if (/\b(for|while)\b/i.test(cleanLine) || /\.(foreach|map|filter|reduce)\b/i.test(lower)) {
+          if (/\b(for|while|retry)\b/i.test(cleanLine) || /\.(foreach|map|filter|reduce)\b/i.test(lower)) {
             detected.add('loop');
           }
 
