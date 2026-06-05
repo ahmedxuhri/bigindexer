@@ -213,6 +213,21 @@
         </tbody>
       </table>
 
+      <h2 style="margin-top: 2.5rem; margin-bottom: 1rem; font-size: 1.5rem; color: #0f172a;">Recent Demo Interactions</h2>
+      <table aria-label="Recent demo interactions">
+        <thead>
+          <tr>
+            <th style="width:18%">When</th>
+            <th style="width:22%">Event</th>
+            <th style="width:30%">Detail</th>
+            <th>Referrer</th>
+          </tr>
+        </thead>
+        <tbody id="interaction-records">
+          <tr><td colspan="4">Loading interactions…</td></tr>
+        </tbody>
+      </table>
+
       <footer>
         Big Indexer · <a href="/">Home</a> · <a href="/validation">Validation</a>
       </footer>
@@ -271,6 +286,20 @@
       }).join('');
 
       document.getElementById('recent-records').innerHTML = rows || '<tr><td colspan="4">No records yet.</td></tr>';
+
+      const intRows = (data.interactions || []).map((item) => {
+        const when = new Date(item.at).toLocaleString();
+        return `
+          <tr>
+            <td>${when}</td>
+            <td><code>${item.event}</code></td>
+            <td><code>${item.detail || '—'}</code></td>
+            <td>${item.referrer || '—'}</td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('interaction-records').innerHTML = intRows || '<tr><td colspan="4">No interactions logged yet.</td></tr>';
     }
 
     trackPageview();

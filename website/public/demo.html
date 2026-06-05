@@ -734,6 +734,8 @@
       
       document.getElementById(tabId).classList.add('active');
       event.target.classList.add('active');
+      
+      trackInteraction('switch_tab', tabId);
     }
 
     // Scenarios Data
@@ -885,6 +887,7 @@ router = APIRouter()
       }, 300);
 
       updateEditorContent();
+      trackInteraction('select_scenario', scenarioId);
     }
 
     function setBGIMode(withBgi) {
@@ -893,6 +896,7 @@ router = APIRouter()
       document.getElementById('btn-no-bgi').classList.toggle('active', !withBgi);
       
       updateEditorContent();
+      trackInteraction('toggle_bgi_context', withBgi ? 'with_bgi' : 'without_bgi');
     }
 
     function updateEditorContent() {
@@ -962,11 +966,18 @@ router = APIRouter()
     function loadSample(lang) {
       document.getElementById('scanner-input').value = SAMPLES[lang];
       runHighlight();
+      trackInteraction('load_preset', lang);
     }
 
+    let scanTimeout = null;
     function runHighlight() {
       const input = document.getElementById('scanner-input').value;
       const lines = input.split('\n');
+      
+      clearTimeout(scanTimeout);
+      scanTimeout = setTimeout(() => {
+        trackInteraction('user_input_scan', `${input.length} chars`);
+      }, 2000);
       
       const resultLines = lines.map(line => {
         let cleanLine = line;
@@ -1021,8 +1032,57 @@ router = APIRouter()
       document.getElementById('scanner-result').innerHTML = resultLines.join('\n');
     }
 
+    async function trackPageview() {
+      const payload = {
+        path: window.location.pathname,
+        title: document.title,
+        referrer: document.referrer || '',
+      };
+      const body = JSON.stringify(payload);
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/analytics/pageview', new Blob([body], { type: 'application/json' }));
+        return;
+      }
+      try {
+        await fetch('/api/analytics/pageview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+          keepalive: true,
+        });
+      } catch (error) {
+        console.error('Failed to send analytics event:', error);
+      }
+    }
+
+    async function trackInteraction(event, detail) {
+      const payload = {
+        event,
+        detail,
+        referrer: document.referrer || '',
+      };
+      const body = JSON.stringify(payload);
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/analytics/interaction', new Blob([body], { type: 'application/json' }));
+        return;
+      }
+      try {
+        await fetch('/api/analytics/interaction', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+          keepalive: true,
+        });
+      } catch (error) {
+        console.error('Failed to send interaction event:', error);
+      }
+    }
+
     // Load initial sample
     loadSample('python');
+    
+    // Track initial pageview
+    trackPageview();
   </script>
 </body>
 </html>

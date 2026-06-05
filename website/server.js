@@ -21,6 +21,7 @@ const analytics = {
   totalPageviews: 0,
   byPath: new Map(),
   recent: [],
+  interactions: [],
 };
 
 function recordPageview({ path: pagePath, title = '', referrer = '', userAgent = '' }) {
@@ -38,6 +39,18 @@ function recordPageview({ path: pagePath, title = '', referrer = '', userAgent =
   analytics.recent = analytics.recent.slice(0, 50);
 }
 
+function recordInteraction({ event, detail, referrer = '' }) {
+  const entry = {
+    event,
+    detail,
+    referrer,
+    at: new Date().toISOString(),
+  };
+
+  analytics.interactions.unshift(entry);
+  analytics.interactions = analytics.interactions.slice(0, 100);
+}
+
 function getAnalyticsSummary() {
   const byPath = Array.from(analytics.byPath.entries())
     .map(([path, count]) => ({ path, count }))
@@ -48,6 +61,7 @@ function getAnalyticsSummary() {
     unique_paths: analytics.byPath.size,
     by_path: byPath,
     recent: analytics.recent,
+    interactions: analytics.interactions,
   };
 }
 
@@ -116,6 +130,23 @@ app.post('/api/analytics/pageview', (req, res) => {
 // API: Analytics summary
 app.get('/api/analytics/summary', (req, res) => {
   res.json(getAnalyticsSummary());
+});
+
+// API: Interaction analytics
+app.post('/api/analytics/interaction', (req, res) => {
+  const { event, detail, referrer = '' } = req.body || {};
+
+  if (typeof event !== 'string' || !event) {
+    return res.status(400).json({ error: 'Invalid event' });
+  }
+
+  recordInteraction({
+    event,
+    detail: typeof detail === 'string' ? detail : '',
+    referrer: typeof referrer === 'string' ? referrer : '',
+  });
+
+  return res.status(204).end();
 });
 
 // ── Telemetry (opt-in BGI client pings) ─────────────────────────────────────
