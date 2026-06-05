@@ -664,6 +664,10 @@
               <h3>Scenario C: Data Access Optimization</h3>
               <p>Finding implementation twins to match established persistence patterns.</p>
             </button>
+            <button class="task-card" id="task-d" onclick="selectScenario('D')">
+              <h3>Scenario D: Transactional API Seam</h3>
+              <p>Detecting and moving external payment calls outside database transactions.</p>
+            </button>
           </div>
 
           <div class="ide-container">
@@ -885,6 +889,42 @@ router = APIRouter()
     r = redis.Redis(host=<span class="tk-str">'localhost'</span>, port=6379, db=0)
     r.setex(f<span class="tk-str">"user:{session_id}"</span>, 3600, user_data)  <span class="tk-comment"># Hardcoded TTL</span>
     <span class="tk-key">return</span> <span class="tk-key">True</span>`
+      },
+      'D': {
+        filename: 'services/payment.py',
+        cmd: 'bgi scan services/payment.py',
+        term: '[BGI] Scan complete: 1 unit fingerprinted.\n[BGI] SEAM ALERT: external API call inside database transaction in payment.py.\n[BGI] Action required: move stripe call outside transaction.',
+        tools: {
+          t1: 'task_fingerprint("process refund with stripe and db update") -> TRANSACTION, FETCH, MUTATE, ASYNC',
+          t2: 'behavioral_twins() -> \n - services/payment.py::process_refund (1.00)',
+          t3: 'twin_context() -> SEAM DETECTED: Stripe API call inside self.db.begin() transaction block.'
+        },
+        withBGI: `<span class="tk-comment"># BGI PREVENTED ROLLBACK RISK: Stripe payment is executed outside the database transaction block.</span>
+<span class="tk-key">async def</span> <span class="tk-func">refund_payment</span>(transaction_id, amount):
+    <span class="tk-comment"># 1. External side-effect happens safely outside SQL transaction</span>
+    stripe_response = <span class="tk-key">await</span> stripe.refund(transaction_id, amount)
+    
+    <span class="tk-comment"># 2. Database transaction is atomic and only holds DB operations</span>
+    <span class="tk-key">async with</span> self.db.begin():
+        <span class="tk-key">await</span> self.db.execute(
+            update(Transaction)
+            .where(Transaction.id == transaction_id)
+            .values(status=<span class="tk-str">"refunded"</span>, stripe_id=stripe_response[<span class="tk-str">"id"</span>])
+        )
+    <span class="tk-key">return</span> {<span class="tk-str">"success"</span>: <span class="tk-key">True</span>}`,
+        noBGI: `<span class="tk-comment"># LLM HALLUCINATION/SEAM: Stripe payment nested inside self.db.begin() transaction block.</span>
+<span class="tk-comment"># If DB update fails, Stripe payment cannot be rolled back!</span>
+<span class="tk-key">async def</span> <span class="tk-func">refund_payment</span>(transaction_id, amount):
+    <span class="tk-key">async with</span> self.db.begin():
+        <span class="tk-comment"># Direct external call nested inside the SQL transaction block</span>
+        stripe_response = <span class="tk-key">await</span> stripe.refund(transaction_id, amount)
+        
+        <span class="tk-key">await</span> self.db.execute(
+            update(Transaction)
+            .where(Transaction.id == transaction_id)
+            .values(status=<span class="tk-str">"refunded"</span>, stripe_id=stripe_response[<span class="tk-str">"id"</span>])
+        )
+    <span class="tk-key">return</span> {<span class="tk-str">"success"</span>: <span class="tk-key">True</span>}`
       }
     };
 
@@ -1191,28 +1231,34 @@ router = APIRouter()
       const hasTransaction = resultLines.some(line => line.includes('badge-transaction'));
       const hasStripe = /\b(stripe|webhook_url)\b/i.test(input);
       const hasHttp = /\b(aiohttp|requests|client|fetch|urllib)\b/i.test(input);
-      const hasDirectImport = /\b(sqlite3|import\s+redis|redis\.redis)\b/i.test(input);
+      
+      const matchedImports = [];
+      if (/\bimport\s+sqlite3\b|\bsqlite3\./i.test(input)) matchedImports.push('sqlite3');
+      if (/\bimport\s+redis\b|from\s+redis\b/i.test(input)) matchedImports.push('redis');
+      if (/\bimport\s+sqlalchemy\b|from\s+sqlalchemy\b/i.test(input)) matchedImports.push('sqlalchemy');
+      const hasDirectImport = matchedImports.length > 0;
       
       const stubExceptions = ['TransactionNotFoundError', 'InsufficientBalanceError', 'StripeAPIError', 'DatabaseConnectionError', 'PaymentException', 'AuthError'];
-      let hasUndefinedExceptions = false;
+      const matchedStubs = [];
       stubExceptions.forEach(exc => {
         if (input.includes(exc)) {
           const classDef = new RegExp(`class\\s+${exc}\\b`);
           const importDef = new RegExp(`\\b${exc}\\b.*import|import.*\\b${exc}\\b`);
           if (!classDef.test(input) && !importDef.test(input)) {
-            hasUndefinedExceptions = true;
+            matchedStubs.push(exc);
           }
         }
       });
+      const hasUndefinedExceptions = matchedStubs.length > 0;
 
       if (hasTransaction && (hasStripe || hasHttp)) {
-        alerts.push(`<div class="alert-item">⚠️ <strong>SEAM WARNING:</strong> External API call (Stripe/HTTP) inside database transaction. <strong>Rollback Risk</strong> detected: if the transaction rolls back, external payments or API side-effects cannot be undone automatically.</div>`);
+        alerts.push(`<div class="alert-item">⚠️ <strong>SEAM WARNING:</strong> External API call (Stripe/HTTP) inside database transaction. <strong>Rollback Risk</strong> detected: if the transaction rolls back, external payments or API side-effects cannot be undone automatically.<br><em style="font-size:0.78rem;color:#78350f;display:inline-block;margin-top:0.2rem;">Recommendation: Move the external API call outside the transaction block, or apply a Transactional Outbox pattern.</em></div>`);
       }
       if (hasUndefinedExceptions) {
-        alerts.push(`<div class="alert-item">⚠️ <strong>STUB WARNING:</strong> References undefined exception/class (e.g., TransactionNotFoundError). <strong>Behavioral Twin</strong> matching required to resolve this dependency against the codebase graph.</div>`);
+        alerts.push(`<div class="alert-item">⚠️ <strong>STUB WARNING:</strong> References undefined exception/class (<code>${matchedStubs.join(', ')}</code>). <strong>Behavioral Twin</strong> matching required to resolve this dependency against the codebase graph.</div>`);
       }
       if (hasDirectImport) {
-        alerts.push(`<div class="alert-item">⚠️ <strong>ARCHITECTURAL DRIFT:</strong> Direct library import (sqlite3/redis) bypasses project standard persistence interfaces. BGI validation flags these as style-drift/hallucinations.</div>`);
+        alerts.push(`<div class="alert-item">⚠️ <strong>ARCHITECTURAL DRIFT:</strong> Direct library import of <code>${matchedImports.join(', ')}</code> bypasses project standard persistence interfaces (e.g. <code>core.database</code>). BGI validation flags these as style-drift/hallucinations.</div>`);
       }
 
       const alertsEl = document.getElementById('scanner-alerts');
