@@ -1017,6 +1017,11 @@ router = APIRouter()
         // Populate with manual tags first
         tags.forEach(t => detected.add(t.trim().toLowerCase()));
 
+        // 9. DECORATOR (checked on all lines including defs/classes/imports)
+        if (/^\s*@/.test(cleanLine)) {
+          detected.add('decorator');
+        }
+
         // Avoid matching imports/definitions themselves as actual operations
         const isImportOrDef = /^\s*(import\s+|from\s+|class\s+|def\s+.*:)/.test(cleanLine);
 
@@ -1053,8 +1058,8 @@ router = APIRouter()
             detected.add('guard');
           }
 
-          // 4. EXCEPTION
-          if (/\b(try|except|catch|throw|raise)\b/i.test(cleanLine)) {
+          // 4. EXCEPTION (except/catch/throw/raise are the boundaries, try block is the context)
+          if (/\b(except|catch|throw|raise)\b/i.test(cleanLine)) {
             detected.add('exception');
           }
 
@@ -1076,11 +1081,6 @@ router = APIRouter()
           // 8. OUTPUT
           if (/\b(return|print|emit|yield)\b/i.test(cleanLine)) {
             detected.add('output');
-          }
-
-          // 9. DECORATOR
-          if (/^\s*@\w+/.test(cleanLine)) {
-            detected.add('decorator');
           }
 
           // 10. FORK
