@@ -645,6 +645,391 @@
       border-color: var(--purple);
       color: var(--text);
     }
+
+    /* Demo Sandbox Notice Banner */
+    .demo-notice-banner {
+      background: var(--blue-lt);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin: 1.5rem auto 0 auto;
+      max-width: 760px;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      text-align: left;
+      font-size: 0.88rem;
+      color: #1e3a8a;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.04);
+      line-height: 1.45;
+    }
+    .demo-notice-icon {
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+    .demo-notice-banner a {
+      color: var(--purple-dk);
+      font-weight: 700;
+      text-decoration: underline;
+      transition: color 0.15s ease;
+    }
+    .demo-notice-banner a:hover {
+      color: var(--purple);
+    }
+
+    /* DRS Cluster Visualizer styling */
+    .drs-container {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 1.5rem;
+      align-items: stretch;
+    }
+    .drs-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .drs-visualizer-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .drs-visualizer-box {
+      background: #11111b; /* dark background for node graph */
+      border-radius: 12px;
+      height: 480px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.05);
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+    }
+    #drs-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .svg-line-normal {
+      stroke: rgba(147, 197, 253, 0.2);
+      stroke-width: 1.5;
+      stroke-dasharray: 4 3;
+      transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .svg-line-fuse {
+      stroke: #ef4444;
+      stroke-width: 3.5;
+      stroke-dasharray: 6 3;
+      animation: flash-fuse 1.5s infinite ease-in-out;
+      transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+      filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.6));
+    }
+    @keyframes flash-fuse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+    
+    .drs-node {
+      position: absolute;
+      width: 140px;
+      background: rgba(24, 24, 37, 0.9);
+      border: 1.5px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 0.5rem 0.65rem;
+      color: #cdd6f4;
+      font-family: monospace;
+      font-size: 0.72rem;
+      z-index: 5;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      backdrop-filter: blur(4px);
+      transition: top 0.8s cubic-bezier(0.25, 1, 0.5, 1), 
+                  left 0.8s cubic-bezier(0.25, 1, 0.5, 1), 
+                  border-color 0.3s ease, 
+                  box-shadow 0.3s ease, 
+                  transform 0.2s ease;
+    }
+    .drs-node:hover {
+      border-color: var(--purple);
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+      transform: scale(1.03);
+      z-index: 10;
+    }
+    .drs-node-title {
+      font-weight: 700;
+      color: #f9e2af;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-bottom: 0.25rem;
+    }
+    .drs-node-tokens {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.15rem;
+      margin-top: 0.35rem;
+    }
+    .drs-mini-badge {
+      font-size: 0.55rem;
+      padding: 0.05rem 0.2rem;
+      border-radius: 3px;
+      color: white;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+    
+    /* Cluster boundary wrappers */
+    .drs-cluster-boundary {
+      position: absolute;
+      border-radius: 16px;
+      border: 2px dashed rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.01);
+      z-index: 2;
+      opacity: 0;
+      transform: scale(0.95);
+      transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      padding: 0.6rem;
+    }
+    .drs-cluster-label {
+      color: rgba(255, 255, 255, 0.35);
+      font-family: monospace;
+      font-size: 0.65rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .is-clustered .drs-cluster-boundary {
+      opacity: 1;
+      transform: scale(1);
+    }
+    
+    /* Cluster positions before/after */
+    /* Init positions (scattered) */
+    .drs-node-1 { top: 40px; left: 40px; }
+    .drs-node-2 { top: 220px; left: 50px; }
+    .drs-node-3 { top: 120px; left: 240px; }
+    .drs-node-4 { top: 380px; left: 190px; }
+    .drs-node-5 { top: 40px; left: 420px; }
+    .drs-node-6 { top: 360px; left: 390px; }
+    .drs-node-7 { top: 210px; left: 320px; }
+    .drs-node-8 { top: 90px; left: 580px; }
+    .drs-node-9 { top: 240px; left: 590px; }
+    
+    /* Clustered positions */
+    .is-clustered .drs-node-1 { top: 75px; left: 45px; border-color: rgba(137, 180, 250, 0.3); }
+    .is-clustered .drs-node-2 { top: 155px; left: 45px; border-color: rgba(137, 180, 250, 0.3); }
+    .is-clustered .drs-node-3 { top: 115px; left: 200px; border-color: rgba(137, 180, 250, 0.3); }
+    
+    .is-clustered .drs-node-4 { top: 310px; left: 145px; border-color: rgba(166, 227, 161, 0.3); }
+    .is-clustered .drs-node-5 { top: 385px; left: 225px; border-color: rgba(166, 227, 161, 0.3); }
+    .is-clustered .drs-node-6 { top: 310px; left: 305px; border-color: rgba(166, 227, 161, 0.3); }
+    
+    .is-clustered .drs-node-7 { top: 155px; left: 450px; border-color: rgba(249, 226, 175, 0.3); }
+    .is-clustered .drs-node-8 { top: 235px; left: 450px; border-color: rgba(249, 226, 175, 0.3); }
+    .is-clustered .drs-node-9 { top: 195px; left: 600px; border-color: rgba(249, 226, 175, 0.3); }
+    
+    /* Cluster boundary positions */
+    .boundary-1 { top: 40px; left: 25px; width: 335px; height: 180px; border-color: rgba(137, 180, 250, 0.15); }
+    .boundary-2 { top: 275px; left: 125px; width: 345px; height: 180px; border-color: rgba(166, 227, 161, 0.15); }
+    .boundary-3 { top: 120px; left: 425px; width: 335px; height: 185px; border-color: rgba(249, 226, 175, 0.15); }
+    
+    /* Fuse Warning Overlays */
+    .fuse-label-overlay {
+      position: absolute;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid #ef4444;
+      border-radius: 6px;
+      padding: 0.35rem 0.5rem;
+      color: #fca5a5;
+      font-family: monospace;
+      font-size: 0.65rem;
+      font-weight: bold;
+      z-index: 6;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.9);
+      transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25);
+    }
+    .is-clustered .fuse-label-overlay {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    .fuse-label-overlay-1 { top: 250px; left: 340px; } /* Seam between Auth and DB */
+    .fuse-label-overlay-2 { top: 280px; left: 460px; } /* Seam between DB and Payment */
+    
+    /* Twin Search Tab styling */
+    .twin-search-sandbox {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .twin-search-bar {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .search-input {
+      flex-grow: 1;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.85rem 1.25rem;
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: var(--text);
+      outline: none;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+      transition: border-color 0.15s ease;
+    }
+    .search-input:focus {
+      border-color: var(--purple);
+    }
+    .search-btn {
+      background: linear-gradient(135deg, var(--purple) 0%, #4f46e5 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 0 1.75rem;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+      transition: all 0.15s ease;
+    }
+    .search-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+    }
+    .twin-results-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1.9fr;
+      gap: 1.5rem;
+      margin-top: 0.5rem;
+    }
+    .twin-col-left {
+      background: #fafafc;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .twin-col-right {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .search-preset-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 0.75rem 0 1.25rem 0;
+    }
+    .preset-pill {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      color: var(--muted);
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+    .preset-pill:hover, .preset-pill.active {
+      background: var(--purple-lt);
+      border-color: var(--purple);
+      color: var(--purple-dk);
+    }
+    .grep-failure-card {
+      border: 1px dashed var(--red);
+      background: var(--red-lt);
+      border-radius: 12px;
+      padding: 1rem;
+      color: #991b1b;
+      font-size: 0.82rem;
+      margin-top: 1rem;
+      line-height: 1.5;
+    }
+    .grep-failure-card h4 {
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    
+    /* Result card styling */
+    .twin-result-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fafafc;
+      transition: all 0.2s ease;
+    }
+    .twin-result-item:hover {
+      border-color: var(--purple);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    }
+    .twin-result-header {
+      background: #f1f5f9;
+      border-bottom: 1px solid var(--line);
+      padding: 0.6rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .twin-result-title {
+      font-family: monospace;
+      font-size: 0.82rem;
+      font-weight: bold;
+      color: #1e293b;
+    }
+    .twin-similarity-badge {
+      background: var(--purple-lt);
+      color: var(--purple-dk);
+      font-size: 0.74rem;
+      font-weight: 800;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+    }
+    .twin-code-block {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      padding: 1rem;
+      font-family: "Fira Code", monospace;
+      font-size: 0.8rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      margin: 0;
+    }
+
+    @media (max-width: 960px) {
+      .drs-container, .twin-results-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -673,12 +1058,20 @@
         <p class="lede">
           Experience the BGI difference. Toggle context to see how BGI halts AI hallucinations, and scan code snippets live in our Gate 1 analyzer.
         </p>
+        <div class="demo-notice-banner">
+          <span class="demo-notice-icon">ℹ️</span>
+          <div>
+            <strong>Interactive Simulator:</strong> This sandbox demonstrates BGI's analysis flow using pre-loaded patterns. To scan your actual codebase, <a href="https://github.com/ahmedxuhri/bigindexer#use-via-mcp-registry" target="_blank" rel="noopener">install bigindexer via pip</a> and check the <a href="https://github.com/ahmedxuhri/bigindexer/blob/master/docs/MCP_SETUP.md" target="_blank" rel="noopener">MCP Setup Guide</a>.
+          </div>
+        </div>
       </section>
 
       <!-- Tabs -->
       <div class="tabs-nav">
         <button class="tab-btn active" onclick="switchTab('tab-mcp')">🔌 MCP IDE Simulator</button>
         <button class="tab-btn" onclick="switchTab('tab-gate1')">⚡ Live Gate 1 Scanner</button>
+        <button class="tab-btn" onclick="switchTab('tab-drs')" id="drs-tab-btn">📊 DRS Cluster Visualizer</button>
+        <button class="tab-btn" onclick="switchTab('tab-twins')">🔍 Behavioral Twin Search</button>
       </div>
 
       <!-- TAB 1: MCP SIMULATOR -->
@@ -804,6 +1197,201 @@
           </div>
         </div>
       </div>
+
+      <!-- TAB 3: DRS CLUSTER & BOUNDARY VISUALIZER -->
+      <div id="tab-drs" class="tab-content">
+        <div class="drs-container">
+          <div class="drs-sidebar">
+            <div class="sandbox-card">
+              <h2>DRS Clustering Settings</h2>
+              <p style="font-size:0.8rem; color:var(--muted); margin-bottom:1rem; line-height:1.4;">
+                Adjust clustering parameters to see how BGI groups units and creates boundaries.
+              </p>
+              
+              <div style="margin-bottom:0.85rem;">
+                <label style="font-size:0.78rem; font-weight:700; display:block; margin-bottom:0.35rem; color:#4b5563;">CLUSTER SIZE CAP</label>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <input type="range" min="3" max="8" value="6" id="drs-size-cap" style="flex-grow:1; margin-right:0.5rem;" oninput="updateDrsCapVal(this.value)">
+                  <span id="drs-cap-val" style="font-size:0.82rem; font-weight:700; font-family:monospace; background:#f1f5f9; padding:0.1rem 0.4rem; border-radius:4px;">6 units</span>
+                </div>
+              </div>
+              
+              <div style="margin-bottom:1.25rem;">
+                <label style="font-size:0.78rem; font-weight:700; display:block; margin-bottom:0.35rem; color:#4b5563;">SPECTRAL MASK FILTER</label>
+                <select style="width:100%; padding:0.5rem; border-radius:6px; border:1px solid var(--line); font-size:0.82rem; font-weight:600; outline:none; background:white;">
+                  <option>Scope: Module-level (default)</option>
+                  <option>Scope: Global</option>
+                  <option>Scope: Direct dependencies only</option>
+                </select>
+              </div>
+              
+              <button class="search-btn" style="width:100%; padding:0.75rem 0; margin-bottom:0.75rem;" onclick="toggleDrsClustering()" id="drs-run-btn">▶ Run DRS Clustering</button>
+              <button class="sample-btn" style="width:100%; border-color:#e2e8f0; background:#f8fafc;" onclick="resetDrsSimulation()">Reset Simulation</button>
+            </div>
+            
+            <div class="sandbox-card" style="padding:1rem;">
+              <h3 style="font-size:0.85rem; margin-bottom:0.5rem; color:#0f172a;">DRS Clustering Status</h3>
+              <div style="display:flex; flex-direction:column; gap:0.45rem; font-size:0.78rem;">
+                <div style="display:flex; justify-content:space-between;"><span style="color:var(--muted);">Status:</span><strong id="drs-status" style="color:var(--orange);">Idle</strong></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:var(--muted);">Total Units:</span><strong>9 units</strong></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:var(--muted);">Active Clusters:</span><strong id="drs-active-clusters">0</strong></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:var(--muted);">Fuse Seams Blocked:</span><strong id="drs-seams" style="color:var(--green);">0</strong></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="drs-visualizer-card">
+            <h2>DRS Graph View (BGI Gate 3 clustering)</h2>
+            <p style="font-size:0.8rem; color:var(--muted); margin-bottom:1.2rem; line-height:1.4;">
+              Nodes are colored by COV roles. Hover over nodes to inspect their details. When clustering runs, watch BGI enforce the size cap of <span id="drs-cap-inline-val">6</span> and emit boundary fuse seams.
+            </p>
+            
+            <div class="drs-visualizer-box" id="drs-visualizer">
+              <svg id="drs-svg"></svg>
+              
+              <!-- Cluster Boundaries -->
+              <div class="drs-cluster-boundary boundary-1">
+                <span class="drs-cluster-label">Cluster A: Auth Subsystem</span>
+              </div>
+              <div class="drs-cluster-boundary boundary-2">
+                <span class="drs-cluster-label">Cluster B: Core DB Adapter</span>
+              </div>
+              <div class="drs-cluster-boundary boundary-3">
+                <span class="drs-cluster-label">Cluster C: Stripe Billing Adapter</span>
+              </div>
+              
+              <!-- Fuse Event Seams Warnings -->
+              <div class="fuse-label-overlay fuse-label-overlay-1" id="fuse-label-1">
+                🛑 FUSE SEAM (CAP REACHED: SEPARATION ENFORCED)
+              </div>
+              <div class="fuse-label-overlay fuse-label-overlay-2" id="fuse-label-2">
+                🛑 FUSE SEAM (CAP REACHED: SEPARATION ENFORCED)
+              </div>
+              
+              <!-- Nodes -->
+              <!-- Cluster A Nodes -->
+              <div class="drs-node drs-node-1" id="node-1" onclick="showNodeDetails(1)">
+                <div class="drs-node-title">auth.py::verify</div>
+                <div class="drs-node-tokens">
+                  <span class="drs-mini-badge badge-guard">GUARD</span>
+                  <span class="drs-mini-badge badge-fetch">FETCH</span>
+                </div>
+              </div>
+              <div class="drs-node drs-node-2" id="node-2" onclick="showNodeDetails(2)">
+                <div class="drs-node-title">auth.py::login</div>
+                <div class="drs-node-tokens">
+                  <span class="drs-mini-badge badge-fetch">FETCH</span>
+                  <span class="drs-mini-badge badge-output">OUTPUT</span>
+                </div>
+              </div>
+              <div class="drs-node drs-node-3" id="node-3" onclick="showNodeDetails(3)">
+                <div class="drs-node-title">user_db.py::get</div>
+                <div class="drs-node-tokens">
+                  <span class="drs-mini-badge badge-fetch">FETCH</span>
+                </div>
+              </div>
+              
+              <!-- Cluster B Nodes -->
+              <div class="drs-node drs-node-4" id="node-4" onclick="showNodeDetails(4)">
+                <div class="drs-node-title">db.py::query</div>
+                <div class="drs-node-tokens">
+                  <span class="drs-mini-badge badge-fetch">FETCH</span>
+                  <span class="drs-mini-badge badge-mutate">MUTATE</span>
+                </div>
+              </div>
+              <div class="drs-node drs-node-5" id="node-5" onclick="showNodeDetails(5)">
+                <div class="drs-node-title">db.py::execute</div>
+                <div class="drs-node-tokens">
+                  <span class="drs-mini-badge badge-mutate">MUTATE</span>
+                </div>
+              </div>
+              <div class="drs-node drs-node-6" id="node-6" onclick="showNodeDetails(6)">
+                <div class="drs-node-title">redis_cache.py::set</div>
+                <div class="drs-node-tokens">
+                  <span class="drs-mini-badge badge-mutate">MUTATE</span>
+                </div>
+              </div>
+              
+              <!-- Cluster C Nodes -->
+              <div class="drs-node drs-node-7" id="node-7" onclick="showNodeDetails(7)">
+                <div class="drs-node-title">refund.py::void</div>
+                <div class="drs-node-tokens">
+                  <span class="drs-mini-badge badge-transaction">TRANSACT</span>
+                  <span class="drs-mini-badge badge-async">ASYNC</span>
+                </div>
+              </div>
+              <div class="drs-node drs-node-8" id="node-8" onclick="showNodeDetails(8)">
+                <div class="drs-node-title">charge.py::bill</div>
+                <div class="drs-node-tokens">
+                  <span class="drs-mini-badge badge-transaction">TRANSACT</span>
+                  <span class="drs-mini-badge badge-fetch">FETCH</span>
+                </div>
+              </div>
+              <div class="drs-node drs-node-9" id="node-9" onclick="showNodeDetails(9)">
+                <div class="drs-node-title">stripe.py::call</div>
+                <div class="drs-node-tokens">
+                  <span class="drs-mini-badge badge-fetch">FETCH</span>
+                  <span class="drs-mini-badge badge-async">ASYNC</span>
+                </div>
+              </div>
+              
+            </div>
+            
+            <!-- Dynamic Node Info Box -->
+            <div id="drs-node-info" style="margin-top:1rem; padding:0.85rem 1rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:0.82rem; display:none;">
+              <!-- Dynamic details here -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: BEHAVIORAL TWIN SEARCH -->
+      <div id="tab-twins" class="tab-content">
+        <div class="twin-search-sandbox">
+          <div class="sandbox-card">
+            <h2>Semantic Behavioral Twin Search</h2>
+            <p style="font-size:0.88rem; color:var(--muted); margin-bottom:1.25rem; line-height:1.45;">
+              BGI maps structural codebase semantics rather than raw string tokens. Search for behavioral shapes (COV token sequences) across the repo. Traditional keyword/grep search fails to find these matches when variable names and file types differ.
+            </p>
+            
+            <div class="twin-search-bar">
+              <input type="text" id="twin-search-input" class="search-input" placeholder="Type a search query or click a preset below (e.g. Fetch user data, authenticate credentials)..." value="Error Guard & Retry Sequence">
+              <button class="search-btn" onclick="runTwinSearch()">🔍 Search Twins</button>
+            </div>
+            
+            <div style="font-size:0.8rem; font-weight:700; color:var(--muted); margin-top:0.5rem;">PRESETS FOR SEMANTIC SEARCH:</div>
+            <div class="search-preset-pills">
+              <button class="preset-pill active" onclick="selectSearchPreset('Error Guard & Retry Sequence', this)">🔄 Error Guard &amp; Retry Sequence</button>
+              <button class="preset-pill" onclick="selectSearchPreset('API Fetch & Cache Update', this)">💾 API Fetch &amp; Cache Update</button>
+              <button class="preset-pill" onclick="selectSearchPreset('Transactional Payment Refund', this)">💳 Transactional Payment Refund</button>
+            </div>
+          </div>
+          
+          <div class="twin-results-grid">
+            <div class="twin-col-left">
+              <h3 style="font-size:1rem; color:#0f172a; margin-bottom:0.5rem;">Traditional Matching</h3>
+              <p style="font-size:0.8rem; color:var(--muted); line-height:1.4;">
+                How traditional grep, regex, or standard text scanners evaluate this search pattern in a large repository.
+              </p>
+              
+              <div class="grep-failure-card" id="grep-failure-content">
+                <!-- Grep failure message -->
+              </div>
+            </div>
+            
+            <div class="twin-col-right">
+              <h3 style="font-size:1.05rem; color:#0f172a; display:flex; justify-content:space-between; align-items:center;">
+                <span>BGI Behavioral Twins Matched</span>
+                <span id="search-spinner" style="font-size:0.78rem; font-weight:600; color:var(--purple); display:none; animation: pulse 1s infinite;">Scanning Graph...</span>
+              </h3>
+              
+              <div id="twin-search-results-list" style="display:flex; flex-direction:column; gap:1rem;">
+                <!-- Twin results list -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -815,6 +1403,13 @@
       
       document.getElementById(tabId).classList.add('active');
       event.target.classList.add('active');
+      
+      if (tabId === 'tab-drs') {
+        setTimeout(drawDrsLines, 100);
+      }
+      if (tabId === 'tab-twins') {
+        runTwinSearch();
+      }
       
       trackInteraction('switch_tab', tabId);
     }
@@ -1418,6 +2013,323 @@ router = APIRouter()
       } catch (error) {
         console.error('Failed to send interaction event:', error);
       }
+    }
+
+    // TAB 3: DRS Cluster Visualizer Logic
+    const DRS_NODES_DATA = {
+      1: { name: 'auth.py::verify_credentials', tokens: ['GUARD', 'FETCH'], desc: 'Validates credential hashes against database user records. Boundary gate: limits access to auth service.' },
+      2: { name: 'auth.py::login', tokens: ['FETCH', 'OUTPUT'], desc: 'Authenticates a user session, records event logs, and returns a session token.' },
+      3: { name: 'user_db.py::get_user', tokens: ['FETCH'], desc: 'Bridges user model fetches with raw SQL drivers inside core database.' },
+      4: { name: 'db.py::query', tokens: ['FETCH', 'MUTATE'], desc: 'Executes standard read/write queries via persistence model.' },
+      5: { name: 'db.py::execute', tokens: ['MUTATE'], desc: 'Commits atomic transactions or batch mutations directly to PostgreSQL.' },
+      6: { name: 'redis_cache.py::set_cache', tokens: ['MUTATE'], desc: 'Sets transient session data with fixed TTL inside Redis caching cluster.' },
+      7: { name: 'refund.py::void_payment', tokens: ['TRANSACT', 'ASYNC'], desc: 'Initiates a transactional void request to Stripe. Runs inside DB transaction context.' },
+      8: { name: 'charge.py::bill_card', tokens: ['TRANSACT', 'FETCH'], desc: 'Queries billing models, initiates credit card charges via Stripe API gateway.' },
+      9: { name: 'stripe.py::call_api', tokens: ['FETCH', 'ASYNC'], desc: 'Low-level HTTP wrapper making network requests directly to Stripe endpoints.' }
+    };
+
+    const DRS_CONNECTIONS = [
+      { from: 'node-1', to: 'node-2', type: 'normal' },
+      { from: 'node-2', to: 'node-3', type: 'normal' },
+      { from: 'node-3', to: 'node-4', type: 'normal' },
+      { from: 'node-4', to: 'node-5', type: 'normal' },
+      { from: 'node-5', to: 'node-6', type: 'normal' },
+      { from: 'node-7', to: 'node-8', type: 'normal' },
+      { from: 'node-8', to: 'node-9', type: 'normal' },
+      { from: 'node-1', to: 'node-4', type: 'normal' }, // Auth calls DB adapter
+      { from: 'node-7', to: 'node-4', type: 'fuse' },   // Refund calls DB transaction - this is the transaction seam!
+      { from: 'node-7', to: 'node-9', type: 'fuse' }    // Refund calls Stripe API directly inside transaction
+    ];
+
+    let drsIsClustered = false;
+
+    function updateDrsCapVal(val) {
+      document.getElementById('drs-cap-val').textContent = val + ' units';
+      document.getElementById('drs-cap-inline-val').textContent = val;
+    }
+
+    function showNodeDetails(id) {
+      const node = DRS_NODES_DATA[id];
+      if (!node) return;
+      const infoEl = document.getElementById('drs-node-info');
+      
+      const badgeHtml = node.tokens.map(t => `<span class="drs-mini-badge badge-${t.toLowerCase()}" style="font-size:0.68rem; padding:0.1rem 0.35rem; margin-right:0.25rem;">${t}</span>`).join('');
+      
+      infoEl.innerHTML = `
+        <h4 style="font-size:0.9rem; margin-bottom:0.35rem; color:#1e293b;">📌 <code>${node.name}</code></h4>
+        <div style="margin-bottom:0.5rem;">${badgeHtml}</div>
+        <p style="color:#4b5563; line-height:1.4;">${node.desc}</p>
+      `;
+      infoEl.style.display = 'block';
+    }
+
+    function drawDrsLines() {
+      const svg = document.getElementById('drs-svg');
+      if (!svg) return;
+      
+      svg.innerHTML = '';
+      
+      const containerRect = svg.getBoundingClientRect();
+      if (containerRect.width === 0 || containerRect.height === 0) return;
+
+      DRS_CONNECTIONS.forEach(conn => {
+        if (conn.type === 'fuse' && !drsIsClustered) return;
+
+        const el1 = document.getElementById(conn.from);
+        const el2 = document.getElementById(conn.to);
+        if (!el1 || !el2) return;
+
+        const rect1 = el1.getBoundingClientRect();
+        const rect2 = el2.getBoundingClientRect();
+
+        const x1 = (rect1.left + rect1.width / 2) - containerRect.left;
+        const y1 = (rect1.top + rect1.height / 2) - containerRect.top;
+        const x2 = (rect2.left + rect2.width / 2) - containerRect.left;
+        const y2 = (rect2.top + rect2.height / 2) - containerRect.top;
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', x1);
+        line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2);
+        line.setAttribute('y2', y2);
+        
+        if (conn.type === 'fuse') {
+          line.setAttribute('class', 'svg-line-fuse');
+        } else {
+          line.setAttribute('class', 'svg-line-normal');
+        }
+        svg.appendChild(line);
+      });
+    }
+
+    function toggleDrsClustering() {
+      const vis = document.getElementById('drs-visualizer');
+      const runBtn = document.getElementById('drs-run-btn');
+      const statusEl = document.getElementById('drs-status');
+      const activeEl = document.getElementById('drs-active-clusters');
+      const seamsEl = document.getElementById('drs-seams');
+
+      if (drsIsClustered) {
+        resetDrsSimulation();
+        return;
+      }
+
+      drsIsClustered = true;
+      vis.classList.add('is-clustered');
+      runBtn.textContent = '🔄 Reset Simulation';
+      statusEl.textContent = 'Clustering...';
+      statusEl.style.color = 'var(--orange)';
+
+      let start = null;
+      function step(timestamp) {
+        if (!start) start = timestamp;
+        drawDrsLines();
+        if (timestamp - start < 900) {
+          requestAnimationFrame(step);
+        } else {
+          drawDrsLines();
+          statusEl.textContent = 'Completed';
+          statusEl.style.color = 'var(--green)';
+          activeEl.textContent = '3';
+          seamsEl.textContent = '2';
+          trackInteraction('drs_cluster_simulation', 'run_complete');
+        }
+      }
+      requestAnimationFrame(step);
+    }
+
+    function resetDrsSimulation() {
+      drsIsClustered = false;
+      const vis = document.getElementById('drs-visualizer');
+      const runBtn = document.getElementById('drs-run-btn');
+      const statusEl = document.getElementById('drs-status');
+      const activeEl = document.getElementById('drs-active-clusters');
+      const seamsEl = document.getElementById('drs-seams');
+      const infoEl = document.getElementById('drs-node-info');
+
+      vis.classList.remove('is-clustered');
+      runBtn.textContent = '▶ Run DRS Clustering';
+      statusEl.textContent = 'Idle';
+      statusEl.style.color = 'var(--orange)';
+      activeEl.textContent = '0';
+      seamsEl.textContent = '0';
+      infoEl.style.display = 'none';
+
+      let start = null;
+      function step(timestamp) {
+        if (!start) start = timestamp;
+        drawDrsLines();
+        if (timestamp - start < 900) {
+          requestAnimationFrame(step);
+        } else {
+          drawDrsLines();
+        }
+      }
+      requestAnimationFrame(step);
+      trackInteraction('drs_cluster_simulation', 'reset');
+    }
+
+    window.addEventListener('resize', () => {
+      if (document.getElementById('tab-drs').classList.contains('active')) {
+        drawDrsLines();
+      }
+    });
+
+    // TAB 4: Twin Search Logic
+    const TWIN_SEARCH_DATA = {
+      'Error Guard & Retry Sequence': {
+        grep: `<h4>❌ Grep / Regex Scanners failed:</h4>
+               <p style="margin-bottom:0.5rem;"><code>grep -rn "AuthError" .</code> yielded <strong>0 hits</strong>.</p>
+               <p style="margin-bottom:0.5rem;"><code>grep -rn "DatabaseConnectionError" .</code> yielded <strong>0 hits</strong>.</p>
+               <p style="line-height:1.5;">Traditional keyword engines match strings, not structure. The Python code below uses custom class stubs and local variables that do not exist in PHP or Kotlin repos, preventing detection of identical error-handling retry flows.</p>`,
+        twins: [
+          {
+            title: 'services/payment.py (Python) — 98% similarity',
+            code: `<span class="tk-key">async def</span> <span class="tk-func">refund_payment</span>(transaction_id, amount):
+    <span class="tk-key">try</span>:
+        stripe_response = <span class="tk-key">await</span> stripe.refund(transaction_id, amount) <span class="tk-marker"># FETCH</span>
+        <span class="tk-key">if not</span> stripe_response[<span class="tk-str">"success"</span>]: <span class="tk-marker"># GUARD</span>
+            <span class="tk-key">raise</span> StripeAPIError(<span class="tk-str">"Failed Stripe API"</span>) <span class="tk-marker"># EXCEPTION</span>
+        <span class="tk-key">await</span> db.update_status(transaction_id, <span class="tk-str">"void"</span>) <span class="tk-marker"># MUTATE</span>
+        <span class="tk-key">return</span> <span class="tk-key">True</span> <span class="tk-marker"># OUTPUT</span>
+    <span class="tk-key">except</span> StripeAPIError <span class="tk-key">as</span> e: <span class="tk-marker"># EXCEPTION</span>
+        <span class="tk-key">return</span> <span class="tk-key">False</span> <span class="tk-marker"># OUTPUT</span>`
+          },
+          {
+            title: 'core/BillingGateway.php (PHP) — 91% similarity',
+            code: `<span class="tk-key">public function</span> <span class="tk-func">voidTransaction</span>($txId) {
+    <span class="tk-key">try</span> {
+        $tx = $this->gateway->void($txId); <span class="tk-marker"># FETCH</span>
+        <span class="tk-key">if</span> ($tx->status !== <span class="tk-str">'success'</span>) { <span class="tk-marker"># GUARD</span>
+            <span class="tk-key">throw new</span> BillingException(<span class="tk-str">"Void failed"</span>); <span class="tk-marker"># EXCEPTION</span>
+        }
+        $this->db->updateStatus($txId, <span class="tk-str">'voided'</span>); <span class="tk-marker"># MUTATE</span>
+        <span class="tk-key">return</span> $tx; <span class="tk-marker"># OUTPUT</span>
+    } <span class="tk-key">catch</span> (BillingException $e) { <span class="tk-marker"># EXCEPTION</span>
+        <span class="tk-key">return</span> null; <span class="tk-marker"># OUTPUT</span>
+    }
+}`
+          },
+          {
+            title: 'data/OrderRepository.kt (Kotlin) — 86% similarity',
+            code: `<span class="tk-key">fun</span> <span class="tk-func">cancelOrder</span>(orderId: String): Boolean {
+    <span class="tk-key">try</span> {
+        val res = api.cancelOrder(orderId) <span class="tk-marker"># FETCH</span>
+        <span class="tk-key">if</span> (res.code() != 200) { <span class="tk-marker"># GUARD</span>
+            <span class="tk-key">throw</span> OrderCancelException() <span class="tk-marker"># EXCEPTION</span>
+        }
+        orderDao.updateStatus(orderId, <span class="tk-str">"cancelled"</span>) <span class="tk-marker"># MUTATE</span>
+        <span class="tk-key">return true</span> <span class="tk-marker"># OUTPUT</span>
+    } <span class="tk-key">catch</span> (e: OrderCancelException) { <span class="tk-marker"># EXCEPTION</span>
+        <span class="tk-key">return false</span> <span class="tk-marker"># OUTPUT</span>
+    }
+}`
+          }
+        ]
+      },
+      'API Fetch & Cache Update': {
+        grep: `<h4>❌ Grep / Regex Scanners failed:</h4>
+               <p style="margin-bottom:0.5rem;"><code>grep -rn "analyticsCache" .</code> yielded <strong>0 hits</strong>.</p>
+               <p style="line-height:1.5;">Traditional searches match raw identifiers. If one subsystem uses <code>redis_cache.py</code> and another uses an in-memory array <code>analyticsCache</code>, raw text scanners cannot associate them. BGI matches the behavioral signature: query $\rightarrow$ validate $\rightarrow$ transform data $\rightarrow$ insert in storage cache.</p>`,
+        twins: [
+          {
+            title: 'gnewsproxy/analytics.js (JavaScript) — 95% similarity',
+            code: `<span class="tk-key">async function</span> <span class="tk-func">fetchMetrics</span>(nodeId) {
+    <span class="tk-key">const</span> res = <span class="tk-key">await</span> fetch(\`/api/v1/nodes/\${nodeId}/metrics\`); <span class="tk-marker"># FETCH</span>
+    <span class="tk-key">if</span> (!res.ok) <span class="tk-key">return</span> null; <span class="tk-marker"># GUARD</span>
+    <span class="tk-key">const</span> data = <span class="tk-key">await</span> res.json();
+    <span class="tk-key">const</span> rollup = data.metrics.map(m => m.value * 100);
+    analyticsCache.push(rollup); <span class="tk-marker"># MUTATE</span>
+    <span class="tk-key">return</span> rollup; <span class="tk-marker"># OUTPUT</span>
+}`
+          },
+          {
+            title: 'data/redis_cache.py (Python) — 89% similarity',
+            code: `<span class="tk-key">def</span> <span class="tk-func">fetch_and_cache_profile</span>(user_id):
+    user_data = db.query_profile(user_id) <span class="tk-marker"># FETCH</span>
+    <span class="tk-key">if not</span> user_data: <span class="tk-key">return</span> <span class="tk-key">None</span> <span class="tk-marker"># GUARD</span>
+    formatted = format_profile(user_data)
+    redis_client.setex(f<span class="tk-str">"user:{user_id}"</span>, 3600, formatted) <span class="tk-marker"># MUTATE</span>
+    <span class="tk-key">return</span> formatted <span class="tk-marker"># OUTPUT</span>`
+          }
+        ]
+      },
+      'Transactional Payment Refund': {
+        grep: `<h4>❌ Grep / Regex Scanners failed:</h4>
+               <p style="margin-bottom:0.5rem;"><code>grep -rn "self.db.begin()" .</code> returned <strong>148 results</strong>.</p>
+               <p style="line-height:1.5;">Traditional scans return either 0 results (due to naming mismatches) or a massive wall of noise (every single database transaction block). BGI filters specifically for the critical architectural seam: Stripe or HTTP calls nested directly inside database transactions.</p>`,
+        twins: [
+          {
+            title: 'services/payment.py (Python) — 97% similarity',
+            code: `<span class="tk-key">async def</span> <span class="tk-func">refund_payment</span>(transaction_id, amount):
+    <span class="tk-key">async with</span> self.db.begin(): <span class="tk-marker"># TRANSACTION</span>
+        stripe_response = <span class="tk-key">await</span> stripe.refund(transaction_id, amount) <span class="tk-marker"># FETCH</span>
+        <span class="tk-key">await</span> self.db.execute(
+            update(Transaction).values(status=<span class="tk-str">"refunded"</span>) <span class="tk-marker"># MUTATE</span>
+        )
+    <span class="tk-key">return</span> {<span class="tk-str">"success"</span>: <span class="tk-key">True</span>} <span class="tk-marker"># OUTPUT</span>`
+          },
+          {
+            title: 'core/billing_controller.php (PHP) — 90% similarity',
+            code: `<span class="tk-key">public function</span> <span class="tk-func">voidTransaction</span>($txId) {
+    $this->db->beginTransaction(); <span class="tk-marker"># TRANSACTION</span>
+    $res = $this->gateway->void($txId); <span class="tk-marker"># FETCH</span>
+    $this->db->query(<span class="tk-str">"UPDATE tx SET status='void' WHERE id=?"</span>, [$txId]); <span class="tk-marker"># MUTATE</span>
+    $this->db->commit(); <span class="tk-marker"># TRANSACTION</span>
+    <span class="tk-key">return</span> true; <span class="tk-marker"># OUTPUT</span>
+}`
+          }
+        ]
+      }
+    };
+
+    function selectSearchPreset(query, btn) {
+      document.getElementById('twin-search-input').value = query;
+      document.querySelectorAll('.preset-pill').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      runTwinSearch();
+    }
+
+    function runTwinSearch() {
+      const query = document.getElementById('twin-search-input').value.trim();
+      const spinner = document.getElementById('search-spinner');
+      const leftCol = document.getElementById('grep-failure-content');
+      const rightCol = document.getElementById('twin-search-results-list');
+      
+      if (!spinner || !leftCol || !rightCol) return;
+      
+      spinner.style.display = 'inline-block';
+      rightCol.style.opacity = '0.5';
+
+      let presetKey = 'Error Guard & Retry Sequence';
+      if (query.toLowerCase().includes('cache') || query.toLowerCase().includes('fetch')) {
+        presetKey = 'API Fetch & Cache Update';
+      } else if (query.toLowerCase().includes('payment') || query.toLowerCase().includes('refund') || query.toLowerCase().includes('transaction')) {
+        presetKey = 'Transactional Payment Refund';
+      }
+
+      setTimeout(() => {
+        spinner.style.display = 'none';
+        rightCol.style.opacity = '1';
+
+        const data = TWIN_SEARCH_DATA[presetKey];
+        leftCol.innerHTML = data.grep;
+
+        let resultsHtml = '';
+        data.twins.forEach(twin => {
+          resultsHtml += `
+            <div class="twin-result-item">
+              <div class="twin-result-header">
+                <span class="twin-result-title">${twin.title}</span>
+                <span class="twin-similarity-badge">${twin.title.split('— ')[1] || '90%'}</span>
+              </div>
+              <pre class="twin-code-block">${twin.code}</pre>
+            </div>
+          `;
+        });
+        rightCol.innerHTML = resultsHtml;
+        trackInteraction('twin_search', query);
+      }, 350);
     }
 
     // Load initial sample

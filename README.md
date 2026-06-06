@@ -4,6 +4,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/bigindexer.svg)](https://pypi.org/project/bigindexer/)
 [![License](https://img.shields.io/github/license/ahmedxuhri/bigindexer.svg)](https://github.com/ahmedxuhri/bigindexer/blob/master/LICENSE)
 [![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen)](https://bigindexer.com/validation)
+[![Interactive Demo](https://img.shields.io/badge/Demo-Interactive%20Sandbox-blueviolet)](https://bigindexer.com/demo)
 [![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue)](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.ahmedxuhri/bigindexer)
 [![PR Risk Bot Action](https://img.shields.io/badge/PR%20Risk%20Bot-Action-blueviolet)](https://github.com/ahmedxuhri/bigindexer-pr-risk-bot)
 
