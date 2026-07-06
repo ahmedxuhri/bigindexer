@@ -70,6 +70,18 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// Redirect .html files to clean URLs (SEO Best Practice)
+app.use((req, res, next) => {
+  if (req.path.endsWith('.html')) {
+    const cleanPath = req.path.slice(0, -5);
+    if (cleanPath === '/index') {
+      return res.redirect(301, '/');
+    }
+    return res.redirect(301, cleanPath);
+  }
+  next();
+});
+
 // In-memory waitlist (in production, use Azure Table Storage or PostgreSQL)
 const waitlist = new Set();
 
@@ -441,9 +453,9 @@ app.get('/api/validation/summary', (req, res) => {
 // Serve static files (after API routes so /api/* routes are handled first)
 app.use(express.static('public'));
 
-// Catch-all: serve index.html for SPA routing
+// Catch-all: serve a proper 404 page / status
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
 });
 
 // Error handling
