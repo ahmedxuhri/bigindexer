@@ -259,3 +259,8 @@ What's collected when enabled: BGI version, OS, repo size bucket, and a 12-char 
 
 - License: Apache License 2.0 (`LICENSE`)
 - Contributor terms: Developer Certificate of Origin (`DCO`) enforced on pull requests
+
+## Legal
+
+Big Indexer is a product of **SUDO SOFTWARES LTD**, registered in England and Wales (Company No. 16976948).
+Contact: [ahmed@bigindexer.com](mailto:ahmed@bigindexer.com) · https://bigindexer.com
